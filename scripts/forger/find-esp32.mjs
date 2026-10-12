@@ -7,7 +7,7 @@ import os from "node:os";
 const subnets = new Set();
 for (const ifs of Object.values(os.networkInterfaces())) {
   for (const i of ifs ?? []) {
-    if (i.family === "IPv4" && !i.internal) subnets.add(i.address.split(".").slice(0, 3).join("."));
+    if (i.family === "IPv4" && !i.internal && !i.address.startsWith("169.254.")) subnets.add(i.address.split(".").slice(0, 3).join("."));
   }
 }
 if (!subnets.size) {

@@ -12,6 +12,10 @@ curl -fsSL <HUB_URL>/skills/forger/SKILL.md -o ~/.claude/skills/rent-a-shell-for
 
 Después, en Claude Code: "quiero publicar mi robot en Rent a Shell". La skill también está en el repo, en `skills/rent-a-shell-forger/`.
 
+La compu del Forger probablemente sea **Windows**: la skill está escrita primero para PowerShell (winget, `curl.exe`, nombre de cámara dshow, tarea programada para arrancar sola).
+
+**Un solo comando para correr todo:** `pnpm forger` (`scripts/forger/run.mjs`) levanta MediaMTX, la cámara (dshow en Windows, avfoundation en macOS, v4l2 en Linux), el túnel de Cloudflare, el gateway con la URL del túnel y el registro en el hub. Además reinicia lo que se cae y se re-registra si el túnel cambia de URL. `pnpm forger:cameras` lista las cámaras y `CAMERA=test` usa una señal de prueba.
+
 Herramientas de apoyo: `pnpm forger:find-esp32` (busca el ESP32 en la red local), `pnpm forger:doctor` (chequeo de punta a punta), `pnpm --filter @ras/rails-solana operator-key` (wallet del operador sin mostrar la clave) y `scripts/forger/mediamtx.yml` (config de cámara).
 
 Un Forger arma un shell, lo mantiene online y cobra por minuto de uso. Corre un gateway propio al lado de su robot y lo registra en el hub.

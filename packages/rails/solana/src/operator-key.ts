@@ -7,7 +7,7 @@ import anchor from "@coral-xyz/anchor";
 
 const file = new URL("../../../../apps/gateway/.env.local", import.meta.url);
 const cur = existsSync(file) ? readFileSync(file, "utf8") : "";
-const line = cur.split("\n").find((l) => /^SOLANA_OPERATOR_KEY=\S+/.test(l));
+const line = cur.split(/\r?\n/).find((l) => /^SOLANA_OPERATOR_KEY=\S+/.test(l));
 if (line) {
   const kp = Keypair.fromSecretKey(anchor.utils.bytes.bs58.decode(line.split("=")[1].replace(/\s+#.*$/, "").trim()));
   console.log(`ya hay operador: ${kp.publicKey.toBase58()}`);
