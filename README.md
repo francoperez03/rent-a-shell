@@ -36,8 +36,10 @@ Testing de software de robótica: el agente prueba su propio código en hardware
 
 | Pieza | Dónde |
 |---|---|
-| Gateway (sesiones, cola, corte a HOME, MCP, `llms.txt`) | `apps/gateway` |
-| Rieles de pago Solana (`solana-x402`, `solana-pay`) | `packages/rails/solana` |
+| Gateway del Forger (sesiones, cola, corte a HOME, MCP, `llms.txt`, pedidos de personalización) | `apps/gateway` |
+| Hub del marketplace (catálogo de Forgers, salud, `llms.txt`, MCP) | `apps/hub` |
+| Rieles de pago Solana (`solana-x402`, `solana-pay` con escrow) | `packages/rails/solana` |
+| Programa de escrow (Anchor, 90/10 y reembolso) | `programs/programs/shell-escrow` |
 | Sitio (landing, checkout con QR, consola, guía de agentes) | `apps/web` |
 | Agente comprador de ejemplo | `apps/buyer` |
 | Robot: El Tucu (ESP32, 4 servos) | `~/repos/job/eventos/bnb-builder-session/agentes/robot-a` |
@@ -49,6 +51,7 @@ pnpm install
 pnpm check-solana          # facilitator y mint de USDC en devnet
 pnpm mock                  # El Tucu simulado (puerto 8080)
 pnpm gateway               # puerto 8787, config en apps/gateway/.env.local
+pnpm hub                   # puerto 8790, catálogo de Forgers (apps/hub/.env.local)
 pnpm web                   # puerto 5175
 pnpm --filter buyer keygen # wallet descartable para el agente
 pnpm buyer                 # el agente paga y prueba la secuencia

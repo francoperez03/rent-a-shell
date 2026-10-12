@@ -24,6 +24,8 @@ interface PaymentRail {
   check?(intent: Intent): Promise<Payment | null>     // rieles asíncronos: el gateway consulta hasta paid o vencido
   paywall?(path, priceFor, description): MiddlewareHandler  // rieles síncronos (x402): cobra antes del handler
   clientExample?(url: string): string                 // snippet para llms.txt y /agents
+  fetch?(req: Request): Promise<Response>             // rutas propias, montadas en /api/rails/:id/*
+  finalize?(payment: Payment, outcome: "completed" | "refund"): Promise<{ tx?: string } | void>
 }
 
 // packages/shell-spec/src/index.ts
@@ -38,6 +40,8 @@ Reglas:
 - Un riel nunca toca sesiones ni el robot. Devuelve `Payment` y el gateway emite el token.
 - La referencia del pago y el matcheo on-chain viven dentro del riel.
 - El gateway guarda intents y pagos con `rail` como dato: cambiar de riel no rompe el historial.
+- `fetch`: el gateway monta las rutas del riel en `/api/rails/:id/*` sin saber qué hacen. Hoy: el transaction request de Solana Pay (`GET`/`POST /api/rails/solana-pay/tx/:intentId`) y su ícono.
+- `finalize`: el gateway lo llama al cerrar cada sesión con pago. `completed` libera al Forger (con la comisión), `refund` devuelve al pagador. Tiene que ser idempotente. Los rieles que cobran directo (x402) no lo implementan.
 
 ## Registro por configuración
 

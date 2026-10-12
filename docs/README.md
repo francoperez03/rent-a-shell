@@ -16,6 +16,9 @@ Un robot real (El Tucu) se alquila por bloques de tiempo. Lo puede alquilar una 
 | 6 | [`specs/06-sitio.md`](specs/06-sitio.md) | Sitio: páginas, taste, motion, stack |
 | 7 | [`specs/07-proyecto-a.md`](specs/07-proyecto-a.md) | El frente "personas que practican Physical AI" sobre el mismo núcleo |
 | 8 | [`specs/08-rieles-adaptador.md`](specs/08-rieles-adaptador.md) | Interfaz `PaymentRail` y regla de aislamiento |
+| 9 | [`specs/09-hub.md`](specs/09-hub.md) | Hub del marketplace: registro de Forgers, catálogo, `llms.txt` y MCP |
+| · | [`forgers.md`](forgers.md) | Cómo un Forger publica su hardware y cobra |
+| · | [`costos.md`](costos.md) | Tenerlo propio contra alquilarlo |
 | 9 | [`plans/PLAN.md`](plans/PLAN.md) | Fases con verificación, quién corre cada una |
 
 Regla transversal: toda conexión con Solana, mints y facilitators vive en `packages/rails/*`. El gateway y el sitio solo conocen la interfaz.

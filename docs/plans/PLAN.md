@@ -9,13 +9,17 @@ Lo que corre en la Mac lo hace Claude Code. Lo que corre en la Legion, el ESP32 
 | Fase | Qué | Dónde | Estado | Evidencia |
 |---|---|---|---|---|
 | F0 | Verificaciones en vivo | Mac + Franco | en curso: facilitator x402.org soporta `exact` en devnet, mint USDC devnet existe, PayAI soporta mainnet (2026-10-12); faltan key de PayAI y Funnel | `docs/specs/04-pagos.md` |
-| F1 | Gateway contra el mock | Mac | hecha: 6 tests (allowlist, cola, corte a HOME, rate limit, x402, MCP), aislamiento ok | `apps/gateway/src/app.test.ts` |
+| F1 | Gateway contra el mock | Mac | hecha: 8 tests (allowlist, cola, corte a HOME, rate limit, x402, MCP, pedidos al Forger, finalize completed/refund), aislamiento ok | `apps/gateway/src/app.test.ts` |
 | F2 | Pago de agente por x402 | Mac + wallet | código hecho; 402 real en devnet y buyer probado hasta la simulación del facilitator (`invalid_exact_svm_transaction_simulation_failed` con wallet vacía); falta wallet con USDC devnet | `apps/buyer` |
 | F3 | Pago de persona por Solana Pay | Mac + Phantom | código hecho; intent con link `solana:` y QR verificados; falta un pago real escaneando | `packages/rails/solana/src/pay.ts` |
 | F4 | Sitio: landing, checkout, consola | Mac | hecha: checkout con QR, `/agents` con ejemplo SVM, build en verde | `evidencia/f4/` |
 | F5 | Legion + El Tucu real + cámara + túnel | Legion + ESP32 | por hacer | `evidencia/f5/` |
 | F6 | MCP, `llms.txt`, agent card | Mac + Legion | código hecho; falta probarlo con una sesión nueva de Claude Code contra devnet | `apps/gateway/src/{mcp,discovery}.ts` |
 | F7 | Ensayo de demo, video y submission | todo | por hacer | `evidencia/f7/` |
+| F8 | Marketplace: hub de Forgers | Mac | hecha (2026-10-12): registro, catálogo, salud, `llms.txt`, MCP; probado con dos gateways y uno caído | `apps/hub`, `docs/specs/09-hub.md` |
+| F9 | Escrow 90/10 con reembolso | Mac + devnet | programa y riel hechos (2026-10-12): `anchor test` 7/7 y e2e en validador local (90/10, refund, idempotencia); falta deploy a devnet y un pago con Phantom | `programs/`, `packages/rails/solana/src/pay-escrow.ts` |
+| F10 | Sensor de corriente (INA219) | robot-a + Mac | firmware compila (`idf.py build`) y test de conversión ok; mock, gateway, buyer y consola muestran `current_ma`; falta soldar el chip | `robot-a/apps/firmware/main/ina219.c` |
+| F11 | Pedidos de personalización | Mac | hecha: endpoint, formulario en la ficha y lectura con `FORGER_TOKEN` | `apps/gateway/src/app.ts` |
 
 Camino crítico: F2 (pago real devnet) → F5 → F7.
 
@@ -70,6 +74,28 @@ Pasos (Franco, en la Legion):
 - [INPUT] Wallet `SOLANA_PAY_TO` del dueño.
 - [INPUT] Dominio (si se usa `cloudflared` con nombre).
 - [INPUT] Copy del hero de cada puerta.
+
+## Pasos de Franco para el marketplace y el escrow (2026-10-12)
+
+1. **Deploy del programa a devnet** (necesita SOL devnet en `~/.config/solana/id.json`, ver https://faucet.solana.com):
+   ```bash
+   cd programs
+   export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"   # Agave 3.x, tapa al solana 1.18 de Homebrew
+   npm run build
+   /opt/homebrew/bin/anchor deploy --provider.cluster devnet
+   ```
+2. **Config del marketplace**: `ESCROW_ADMIN_KEY=<secret base58> ESCROW_TREASURY=<address de la tesorería> pnpm --filter @ras/rails-solana init-escrow` (FEE_BPS por defecto 1000).
+3. **Operator del gateway**: crear una wallet aparte, fondearla con SOL devnet y poner su secret en `SOLANA_OPERATOR_KEY` (`apps/gateway/.env.local`). Con ella, Solana Pay pasa al escrow; el QR necesita `PUBLIC_URL` HTTPS (túnel).
+4. **Hub**: `cp apps/hub/.env.example apps/hub/.env.local`, `HUB_GATEWAYS=<url del gateway>`, `pnpm hub`. En el sitio, `VITE_HUB_URL=<url del hub>`.
+5. **INA219**: soldar al bus de 5 V de los servos con SDA en GPIO 21 y SCL en GPIO 22 (dirección 0x40), flashear el firmware de robot-a y verificar que `curl http://<ip>/state` muestre `current_ma` subiendo al mover.
+
+E2E del escrow en local (sin devnet):
+
+```bash
+export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+solana-test-validator --reset --bpf-program 5459LTpropgaL1a7Ct4nRUN6BULGvJs3STMcreh2gf4X programs/target/deploy/shell_escrow.so
+pnpm --filter @ras/rails-solana e2e     # en otra terminal
+```
 
 ## Pasos de Franco para cerrar Solana (2026-10-12)
 

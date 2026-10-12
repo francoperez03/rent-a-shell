@@ -58,15 +58,19 @@ En paralelo, una persona escanea el QR con Phantom y toma el control desde la co
 
 - Gateway con sesiones, cola FIFO, corte automático a HOME, rate limit, MCP, `llms.txt` y agent card. Tests en verde.
 - Riel `solana-x402`: 402 real en devnet con USDC y fee payer del facilitator; el agente de ejemplo firma y el facilitator simula la tx.
-- Riel `solana-pay`: intent con `reference`, QR en el checkout y confirmación por `getSignaturesForAddress`.
-- Sitio: landing, checkout con QR, consola con cámara y guía para agentes.
+- Riel `solana-pay`: QR de Solana Pay (transaction request) que deposita en escrow.
+- Escrow en Solana (programa Anchor `shell_escrow`): al terminar la sesión, 90 % al Forger y 10 % a la plataforma; si el shell se cae, reembolso automático; si el gateway desaparece, el pagador reclama solo. `anchor test` 7/7 y e2e en validador local.
+- Hub del marketplace: los Forgers registran su gateway, el hub arma el catálogo, chequea salud y lo publica en `llms.txt` y MCP.
+- Pedidos de personalización: el cliente le escribe al Forger desde la ficha; el Forger los lee con su token.
+- Sensor de corriente (INA219): driver en el firmware de El Tucu, `current_ma` en `/state`; el mock, el gateway, la consola y el agente de ejemplo ya lo muestran (mA pico por paso).
+- Sitio: landing, catálogo, checkout con QR, consola con cámara y guía para agentes.
 - Robot: El Tucu (ESP32 + 4 servos) funcionando en eventos; el ESP32 queda en red local detrás del gateway.
 
 ## Roadmap
 
-- Sensor de corriente (INA219) en El Tucu: los agentes miden consumo por servo además de posición.
-- Onboarding de Forgers: publicar un shell con su ficha, un kit de gateway y pago directo a su wallet (`payTo` por shell).
-- Escrow en Solana: el pago se libera al Forger cuando la sesión termina bien, y se reembolsa si el shell se cae.
+- Deploy del programa de escrow a devnet y primer pago real con Phantom.
+- Túnel público y cámara en vivo de El Tucu; INA219 soldado.
+- Mainnet con bloques de USD 0,01 para la primera prueba.
 - Más shells: rover, cámara móvil, bancos de sensores.
 - Reputación por shell (uptime, sesiones completadas) visible para los agentes.
 

@@ -27,6 +27,9 @@ Un solo proceso Node 22 con Hono en `localhost:8787`, más MediaMTX y ffmpeg par
 | POST | `/api/sessions/end` | Bearer token | cierra antes de tiempo (sin reembolso parcial en v1) |
 | GET | `/api/events` | | SSE con `state`, `session_started`, `session_ended`, `payment_seen` para el HUD |
 | POST | `/mcp` | | servidor MCP (Streamable HTTP) |
+| POST | `/api/shells/:id/requests` | | pedido de personalización al Forger `{contact, message}`: 1 a 200 y 10 a 2000 caracteres, cuerpo de 4 KB como máximo (413), 5 por IP cada 10 min (429). Se guarda en `DATA_FILE` |
+| GET | `/api/forger/requests` | Bearer `FORGER_TOKEN` | lista de pedidos para el Forger; sin token 401 |
+| * | `/api/rails/:id/*` | | rutas propias de cada riel (`fetch` en `08-rieles-adaptador.md`); hoy el transaction request de Solana Pay |
 
 ## Token de sesión
 
@@ -45,6 +48,18 @@ Un solo proceso Node 22 con Hono en `localhost:8787`, más MediaMTX y ffmpeg par
 ## Corte al vencer
 
 Un timer por sesión. Al vencer: `POST /stop`, `joint` a HOME en cada articulación, evento `session_ended`, se arranca la siguiente de la cola tras 60 s de descanso.
+
+## Cierre del pago (`finalizeEnded`)
+
+En cada tick, para cada sesión terminada con pago y sin `finalized`:
+- terminó por vencimiento o por `POST /api/sessions/end`: `finalize(payment, "completed")`;
+- terminó por robot caído (`ended: "offline"`): `finalize(payment, "refund")`.
+
+Los rieles sin `finalize` (x402, fake) quedan marcados al instante. Si `finalize` falla, se reintenta 30 s después (`finalize_retry_at`); mientras tanto los fondos siguen en escrow y el pagador puede reclamarlos solo pasado el plazo (`04-pagos.md`). La sesión guarda `finalized` y `finalize_tx`.
+
+## Corte por robot caído
+
+Si el robot queda offline (3 fallos seguidos) con una sesión activa, el gateway anota `offline_since`. Si no vuelve en `OFFLINE_REFUND_SECONDS` (120 por defecto), corta la sesión con `ended: "offline"` y el cierre del pago la reembolsa. Si vuelve antes, se borra la marca y la sesión sigue.
 
 ## Cámara
 
@@ -71,7 +86,7 @@ Mismo esquema que El Tucu (`robot-a/SPEC.md` §4.3):
 
 | Qué se cae | Qué ve el usuario | Qué hace el gateway |
 |---|---|---|
-| ESP32 | pill `offline`, consola deshabilitada | pausa el reloj de la sesión activa y reintenta `/state` cada 5 s; si no vuelve en 2 min, marca la sesión para reembolso (`04-pagos.md`) |
+| ESP32 | pill `offline`, consola deshabilitada | reintenta `/state` en cada tick; si no vuelve en `OFFLINE_REFUND_SECONDS`, corta la sesión y la reembolsa por el riel (`04-pagos.md`) |
 | Cámara | "Sin video" sobre el último frame | sigue aceptando comandos; el HUD muestra ángulos desde `/state` |
 | Túnel | el sitio muestra "El Tucu está desconectado" y reintenta cada 10 s (patrón `Camera.tsx` de El Tucu) | nada que hacer del lado del gateway |
 | Gateway | lo mismo que el túnel | pm2 lo reinicia; las sesiones en memoria se pierden `[a verificar]` |

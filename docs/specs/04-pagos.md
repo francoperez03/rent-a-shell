@@ -57,10 +57,30 @@ Con la `reference` no hacen falta montos con decimales mágicos ni un contrato: 
 
 El precio se cobra en USDC 1:1 con USD.
 
-## Liquidación al dueño
+## Escrow (programa `shell_escrow`)
 
-v1: `SOLANA_PAY_TO` es la wallet del dueño. El pago llega directo, sin escrow, y el gateway no necesita clave privada. Para un marketplace con varios hosts, el siguiente paso es un programa de escrow en Solana que retenga el pago hasta que la sesión termine bien.
+Pago de personas con comisión del marketplace y reembolso automático. Código en `programs/programs/shell-escrow/src/lib.rs` (Anchor 0.32.1), program id `5459LTpropgaL1a7Ct4nRUN6BULGvJs3STMcreh2gf4X`. Cliente en `packages/rails/solana/src/escrow.ts`.
+
+**Cuentas**
+- `Config`, PDA `["config"]`: `admin`, `treasury`, `fee_bps` (1000 = 10 %) y `usdc_mint`.
+- `Escrow`, PDA `["escrow", session_id]`: `payer`, `forger`, `operator`, `mint`, `amount`, `expires_at` y `state` (Funded, Settled o Refunded). `session_id` es el sha256 del id del intent, así el riel lo deriva sin guardar estado. La cuenta queda abierta con su estado final: sirve de registro e impide reusar un `session_id`.
+- Vault: ATA de USDC del PDA `Escrow`.
+
+**Instrucciones**
+- `init_config` y `update_config`: solo el admin. Se corren con `pnpm --filter @ras/rails-solana init-escrow`.
+- `deposit(session_id, amount, forger, operator, expires_at)`: firma el pagador; el USDC pasa a su vault. El mint tiene que ser el de `Config`.
+- `settle`: firma el operator. `fee_bps` a la tesorería y el resto al Forger (90/10). Cierra el vault y el rent vuelve al pagador.
+- `refund`: firma el operator. Todo vuelve al pagador.
+- `reclaim`: puede firmarla cualquiera, pasado `expires_at` + 1 h y con el escrow en Funded. Todo vuelve al pagador. Protege al que pagó si el gateway desaparece. El riel pone `expires_at` en `ESCROW_HOLD_SECONDS` (6 h por defecto).
+
+**Operator.** Cada gateway tiene una wallet propia (`SOLANA_OPERATOR_KEY`) que solo puede liquidar al Forger y a la tesorería o reembolsar al pagador: el programa no tiene ningún camino que mande fondos a otro lado. Necesita algo de SOL para fees. Esto reemplaza la regla anterior de "el gateway no tiene keys": la clave del operator vive solo en `.env.local` de la máquina del Forger, y la wallet que cobra (`SOLANA_PAY_TO`) sigue sin estar en el gateway.
+
+**Transaction request de Solana Pay.** Con operator configurado, el riel `solana-pay` (`pay-escrow.ts`) cambia el transfer request por un transaction request: el QR lleva `solana:<PUBLIC_URL>/api/rails/solana-pay/tx/<intentId>`. La wallet hace `GET` (label e ícono) y `POST {account}`; el gateway responde con la tx `deposit` armada y la `reference` como cuenta de solo lectura. `check()` lee la cuenta `Escrow` (Funded y monto correcto). Al cerrar la sesión, `finalize()` hace `settle` o `refund` (idempotente: si ya está cerrado, no hace nada). La URL tiene que ser HTTPS pública para que la wallet llegue: hace falta el túnel. Sin operator, el riel sigue con el transfer request directo a `SOLANA_PAY_TO`.
+
+**x402.** Los agentes siguen pagando directo a la wallet del Forger, sin comisión: el facilitator arma una transferencia SPL simple y no invoca programas.
+
+**Verificado (2026-10-12, validador local con el programa cargado).** `pnpm --filter @ras/rails-solana e2e` (`escrow.e2e.ts`) recorre QR, `GET`/`POST` del transaction request, firma del pagador, `check()` y `finalize`. Resultado: Forger 0,9 USDC, tesorería 0,1 USDC, refund devuelve el 100 % y un segundo `finalize` no hace nada. `anchor test` en `programs/`: 7 de 7 (split exacto, refund, reclaim antes y después del plazo, operator ajeno, doble settle, mint incorrecto, monto cero).
 
 ## Reembolso
 
-Si el robot queda `offline` durante una sesión pagada, el gateway marca la sesión `refund_due` y la muestra en el log. En v1 el reembolso lo hace Franco a mano desde la wallet del dueño. `[INPUT]` confirmar que alcanza para la demo.
+Con escrow, automático: si el robot cae con sesión paga y no vuelve en `OFFLINE_REFUND_SECONDS`, el gateway corta la sesión y `finalize("refund")` devuelve el USDC (`03-gateway-local.md`). Pagos x402 (directos al Forger): el reembolso sigue siendo manual desde la wallet del Forger.
