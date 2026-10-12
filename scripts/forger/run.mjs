@@ -151,4 +151,7 @@ if (useTunnel) {
   void register();
 }
 
+// macOS: que la Mac no se duerma mientras el Forger corre (caffeinate se corta solo cuando termina este proceso)
+if (MAC) spawn("caffeinate", ["-i", "-s", "-w", String(process.pid)], { stdio: "ignore" }).on("error", () => {}).unref();
+
 log("forger", `shell ${SHELL_ID} · ${WIN ? "Windows" : MAC ? "macOS" : "Linux"} · Ctrl+C para cortar`);
