@@ -62,3 +62,9 @@ test("MCP del catálogo lista shells", async () => {
   const j = await r.json();
   assert.deepEqual(j.result.tools.map((t: { name: string }) => t.name).sort(), ["get_shell", "list_shells"]);
 });
+
+test("sirve la skill de Forger", async () => {
+  const r = await req("/skills/forger/SKILL.md");
+  assert.equal(r.status, 200);
+  assert.match(await r.text(), /^---\nname: rent-a-shell-forger/);
+});

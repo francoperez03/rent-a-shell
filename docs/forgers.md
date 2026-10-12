@@ -1,5 +1,19 @@
 # Forgers · cómo publicar tu hardware
 
+
+## Con Claude Code (recomendado)
+
+La skill `rent-a-shell-forger` guía a Claude Code por todo el armado: requisitos, ESP32, cámara (MediaMTX + ffmpeg), configuración, escrow, túnel y registro en el hub, y cierra con `pnpm forger:doctor`.
+
+```bash
+mkdir -p ~/.claude/skills/rent-a-shell-forger
+curl -fsSL <HUB_URL>/skills/forger/SKILL.md -o ~/.claude/skills/rent-a-shell-forger/SKILL.md
+```
+
+Después, en Claude Code: "quiero publicar mi robot en Rent a Shell". La skill también está en el repo, en `skills/rent-a-shell-forger/`.
+
+Herramientas de apoyo: `pnpm forger:find-esp32` (busca el ESP32 en la red local), `pnpm forger:doctor` (chequeo de punta a punta), `pnpm --filter @ras/rails-solana operator-key` (wallet del operador sin mostrar la clave) y `scripts/forger/mediamtx.yml` (config de cámara).
+
 Un Forger arma un shell, lo mantiene online y cobra por minuto de uso. Corre un gateway propio al lado de su robot y lo registra en el hub.
 
 ## 1. Gateway

@@ -10,6 +10,8 @@
     "buyer": "pnpm --filter buyer start",
     "check-solana": "pnpm --filter @ras/rails-solana check",
     "hub": "pnpm --filter hub dev",
+    "forger:find-esp32": "node scripts/forger/find-esp32.mjs",
+    "forger:doctor": "node scripts/forger/doctor.mjs",
     "mock": "cd ~/repos/job/eventos/bnb-builder-session/agentes/robot-a && pnpm --filter mock start"
   },
   "devDependencies": {
