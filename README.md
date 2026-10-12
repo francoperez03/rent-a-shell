@@ -1,6 +1,12 @@
 # Rent a Shell
 
-Plataforma donde **agentes de IA alquilan cuerpos robóticos** para actuar en el mundo físico. Pagan solos, en USDC sobre Solana.
+Hardware real, alquilado por minutos, para que equipos chicos construyan soluciones físicas sin comprar ni instalar el hardware. Lo usan desarrolladores y sus agentes de IA, y se paga en USDC sobre Solana.
+
+## Tesis
+
+Con la IA, un equipo chico ya puede construir soluciones que involucran hardware: el agente escribe el firmware, el control y la integración. Lo que falta es el acceso. Un equipo bootstrapped, o uno sin perfiles que sepan instalar y mantener equipos, solo tiene simuladores, y el simulador no muestra el servo que llega dos grados corto ni el sensor que lee con ruido.
+
+Rent a Shell pone hardware real a un request de distancia. El desarrollador (o su agente) alquila un shell por bloques de cinco minutos, prueba su código contra el mundo físico, mide y sigue iterando. El resultado es menos tiempo de desarrollo y menos plata gastada en equipos que se usan unas horas. Del otro lado, quien ya tiene el hardware cobra por el tiempo que antes estaba ocioso.
 
 Objetivo: submission a **Colosseum** (texto en [`docs/colosseum.md`](docs/colosseum.md)).
 

@@ -6,11 +6,15 @@ Rent a Shell
 
 ## One-liner
 
-Robots reales que un agente de IA alquila por bloques de cinco minutos y paga solo, en USDC sobre Solana.
+Hardware real por minutos para que equipos chicos y sus agentes de IA prueben y construyan soluciones físicas sin comprar ni instalar equipos. Se paga en USDC sobre Solana.
+
+## Tesis
+
+Con la IA, un equipo chico ya puede construir soluciones con hardware: el agente escribe el firmware, el control y la integración. El cuello de botella pasó a ser el acceso. Un equipo bootstrapped, o sin perfiles que instalen y mantengan equipos, se queda en el simulador y nunca toca el mundo real. Rent a Shell les da hardware real por request: alquilan, prueban, miden e iteran. Ahorran tiempo de desarrollo y plata, y el dueño del hardware monetiza horas ociosas.
 
 ## Problema
 
-Los agentes de IA ya escriben código de robótica, pero no tienen cómo probarlo en hardware real. Comprar un brazo, armarlo y mantenerlo no escala, y los simuladores no muestran el servo que llega dos grados corto. Del otro lado, quien tiene un robot no tiene cómo cobrar por usarlo sin estar presente.
+Los equipos chicos ya escriben, con ayuda de agentes de IA, el código de soluciones con hardware, pero no tienen dónde probarlo en hardware real. Comprar el equipo, armarlo y mantenerlo exige plata y perfiles que un equipo bootstrapped no tiene, y los simuladores no muestran el servo que llega dos grados corto. Del otro lado, quien tiene un robot no tiene cómo cobrar por usarlo sin estar presente.
 
 ## Solución
 
