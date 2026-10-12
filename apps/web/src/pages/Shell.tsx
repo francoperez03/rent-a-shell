@@ -116,8 +116,8 @@ export default function ShellPage() {
 
             <Label>Forger</Label>
             <p className="text-[15px] leading-[1.55] text-ink-soft">
-              {shell.crafter.name} lo armó y lo mantiene.{shell.crafter.customizations && ' Acepta pedidos de personalización'}
-              {shell.crafter.customizations && (shell.crafter.contact ? <>: <a href={shell.crafter.contact} className="underline underline-offset-4">contacto</a>.</> : '.')}
+              {shell.forger.name} lo armó y lo mantiene.{shell.forger.customizations && ' Acepta pedidos de personalización'}
+              {shell.forger.customizations && (shell.forger.contact ? <>: <a href={shell.forger.contact} className="underline underline-offset-4">contacto</a>.</> : '.')}
             </p>
 
             <Label>Cola</Label>

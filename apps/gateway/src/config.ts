@@ -44,7 +44,7 @@ export function loadConfig(env: Env): Config {
       home: { base: 90, shoulder: 90, elbow: 90, grip: 70 },
       routines: ["robot", "lento", "saludo", "recta"],
       pricing: { block_minutes: Number(env.BLOCK_MINUTES ?? 5), usd: env.BLOCK_USD ?? "1.00" },
-      crafter: { name: env.CRAFTER_NAME ?? "Franco Pérez", contact: env.CRAFTER_CONTACT || undefined, customizations: true },
+      forger: { name: env.FORGER_NAME ?? "Franco Pérez", contact: env.FORGER_CONTACT || undefined, customizations: true },
       // ponytail: estimado (docs/costos.md): 4 SG90 + ESP32 + PLA + fuente, importado a AR, impresión + armado + calibración
       build: { parts_usd: 45, lead_days: 14, build_hours: 10 },
     },

@@ -16,8 +16,8 @@ export interface Shell {
   routines: string[];
   pricing: { block_minutes: number; usd: string };
   /** Forger: quien arma, publica y mantiene el shell, y cobra por su uso. */
-  crafter: { name: string; contact?: string; customizations: boolean };
-  /** Lo que cuesta tenerlo propio, para comparar contra alquilarlo (estimado por el crafter). */
+  forger: { name: string; contact?: string; customizations: boolean };
+  /** Lo que cuesta tenerlo propio, para comparar contra alquilarlo (estimado por el forger). */
   build: { parts_usd: number; lead_days: number; build_hours: number };
 }
 

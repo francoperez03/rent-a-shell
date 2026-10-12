@@ -25,7 +25,7 @@ export function llmsTxt(cfg: Config, shell: Shell, rails: PaymentRail[]): string
 - Rutinas: ${shell.routines.join(", ")}
 - Precio: USD ${shell.pricing.usd} por bloque de ${shell.pricing.block_minutes} min, máximo ${cfg.maxBlocks} bloques
 - Cámara: HLS ${shell.camera.hls ?? "(no publicada)"} · último frame JPEG ${shell.camera.frame}
-- Forger (quien lo arma y mantiene): ${shell.crafter.name}${shell.crafter.contact ? `, contacto ${shell.crafter.contact}` : ""}${shell.crafter.customizations ? ". Acepta pedidos de personalización." : ""}
+- Forger (quien lo arma y mantiene): ${shell.forger.name}${shell.forger.contact ? `, contacto ${shell.forger.contact}` : ""}${shell.forger.customizations ? ". Acepta pedidos de personalización." : ""}
 - Tenerlo propio: unos USD ${shell.build.parts_usd} en partes, ${shell.build.lead_days} días de espera y ${shell.build.build_hours} h de armado. Acá: USD ${shell.pricing.usd} por ${shell.pricing.block_minutes} min, desde ahora.
 
 ## Medios de pago para agentes
