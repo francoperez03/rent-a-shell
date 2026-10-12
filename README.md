@@ -70,6 +70,6 @@ Referencia previa: `paybot` (`github.com/superposition/paybot`), pago x402 para 
 ## Skills de Claude Code
 
 - **`skills/rent-a-shell`** (alquilar): un Claude Code alquila un shell, corre un plan de movimientos, mide ángulos, corriente y fotos, y devuelve un reporte. Paga por x402 con tope de gasto aprobado por la persona. El cliente es `skills/rent-a-shell/rent.mjs`.
-- **`skills/rent-a-shell-forger`** (publicar): convierte una compu (Windows primero) en Forger con `pnpm forger`, que levanta cámara, túnel, gateway y registro en el hub, y cierra con `pnpm forger:doctor`.
+- **`skills/rent-a-shell-forger`** (publicar): convierte una compu (macOS primero, también Windows y Linux) en Forger con `pnpm forger`, que levanta cámara, túnel, gateway y registro en el hub, y cierra con `pnpm forger:doctor`.
 
 El hub sirve ambas en `/skills/rent/SKILL.md` y `/skills/forger/SKILL.md`.
