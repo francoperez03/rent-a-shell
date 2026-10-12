@@ -20,15 +20,15 @@ Los equipos chicos ya escriben, con ayuda de agentes de IA, el código de soluci
 
 Un gateway pone un robot real detrás de una API con sesiones por tiempo. El agente lee `llms.txt` o el MCP, paga un bloque por x402, recibe un token y manda comandos mientras mira la cámara. Al vencer, el robot vuelve solo a HOME y queda libre para el siguiente. Las personas alquilan el mismo robot desde el navegador, pagando con un QR de Solana Pay. El dueño cobra directo en su wallet, sin intervenir.
 
-## Shellsmiths: quién pone el hardware
+## Forgers: quién pone el hardware
 
-El catálogo lo construyen los **Shellsmiths**: makers, labs y talleres que arman un shell, lo publican con su ficha (capacidades, rangos, sensores, precio) y lo mantienen online. Cobran por cada minuto de uso directo en su wallet, y pueden ofrecer personalizaciones (un sensor extra, un efector distinto, otro montaje) a los clientes que las pidan. El catálogo crece como un marketplace: cada Shellsmith suma el hardware que conoce y la plataforma pone sesiones, pagos, cola y corte seguro.
+El catálogo lo construyen los **Forgers**: makers, labs y talleres que arman un shell, lo publican con su ficha (capacidades, rangos, sensores, precio) y lo mantienen online. Cobran por cada minuto de uso directo en su wallet, y pueden ofrecer personalizaciones (un sensor extra, un efector distinto, otro montaje) a los clientes que las pidan. El catálogo crece como un marketplace: cada Forger suma el hardware que conoce y la plataforma pone sesiones, pagos, cola y corte seguro.
 
-Hoy hay un Shellsmith (el equipo, con El Tucu). La ficha ya lleva el Shellsmith y si acepta personalizaciones, y `llms.txt` lo expone a los agentes.
+Hoy hay un Forger (el equipo, con El Tucu). La ficha ya lleva el Forger y si acepta personalizaciones, y `llms.txt` lo expone a los agentes.
 
 ## Cuánto ahorra
 
-Tener El Tucu propio cuesta unos USD 45 en partes, 14 días de espera y 10 h de armado y calibración (detalle en [`costos.md`](costos.md)). Alquilado: USD 1 por 5 minutos, desde hoy. Las partes equivalen a ≈ 3,75 h de uso, y una iteración (subir la rutina, correrla, medir) entra en un bloque de USD 1. El primer test pasa del día 15 al día 1. La diferencia crece con hardware caro, que es lo que suman los Shellsmiths.
+Tener El Tucu propio cuesta unos USD 45 en partes, 14 días de espera y 10 h de armado y calibración (detalle en [`costos.md`](costos.md)). Alquilado: USD 1 por 5 minutos, desde hoy. Las partes equivalen a ≈ 3,75 h de uso, y una iteración (subir la rutina, correrla, medir) entra en un bloque de USD 1. El primer test pasa del día 15 al día 1. La diferencia crece con hardware caro, que es lo que suman los Forgers.
 
 ## Por qué Solana
 
@@ -39,7 +39,7 @@ Solana es la infraestructura sobre la que operan los agentes: descubren el shell
 - **x402 sin gas para el agente**: el agente firma una transferencia de USDC y el facilitator la envía y paga el fee. Con una wallet que solo tiene USDC alcanza.
 - **Solana Pay** para personas: un QR con `reference` por sesión. Se confirma buscando esa cuenta, sin contrato ni montos raros.
 - **Confirmación en segundos y fees de centavos**: permiten cobrar bloques de USD 1 y abrir la sesión apenas llega el pago.
-- **Pago global sin intermediarios**: un equipo en cualquier país paga en USDC, y el Shellsmith cobra directo en su wallet.
+- **Pago global sin intermediarios**: un equipo en cualquier país paga en USDC, y el Forger cobra directo en su wallet.
 
 ## Demo
 
@@ -65,13 +65,13 @@ En paralelo, una persona escanea el QR con Phantom y toma el control desde la co
 ## Roadmap
 
 - Sensor de corriente (INA219) en El Tucu: los agentes miden consumo por servo además de posición.
-- Onboarding de Shellsmiths: publicar un shell con su ficha, un kit de gateway y pago directo a su wallet (`payTo` por shell).
-- Escrow en Solana: el pago se libera al Shellsmith cuando la sesión termina bien, y se reembolsa si el shell se cae.
+- Onboarding de Forgers: publicar un shell con su ficha, un kit de gateway y pago directo a su wallet (`payTo` por shell).
+- Escrow en Solana: el pago se libera al Forger cuando la sesión termina bien, y se reembolsa si el shell se cae.
 - Más shells: rover, cámara móvil, bancos de sensores.
 - Reputación por shell (uptime, sesiones completadas) visible para los agentes.
 
 ## Referencia y competencia
 
 - **CrowdBrain** (Grand Prize de Colosseum) valida el espacio de robótica con incentivos on-chain. Rent a Shell apunta al mismo mundo desde otro lado: equipos y agentes que necesitan probar en hardware real y pagan por uso.
-- **Renesas Lab on the Cloud** y labs remotos académicos (FPGAs) validan la demanda de hardware real por web, pero cada fabricante muestra solo sus placas. Rent a Shell es neutral, multi-Shellsmith y pensado para agentes.
+- **Renesas Lab on the Cloud** y labs remotos académicos (FPGAs) validan la demanda de hardware real por web, pero cada fabricante muestra solo sus placas. Rent a Shell es neutral, multi-Forger y pensado para agentes.
 - **paybot** (ETHGlobal): pago x402 para controlar un robot con webcam. Rent a Shell suma sesiones por tiempo, cola, corte seguro, MCP y pago para personas.

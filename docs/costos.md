@@ -27,6 +27,6 @@ Además de la plata:
 
 - Para validar una idea y las primeras decenas de pruebas, alquilar es más barato. Además gana en tiempo: se prueba el día 1 en lugar del día 15.
 - Si el equipo va a usar el hardware muchas horas, conviene comprarlo, y Rent a Shell sirvió para decidir con datos antes de gastar.
-- La diferencia crece con hardware caro (brazos de grado investigación, sensores industriales, LiDAR). Ese es el catálogo que suman los Shellsmiths.
+- La diferencia crece con hardware caro (brazos de grado investigación, sensores industriales, LiDAR). Ese es el catálogo que suman los Forgers.
 
 Los mismos números se muestran en la ficha de cada shell (`build` en la ficha, página `/shells/:id` y `llms.txt`).

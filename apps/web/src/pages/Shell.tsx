@@ -114,7 +114,7 @@ export default function ShellPage() {
               Acá probás hoy: {Math.round(shell.build.parts_usd / Number(shell.pricing.usd)) * shell.pricing.block_minutes / 60} h de uso cuestan lo mismo que las partes.
             </p>
 
-            <Label>Shellsmith</Label>
+            <Label>Forger</Label>
             <p className="text-[15px] leading-[1.55] text-ink-soft">
               {shell.crafter.name} lo armó y lo mantiene.{shell.crafter.customizations && ' Acepta pedidos de personalización'}
               {shell.crafter.customizations && (shell.crafter.contact ? <>: <a href={shell.crafter.contact} className="underline underline-offset-4">contacto</a>.</> : '.')}
