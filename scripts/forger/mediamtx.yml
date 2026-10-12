@@ -1,0 +1,15 @@
+# Config mínima de MediaMTX para un Forger: RTSP en :8554 (ffmpeg publica), HLS en :8888 (el gateway lo sirve en /live).
+# mediamtx scripts/forger/mediamtx.yml
+logLevel: warn
+rtsp: yes
+rtspAddress: :8554
+hls: yes
+hlsAddress: :8888
+hlsVariant: mpegts
+hlsSegmentDuration: 1s
+rtmp: no
+webrtc: no
+srt: no
+api: no
+paths:
+  all_others:

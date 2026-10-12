@@ -96,6 +96,8 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
 - Catálogo JSON: ${publicUrl}/api/catalog
 - MCP (Streamable HTTP): ${publicUrl}/mcp, tools list_shells y get_shell
 - Sumar tu hardware como Forger: POST ${publicUrl}/api/forgers {"gateway":"https://tu-gateway"}
+- Skill de Claude Code para Forgers (instala y configura el gateway, la cámara y el túnel):
+  mkdir -p ~/.claude/skills/rent-a-shell-forger && curl -fsSL ${publicUrl}/skills/forger/SKILL.md -o ~/.claude/skills/rent-a-shell-forger/SKILL.md
 `;
   };
 
@@ -130,6 +132,16 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
   });
 
   app.get("/llms.txt", (c) => c.text(llms()));
+
+  // Skill de Claude Code para sumarse como Forger (skills/rent-a-shell-forger en el repo).
+  const skill = (() => {
+    try {
+      return readFileSync(new URL("../../../skills/rent-a-shell-forger/SKILL.md", import.meta.url), "utf8");
+    } catch {
+      return null;
+    }
+  })();
+  app.get("/skills/forger/SKILL.md", (c) => (skill ? c.text(skill, 200, { "content-type": "text/markdown; charset=utf-8" }) : c.json({ error: "no_skill" }, 404)));
 
   app.all("/mcp", async (c) => {
     const s = new McpServer({ name: "rent-a-shell-hub", version: "0.1.0" });

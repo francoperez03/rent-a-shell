@@ -293,6 +293,16 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
   );
 
   const card = () => agentCard(cfg, rails);
+  // Proxy del HLS de MediaMTX: la cámara del Forger sale por el mismo túnel que la API.
+  app.get("/live/*", async (c) => {
+    if (!cfg.hlsUpstream) return c.json({ error: "no_camera" }, 404);
+    const path = c.req.path.slice("/live".length);
+    if (path.includes("..")) return c.json({ error: "bad_path" }, 400);
+    const r = await fetch(cfg.hlsUpstream + path + (new URL(c.req.url).search || ""), { signal: AbortSignal.timeout(10_000) }).catch(() => null);
+    if (!r) return c.json({ error: "camera_offline" }, 502);
+    return new Response(r.body, { status: r.status, headers: { "content-type": r.headers.get("content-type") ?? "application/octet-stream", "cache-control": "no-store" } });
+  });
+
   app.get("/llms.txt", (c) => c.text(llmsTxt(cfg, shell(), rails)));
   app.get("/.well-known/agent.json", (c) => c.json(card()));
   app.all("/mcp", (c) => mcpHandler(c.req.raw, { cfg, shell, rails, robot, sessions, frames, price, publicUrl: cfg.publicUrl }));

@@ -8,6 +8,7 @@ export interface Config {
   secret: string;
   publicUrl: string;
   liveUrl: string | null;
+  hlsUpstream: string | null;
   rtspUrl: string | null;
   allowedOrigin: string;
   rails: string[];
@@ -29,7 +30,9 @@ export function loadConfig(env: Env): Config {
     // ponytail: secreto de dev si falta; en la Legion siempre va SESSION_SECRET
     secret: secret || "dev-secret-dev-secret-dev-secret-0000",
     publicUrl,
-    liveUrl: env.LIVE_URL || null,
+    // con HLS_UPSTREAM (MediaMTX local) el gateway sirve el video en /live/* y alcanza un solo túnel
+    liveUrl: env.LIVE_URL || (env.HLS_UPSTREAM ? `${publicUrl}/live/${env.SHELL_ID ?? "el-tucu"}/index.m3u8` : null),
+    hlsUpstream: env.HLS_UPSTREAM?.replace(/\/$/, "") || null,
     rtspUrl: env.RTSP_URL || null,
     allowedOrigin: env.ALLOWED_ORIGIN ?? "*",
     rails: (env.RAILS ?? "fake").split(",").map((s) => s.trim()).filter(Boolean),
