@@ -168,3 +168,26 @@ test("pedidos de personalización: se guardan y solo el Forger los lee", async (
   assert.equal(list.length, 1);
   assert.equal(list[0].contact, "@equipo");
 });
+
+test("al terminar, el riel cierra el pago: completed si vence, refund si el robot se cae", async () => {
+  const { fakeRail } = await import("@ras/rails-core");
+  const calls: string[] = [];
+  const rail = { ...fakeRail(), finalize: async (p: { intentId: string }, outcome: string) => void calls.push(outcome) };
+  const down = http.createServer((_q, res) => res.destroy());
+  await new Promise<void>((r) => down.listen(0, r));
+  const env = { RAILS: "fake", ESP32_URL: `http://localhost:${(esp.address() as AddressInfo).port}`, BLOCK_MINUTES: "0.002", REST_SECONDS: "0", DATA_FILE: "", OFFLINE_REFUND_SECONDS: "0" };
+  const a = createApp(loadConfig(env), env, { rails: [rail] });
+  const pay = () => a.app.request("/api/sessions/x402?shell=el-tucu&blocks=1", { method: "POST", headers: { "x-fake-pay": "1" } });
+
+  assert.equal((await pay()).status, 200);
+  await sleep(200);
+  await a.tick();
+  assert.deepEqual(calls, ["completed"]);
+
+  // robot caído con sesión activa: se corta y se reembolsa
+  const b = createApp(loadConfig({ ...env, BLOCK_MINUTES: "1", ESP32_URL: `http://localhost:${(down.address() as AddressInfo).port}` }), env, { rails: [rail] });
+  assert.equal((await b.app.request("/api/sessions/x402?shell=el-tucu&blocks=1", { method: "POST", headers: { "x-fake-pay": "1" } })).status, 200);
+  for (let i = 0; i < 4; i++) await b.tick(); // 3 fallos seguidos = offline
+  assert.deepEqual(calls, ["completed", "refund"]);
+  down.close();
+});

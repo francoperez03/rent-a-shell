@@ -66,6 +66,27 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     }
   }
 
+  /** Cierra en el riel los pagos de sesiones terminadas: settle al Forger o reembolso si el shell se cayó. */
+  async function finalizeEnded() {
+    for (const s of sessions.sessions.values()) {
+      if (!s.ended || s.finalized || !s.payment) continue;
+      if (s.finalize_retry_at && Date.now() < s.finalize_retry_at) continue;
+      const outcome = s.ended === "offline" ? "refund" : "completed";
+      const rail = byId.get(s.payment.rail);
+      try {
+        const r = rail?.finalize ? await rail.finalize(s.payment, outcome) : undefined;
+        s.finalized = outcome;
+        if (r && r.tx) s.finalize_tx = r.tx;
+        sessions.save();
+        if (rail?.finalize) console.log(`[finalize] sesión ${s.sid} ${outcome}${r && r.tx ? ` tx ${r.tx}` : ""}`);
+      } catch (e) {
+        // se reintenta en el próximo tick; los fondos quedan en escrow y el pagador puede reclamar si nunca se cierra
+        console.error(`[finalize] sesión ${s.sid} ${outcome}:`, (e as Error).message);
+        s.finalize_retry_at = Date.now() + 30_000;
+      }
+    }
+  }
+
   /** Reloj: arranca y corta sesiones, detecta robot caído, revisa pagos pendientes. */
   let ticks = 0;
   async function tick() {
@@ -89,11 +110,16 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
       status = next;
       bus.emit({ type: "status", shell: cfg.shell.id, status });
     }
-    if (act && !robot.online && !act.refund_due) {
-      act.refund_due = true; // spec 04: reembolso manual si el robot se cae con sesión paga
+    // spec 04: si el robot se cae con una sesión paga y no vuelve en offlineRefundMs, se corta y se reembolsa
+    if (act && !robot.online) {
+      act.offline_since ??= now;
+      if (now - act.offline_since >= cfg.offlineRefundMs) sessions.end(act.sid, "offline");
       sessions.save();
-      console.warn(`[refund_due] sesión ${act.sid} pagó ${act.payment?.tx ?? act.rail} y el robot está offline`);
+    } else if (act?.offline_since) {
+      delete act.offline_since;
+      sessions.save();
     }
+    await finalizeEnded();
     if (st) bus.emit({ type: "state", shell: cfg.shell.id, state: st });
     if (ticks % 5 === 0) {
       for (const [id, rec] of sessions.intents) if (rec.status === "pending") await checkIntent(id);
@@ -128,6 +154,11 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
   });
 
   app.get("/api/rails", (c) => c.json(rails.map((r) => r.manifest())));
+  // Rutas propias de cada riel (ej. transaction request de Solana Pay); el gateway no sabe qué hacen.
+  app.all("/api/rails/:id/*", (c) => {
+    const r = byId.get(c.req.param("id"));
+    return r?.fetch ? r.fetch(c.req.raw) : c.json({ error: "unknown_rail" }, 404);
+  });
 
   // Pedidos de personalización al Forger: públicos para crear, privados para leer.
   const reqHits = new Map<string, number[]>();

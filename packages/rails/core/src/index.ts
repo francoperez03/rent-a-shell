@@ -26,7 +26,16 @@ export interface PaymentRail {
   paywall?(path: string, priceFor: (query: Record<string, string>) => Money, description: string): MiddlewareHandler;
   /** Ejemplo de cliente para llms.txt y /agents: cómo paga un agente este riel. `url` es el endpoint a pagar. */
   clientExample?(url: string): string;
+  /** Rutas propias del riel (ej. transaction request de Solana Pay). El gateway las monta en /api/rails/:id/*. */
+  fetch?(req: Request): Promise<Response>;
+  /**
+   * Cierra el pago cuando termina la sesión: "completed" libera al Forger (con la comisión de la plataforma),
+   * "refund" devuelve al pagador. Rieles que cobran directo (x402) no lo implementan.
+   */
+  finalize?(payment: Payment, outcome: Outcome): Promise<{ tx?: string } | void>;
 }
+
+export type Outcome = "completed" | "refund";
 
 export type RailFactory = (env: Record<string, string | undefined>) => PaymentRail | PaymentRail[];
 

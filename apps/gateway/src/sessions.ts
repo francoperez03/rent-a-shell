@@ -13,7 +13,11 @@ export interface Session {
   starts_at: number;
   expires_at: number;
   ended?: "expired" | "ended" | "offline";
-  refund_due?: boolean;
+  offline_since?: number;
+  /** Cómo se cerró el pago en el riel (settle al Forger o reembolso); ausente = pendiente. */
+  finalized?: "completed" | "refund";
+  finalize_tx?: string;
+  finalize_retry_at?: number;
   payment?: Payment;
 }
 

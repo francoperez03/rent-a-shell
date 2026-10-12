@@ -12,6 +12,7 @@ export interface Config {
   allowedOrigin: string;
   rails: string[];
   restMs: number;
+  offlineRefundMs: number;
   maxBlocks: number;
   forgerToken: string | null;
   dataFile: string | null;
@@ -33,6 +34,7 @@ export function loadConfig(env: Env): Config {
     allowedOrigin: env.ALLOWED_ORIGIN ?? "*",
     rails: (env.RAILS ?? "fake").split(",").map((s) => s.trim()).filter(Boolean),
     restMs: Number(env.REST_SECONDS ?? 60) * 1000,
+    offlineRefundMs: Number(env.OFFLINE_REFUND_SECONDS ?? 120) * 1000,
     maxBlocks: Number(env.MAX_BLOCKS ?? 6),
     forgerToken: env.FORGER_TOKEN || null,
     dataFile: env.DATA_FILE === "" ? null : (env.DATA_FILE ?? "data/state.json"),
