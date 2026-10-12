@@ -96,6 +96,8 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
 - Catálogo JSON: ${publicUrl}/api/catalog
 - MCP (Streamable HTTP): ${publicUrl}/mcp, tools list_shells y get_shell
 - Sumar tu hardware como Forger: POST ${publicUrl}/api/forgers {"gateway":"https://tu-gateway"}
+- Skill de Claude Code para alquilar y probar código en hardware real:
+  mkdir -p ~/.claude/skills/rent-a-shell && curl -fsSL ${publicUrl}/skills/rent/SKILL.md -o ~/.claude/skills/rent-a-shell/SKILL.md
 - Skill de Claude Code para Forgers (instala y configura el gateway, la cámara y el túnel):
   mkdir -p ~/.claude/skills/rent-a-shell-forger && curl -fsSL ${publicUrl}/skills/forger/SKILL.md -o ~/.claude/skills/rent-a-shell-forger/SKILL.md
 `;
@@ -118,6 +120,14 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
     } catch (e) {
       return c.json({ error: "gateway_unreachable", message: (e as Error).message }, 422);
     }
+    // ids únicos en el catálogo: si otro gateway publica el mismo id y sigue vivo, conflicto; si está caído
+    // (ej. el túnel rápido del mismo Forger cambió de URL), se reemplaza
+    for (const g of [...gateways.values()]) {
+      if (g.url === url || !g.shells.some((s) => shells.some((n) => n.id === s.id))) continue;
+      const alive = await fetchShells(g.url, timeoutMs).then(() => true, () => false);
+      if (alive) return c.json({ error: "shell_id_taken", message: `El id ya lo publica ${g.url}. Usá otro SHELL_ID.` }, 409);
+      gateways.delete(g.url);
+    }
     gateways.set(url, { url, addedAt: gateways.get(url)?.addedAt ?? Date.now(), online: true, lastSeen: Date.now(), shells });
     save();
     return c.json({ ok: true, url, shells: shells.map((s) => s.id) }, 201);
@@ -133,15 +143,21 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
 
   app.get("/llms.txt", (c) => c.text(llms()));
 
-  // Skill de Claude Code para sumarse como Forger (skills/rent-a-shell-forger en el repo).
-  const skill = (() => {
+  // Skills de Claude Code (carpeta skills/ del repo): forger = publicar hardware, rent = alquilarlo.
+  const SKILLS: Record<string, { dir: string; files: Record<string, string> }> = {
+    forger: { dir: "rent-a-shell-forger", files: { "SKILL.md": "text/markdown; charset=utf-8" } },
+    rent: { dir: "rent-a-shell", files: { "SKILL.md": "text/markdown; charset=utf-8", "rent.mjs": "text/javascript; charset=utf-8" } },
+  };
+  app.get("/skills/:name/:file", (c) => {
+    const sk = SKILLS[c.req.param("name")];
+    const type = sk?.files[c.req.param("file")];
+    if (!sk || !type) return c.json({ error: "not_found" }, 404);
     try {
-      return readFileSync(new URL("../../../skills/rent-a-shell-forger/SKILL.md", import.meta.url), "utf8");
+      return c.body(readFileSync(new URL(`../../../skills/${sk.dir}/${c.req.param("file")}`, import.meta.url), "utf8"), 200, { "content-type": type });
     } catch {
-      return null;
+      return c.json({ error: "not_found" }, 404);
     }
-  })();
-  app.get("/skills/forger/SKILL.md", (c) => (skill ? c.text(skill, 200, { "content-type": "text/markdown; charset=utf-8" }) : c.json({ error: "no_skill" }, 404)));
+  });
 
   app.all("/mcp", async (c) => {
     const s = new McpServer({ name: "rent-a-shell-hub", version: "0.1.0" });

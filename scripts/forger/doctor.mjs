@@ -4,16 +4,16 @@
 // Sale con código 1 si algo crítico falla. Cada línea dice qué arreglar.
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { readEnvFile } from "./lib.mjs";
 
-const env = { ...Object.fromEntries((() => {
-  try {
-    return readFileSync(new URL("../../apps/gateway/.env.local", import.meta.url), "utf8")
-      .split("\n").map((l) => l.replace(/\s+#.*$/, "").trim()).filter((l) => l && !l.startsWith("#") && l.includes("="))
-      .map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)]);
-  } catch {
-    return [];
-  }
-})()), ...process.env };
+// .env.local (tolerante a CRLF) + la URL que dejó el lanzador si el túnel la asignó al vuelo
+const envFile = readEnvFile(fileURLToPath(new URL("../../apps/gateway/.env.local", import.meta.url)));
+let tunnelUrl = "";
+try {
+  tunnelUrl = readFileSync(new URL("../../apps/gateway/data/public-url.txt", import.meta.url), "utf8").trim();
+} catch {}
+const env = { ...envFile, ...(envFile.PUBLIC_URL || !tunnelUrl ? {} : { PUBLIC_URL: tunnelUrl }), ...process.env };
 
 let bad = 0;
 let warn = 0;
@@ -40,7 +40,7 @@ for (const t of ["ffmpeg", "mediamtx"]) has(t) ? ok(`${t} instalado`) : ko(`${t}
 for (const k of ["SOLANA_PAY_TO", "SESSION_SECRET", "ESP32_URL", "PUBLIC_URL"]) {
   env[k] ? ok(`${k} configurado`) : ko(`falta ${k} en apps/gateway/.env.local`, "Completalo (ver skills/rent-a-shell-forger/SKILL.md, paso 4).");
 }
-if ((env.SESSION_SECRET ?? "").length < 32) ko("SESSION_SECRET corto", "Generalo con: openssl rand -hex 32");
+if ((env.SESSION_SECRET ?? "").length < 32) ko("SESSION_SECRET corto", "Generalo con: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"");
 
 if (env.ESP32_URL) {
   const s = await get(`${env.ESP32_URL}/state`, 2500);
@@ -67,7 +67,7 @@ if (h.status === 200) {
       l.status === 200 ? ok("video en vivo (HLS) por /live") : ko("sin HLS en /live", "Revisá HLS_UPSTREAM (MediaMTX en :8888) y el nombre del path = SHELL_ID.", false);
     }
   }
-} else ko(`gateway no responde en ${local}`, "Arrancalo con: pnpm gateway");
+} else ko(`gateway no responde en ${local}`, "Arrancalo con: pnpm forger (o pnpm gateway si manejás la cámara y el túnel aparte)");
 
 if (env.PUBLIC_URL && !env.PUBLIC_URL.includes("localhost")) {
   const p = await get(`${env.PUBLIC_URL}/api/health`, 8000);

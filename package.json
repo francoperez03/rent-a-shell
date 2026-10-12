@@ -4,12 +4,14 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "test": "turbo run test && bash scripts/check-isolation.sh",
+    "test": "turbo run test && node --test scripts/forger/lib.test.mjs && bash scripts/check-isolation.sh",
     "gateway": "pnpm --filter gateway dev",
     "web": "pnpm --filter web dev",
     "buyer": "pnpm --filter buyer start",
     "check-solana": "pnpm --filter @ras/rails-solana check",
     "hub": "pnpm --filter hub dev",
+    "forger": "node scripts/forger/run.mjs",
+    "forger:cameras": "node scripts/forger/run.mjs --list-cameras",
     "forger:find-esp32": "node scripts/forger/find-esp32.mjs",
     "forger:doctor": "node scripts/forger/doctor.mjs",
     "mock": "cd ~/repos/job/eventos/bnb-builder-session/agentes/robot-a && pnpm --filter mock start"
