@@ -37,7 +37,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 before(async () => {
   await new Promise<void>((r) => esp.listen(0, r));
   const port = (esp.address() as AddressInfo).port;
-  const env = { RAILS: "fake", ESP32_URL: `http://localhost:${port}`, BLOCK_MINUTES: "0.005", REST_SECONDS: "0", DATA_FILE: "" };
+  const env = { RAILS: "fake", ESP32_URL: `http://localhost:${port}`, BLOCK_MINUTES: "0.005", REST_SECONDS: "0", DATA_FILE: "", FORGER_TOKEN: "forger-test" };
   ctx = createApp(loadConfig(env), env);
 });
 after(() => esp.close());
@@ -153,4 +153,18 @@ test("MCP: lista tools y rent_shell devuelve cómo pagar", async () => {
   const body = JSON.parse(rent.result.content[0].text);
   assert.equal(body.price.usd, "2");
   assert.match(body.pay.url, /api\/sessions\/x402\?shell=el-tucu&blocks=2/);
+});
+
+test("pedidos de personalización: se guardan y solo el Forger los lee", async () => {
+  let r = await req("/api/shells/el-tucu/requests", json({ contact: "@equipo", message: "Necesito un sensor de distancia en la pinza" }));
+  assert.equal(r.status, 201);
+  r = await req("/api/shells/el-tucu/requests", json({ contact: "@equipo", message: "x".repeat(5000) }));
+  assert.equal(r.status, 413);
+  r = await req("/api/shells/el-tucu/requests", json({ contact: "", message: "corto" }));
+  assert.equal(r.status, 400);
+  assert.equal((await req("/api/forger/requests")).status, 401);
+  r = await req("/api/forger/requests", { headers: { authorization: "Bearer forger-test" } });
+  const list = await r.json();
+  assert.equal(list.length, 1);
+  assert.equal(list[0].contact, "@equipo");
 });

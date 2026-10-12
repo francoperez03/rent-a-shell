@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { LiveVideo } from '@/components/LiveVideo';
 import { Pill } from '@/components/Pill';
 import { StatusDot } from '@/components/StatusDot';
 import { Footer } from '@/components/Footer';
-import { fmtClock, toMs, useNow, useQueue, useShell, useShellState } from '@/lib/api';
+import { HUB, api, fmtClock, setGateway, toMs, useNow, useQueue, useShell, useShellState } from '@/lib/api';
 import { JOINTS, JOINT_LABEL } from '@/lib/joints';
 import { cn } from '@/lib/cn';
 
@@ -14,6 +15,10 @@ const BLOCKS = [1, 2, 3, 4, 5, 6];
 export default function ShellPage() {
   const { id } = useParams();
   const { data: shell, isLoading, isError } = useShell(id);
+  // con hub, alquilar este shell es hablar con el gateway de su Forger (checkout y consola incluidos)
+  useEffect(() => {
+    if (HUB && shell?.gateway) setGateway(shell.gateway);
+  }, [shell?.gateway]);
   const { data: state } = useShellState(id);
   const { data: queue } = useQueue(id);
   const now = useNow();
@@ -120,6 +125,8 @@ export default function ShellPage() {
               {shell.forger.customizations && (shell.forger.contact ? <>: <a href={shell.forger.contact} className="underline underline-offset-4">contacto</a>.</> : '.')}
             </p>
 
+            {shell.forger.customizations && <CustomRequest shellId={shell.id} forger={shell.forger.name} />}
+
             <Label>Cola</Label>
             <p className="font-mono text-[12px] text-ink-soft md:text-[13px]">
               {!queue
@@ -149,4 +156,42 @@ function Layout({ children }: { children: React.ReactNode }) {
 
 function Label({ children }: { children: string }) {
   return <p className="mb-3 mt-6 border-t border-hairline pt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">{children}</p>;
+}
+
+/** Pedido de personalización al Forger (un sensor extra, otro efector, otro montaje). */
+function CustomRequest({ shellId, forger }: { shellId: string; forger: string }) {
+  const [open, setOpen] = useState(false);
+  const [contact, setContact] = useState('');
+  const [message, setMessage] = useState('');
+  const send = useMutation({
+    mutationFn: () => api<{ ok: true }>(`/api/shells/${shellId}/requests`, { method: 'POST', body: JSON.stringify({ contact, message }) }),
+  });
+
+  if (send.isSuccess) return <p className="mt-4 text-[15px] text-ink-soft">Listo. {forger} te va a escribir a {contact}.</p>;
+  if (!open)
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-accent hover:underline">
+        Pedir una personalización
+      </button>
+    );
+  return (
+    <form
+      className="mt-4 flex flex-col gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        send.mutate();
+      }}
+    >
+      <label className="flex flex-col gap-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-mute">
+        Contacto
+        <input required maxLength={200} value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Telegram, mail o X" className="rounded-sm border border-hairline bg-white px-3 py-2 font-sans text-[15px] normal-case tracking-normal text-ink" />
+      </label>
+      <label className="flex flex-col gap-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-mute">
+        Qué necesitás
+        <textarea required minLength={10} maxLength={2000} rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Ej: un sensor de distancia en la pinza" className="rounded-sm border border-hairline bg-white px-3 py-2 font-sans text-[15px] normal-case tracking-normal text-ink" />
+      </label>
+      <Pill type="submit" surface="light" label={send.isPending ? 'Enviando…' : 'Enviar al Forger'} disabled={send.isPending} />
+      {send.isError && <p role="alert" className="text-[15px] text-alert">{(send.error as Error).message}</p>}
+    </form>
+  );
 }

@@ -64,14 +64,16 @@ for (const paso of SECUENCIA) {
   const r = await cmd({ cmd: "joint", args: paso });
   // el firmware mueve a 2° cada 20 ms: esperar a que llegue antes de medir
   let st;
+  let picoMa: number | null = null; // pico de corriente del bus mientras se mueve (si el shell tiene INA219)
   for (let i = 0; i < 30; i++) {
     await sleep(100);
     st = await get(`/api/shells/${SHELL}/state`);
+    if (typeof st.current_ma === "number") picoMa = Math.max(picoMa ?? 0, st.current_ma);
     if (!st.moving && st.angles?.[paso.joint] === (r.data.angle ?? paso.angle)) break;
   }
   const medido = st?.angles?.[paso.joint];
-  reporte.push({ ...paso, aceptado: r.data.angle ?? null, recortado: Boolean(r.data.clamped), medido, ok: r.status === 200 && medido === (r.data.angle ?? paso.angle) });
-  console.log(`  ${paso.joint} → ${paso.angle}°: ${r.status} medido ${medido}°${r.data.clamped ? " (recortado)" : ""}`);
+  reporte.push({ ...paso, aceptado: r.data.angle ?? null, recortado: Boolean(r.data.clamped), medido, pico_ma: picoMa, ok: r.status === 200 && medido === (r.data.angle ?? paso.angle) });
+  console.log(`  ${paso.joint} → ${paso.angle}°: ${r.status} medido ${medido}°${picoMa != null ? ` · pico ${picoMa} mA` : ""}${r.data.clamped ? " (recortado)" : ""}`);
 }
 
 await fetch(`${GW}/api/sessions/end`, { method: "POST", headers: { authorization: `Bearer ${grant.token}` } });

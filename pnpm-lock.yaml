@@ -57,6 +57,24 @@ importers:
         specifier: ^3.25.28
         version: 3.25.76
 
+  apps/hub:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^1.13.0
+        version: 1.13.0(hono@4.13.0)
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.32.0
+        version: 1.32.0(zod@3.25.76)
+      '@ras/shell-spec':
+        specifier: workspace:*
+        version: link:../../packages/shell-spec
+      hono:
+        specifier: ^4.13.0
+        version: 4.13.0
+      zod:
+        specifier: ^3.25.28
+        version: 3.25.76
+
   apps/web:
     dependencies:
       '@phosphor-icons/react':

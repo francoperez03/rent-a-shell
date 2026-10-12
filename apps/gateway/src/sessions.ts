@@ -26,14 +26,25 @@ export interface IntentRec {
   lastCheck?: number;
 }
 
+/** Pedido de personalización que un cliente le deja al Forger. */
+export interface CustomRequest {
+  id: string;
+  shell: string;
+  contact: string;
+  message: string;
+  at: number;
+}
+
 interface Persisted {
   sessions: Session[];
   intents: IntentRec[];
+  requests?: CustomRequest[];
 }
 
 export class Sessions {
   sessions = new Map<string, Session>();
   intents = new Map<string, IntentRec>();
+  requests: CustomRequest[] = [];
   private tokens = new Map<string, string>(); // sid -> token, para devolverlo al consultar un intent pagado
 
   constructor(
@@ -153,6 +164,7 @@ export class Sessions {
       for (const s of d.sessions) this.sessions.set(s.sid, s);
       for (const i of d.intents) this.intents.set(i.intent.id, i);
       for (const [k, v] of d.tokens ?? []) this.tokens.set(k, v);
+      this.requests = d.requests ?? [];
     } catch {
       /* primer arranque */
     }
@@ -161,7 +173,7 @@ export class Sessions {
   save() {
     if (!this.dataFile) return;
     mkdirSync(dirname(this.dataFile), { recursive: true });
-    const d = { sessions: [...this.sessions.values()], intents: [...this.intents.values()], tokens: [...this.tokens] };
+    const d = { sessions: [...this.sessions.values()], intents: [...this.intents.values()], tokens: [...this.tokens], requests: this.requests };
     writeFileSync(this.dataFile, JSON.stringify(d, (_k, v) => (typeof v === "bigint" ? v.toString() : v), 2));
   }
 }

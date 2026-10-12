@@ -3,9 +3,34 @@ import { useQuery } from '@tanstack/react-query';
 import type { GatewayEvent, IntentView, RailManifest, SessionGrant, Shell, ShellState } from '@ras/shell-spec';
 
 export const API = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+/** Hub del marketplace: si está, el catálogo sale de ahí y cada shell se opera en el gateway de su Forger. */
+export const HUB = ((import.meta.env.VITE_HUB_URL as string | undefined) ?? '').replace(/\/$/, '');
+
+// Gateway "actual" (el del shell que se está alquilando). Persiste en la pestaña para checkout y consola.
+const GW_KEY = 'ras:gateway';
+let gateway = (() => {
+  try {
+    return sessionStorage.getItem(GW_KEY) ?? API;
+  } catch {
+    return API;
+  }
+})();
+export const setGateway = (url: string) => {
+  gateway = url.replace(/\/$/, '');
+  try {
+    sessionStorage.setItem(GW_KEY, gateway);
+  } catch {
+    /* sin storage: queda en memoria */
+  }
+};
+const gwById = new Map<string, string>();
+/** Base de API para un shell: su gateway si viene del hub, si no el gateway actual. */
+const baseFor = (id?: string) => (HUB && id && gwById.get(id)) || gateway;
+/** Link a la ficha que fija el gateway del shell (necesario con hub, inocuo sin él). */
+export const shellHref = (s: Pick<Shell, 'id' | 'gateway'>) => (HUB && s.gateway ? `/shells/${s.id}?gw=${encodeURIComponent(s.gateway)}` : `/shells/${s.id}`);
 
 /** URL absoluta contra el gateway (las rutas del gateway pueden venir relativas, ej. camera.frame). */
-export const apiUrl = (path: string) => (path.startsWith('http') ? path : `${API}${path}`);
+export const apiUrl = (path: string, base = gateway) => (path.startsWith('http') ? path : `${base}${path}`);
 
 export class ApiError extends Error {
   /** `code` es el `error` del gateway (ej. session_not_started); `message` su detalle si lo manda. */
@@ -14,9 +39,9 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T>(path: string, init: RequestInit & { token?: string } = {}): Promise<T> {
-  const { token, headers, ...rest } = init;
-  const res = await fetch(apiUrl(path), {
+export async function api<T>(path: string, init: RequestInit & { token?: string; base?: string } = {}): Promise<T> {
+  const { token, headers, base, ...rest } = init;
+  const res = await fetch(apiUrl(path, base), {
     ...rest,
     headers: {
       ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
@@ -47,7 +72,15 @@ export interface SessionInfo {
 }
 
 export const useShells = () =>
-  useQuery({ queryKey: ['shells'], queryFn: () => api<Shell[]>('/api/shells'), refetchInterval: 10_000 });
+  useQuery({
+    queryKey: ['shells'],
+    queryFn: async () => {
+      const list = HUB ? await api<Shell[]>('/api/catalog', { base: HUB }) : await api<Shell[]>('/api/shells');
+      for (const s of list) if (s.gateway) gwById.set(s.id, s.gateway.replace(/\/$/, ''));
+      return list;
+    },
+    refetchInterval: 10_000,
+  });
 
 export const useShell = (id: string | undefined) => {
   const q = useShells();
@@ -57,7 +90,7 @@ export const useShell = (id: string | undefined) => {
 export const useShellState = (id: string | undefined, every = 2_000) =>
   useQuery({
     queryKey: ['state', id],
-    queryFn: () => api<ShellState>(`/api/shells/${id}/state`),
+    queryFn: () => api<ShellState>(`/api/shells/${id}/state`, { base: baseFor(id) }),
     enabled: !!id,
     refetchInterval: every,
     retry: false,
@@ -66,7 +99,7 @@ export const useShellState = (id: string | undefined, every = 2_000) =>
 export const useQueue = (id: string | undefined) =>
   useQuery({
     queryKey: ['queue', id],
-    queryFn: () => api<Queue>(`/api/shells/${id}/queue`),
+    queryFn: () => api<Queue>(`/api/shells/${id}/queue`, { base: baseFor(id) }),
     enabled: !!id,
     refetchInterval: 5_000,
   });

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { Nav } from '@/components/Nav';
+import { setGateway } from '@/lib/api';
 import ShellPage from '@/pages/Shell';
 import SessionPage from '@/pages/Session';
 import AgentsPage from '@/pages/Agents';
@@ -22,6 +23,9 @@ function ScrollManager() {
 }
 
 export default function App() {
+  // ?gw=<gateway> llega desde el catálogo del hub: fija el gateway del Forger antes de que se disparen las consultas
+  const gw = new URLSearchParams(useLocation().search).get('gw');
+  if (gw) setGateway(gw);
   return (
     <>
       <ScrollManager />

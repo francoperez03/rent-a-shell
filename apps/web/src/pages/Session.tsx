@@ -204,6 +204,7 @@ function Console({ grant }: { grant: SessionGrant }) {
           {state && (
             <span className="absolute bottom-3 left-3 right-3 bg-[rgba(0,12,41,0.8)] px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-white/80 sm:right-auto">
               {JOINTS.map((j) => `${JOINT_LABEL[j]} ${Math.round(state.angles[j])}°`).join(' · ')}
+              {typeof state.current_ma === 'number' && ` · ${state.current_ma} mA`}
             </span>
           )}
         </LiveVideo>

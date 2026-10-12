@@ -23,6 +23,7 @@ export function llmsTxt(cfg: Config, shell: Shell, rails: PaymentRail[]): string
 - Articulaciones y rango seguro en grados: base ${j.base[0]} a ${j.base[1]}, shoulder ${j.shoulder[0]} a ${j.shoulder[1]}, elbow ${j.elbow[0]} a ${j.elbow[1]}, grip ${j.grip[0]} a ${j.grip[1]}. Fuera de rango se recorta.
 - HOME: ${JSON.stringify(shell.home)}
 - Rutinas: ${shell.routines.join(", ")}
+- Sensores en /state: ${shell.sensors.join(", ")}${shell.sensors.includes("current_ma") ? " (current_ma = mA totales del bus de servos; sirve para medir cuánto consume tu movimiento)" : ""}
 - Precio: USD ${shell.pricing.usd} por bloque de ${shell.pricing.block_minutes} min, máximo ${cfg.maxBlocks} bloques
 - Cámara: HLS ${shell.camera.hls ?? "(no publicada)"} · último frame JPEG ${shell.camera.frame}
 - Forger (quien lo arma y mantiene): ${shell.forger.name}${shell.forger.contact ? `, contacto ${shell.forger.contact}` : ""}${shell.forger.customizations ? ". Acepta pedidos de personalización." : ""}

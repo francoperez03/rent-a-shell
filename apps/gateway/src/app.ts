@@ -30,6 +30,7 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     ...cfg.shell,
     status,
     camera: { hls: cfg.liveUrl, frame: `${cfg.publicUrl}/api/shells/${cfg.shell.id}/frame` },
+    gateway: cfg.publicUrl,
   });
   const price = (blocks: number) => ({ usd: mulUsd(cfg.shell.pricing.usd, blocks) });
   const parseBlocks = (v: unknown) => {
@@ -127,6 +128,40 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
   });
 
   app.get("/api/rails", (c) => c.json(rails.map((r) => r.manifest())));
+
+  // Pedidos de personalización al Forger: públicos para crear, privados para leer.
+  const reqHits = new Map<string, number[]>();
+  app.post("/api/shells/:id/requests", async (c) => {
+    if (c.req.param("id") !== cfg.shell.id) return c.json({ error: "unknown_shell" }, 404);
+    if (!cfg.shell.forger.customizations) return c.json({ error: "customizations_closed" }, 403);
+    const raw = await c.req.text();
+    if (raw.length > 4000) return c.json({ error: "too_large" }, 413);
+    const ip = c.req.header("x-forwarded-for")?.split(",")[0].trim() ?? "local";
+    const now = Date.now();
+    const h = (reqHits.get(ip) ?? []).filter((t) => now - t < 10 * 60_000);
+    if (h.length >= 5) return c.json({ error: "rate_limited" }, 429);
+    let b: { contact?: unknown; message?: unknown };
+    try {
+      b = JSON.parse(raw);
+    } catch {
+      return c.json({ error: "invalid_json" }, 400);
+    }
+    const contact = typeof b.contact === "string" ? b.contact.trim() : "";
+    const message = typeof b.message === "string" ? b.message.trim() : "";
+    if (!contact || contact.length > 200 || message.length < 10 || message.length > 2000) {
+      return c.json({ error: "invalid_request", hint: "contact (1 a 200) y message (10 a 2000 caracteres)" }, 400);
+    }
+    reqHits.set(ip, [...h, now]);
+    const r = { id: crypto.randomUUID(), shell: cfg.shell.id, contact, message, at: now };
+    sessions.requests.push(r);
+    sessions.save();
+    return c.json({ ok: true, id: r.id }, 201);
+  });
+  app.get("/api/forger/requests", (c) => {
+    const auth = c.req.header("authorization") ?? "";
+    if (!cfg.forgerToken || auth !== `Bearer ${cfg.forgerToken}`) return c.json({ error: "unauthorized" }, 401);
+    return c.json(sessions.requests);
+  });
 
   app.post("/api/sessions/intent", async (c) => {
     const b = await c.req.json<{ shell?: string; blocks?: number; rail?: string; asset?: string }>().catch(() => ({}) as never);

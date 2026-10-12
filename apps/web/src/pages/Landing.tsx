@@ -11,7 +11,7 @@ import { SectionHeading } from '@/components/SectionHeading';
 import { StatusDot } from '@/components/StatusDot';
 import { TelemetryPanel } from '@/components/TelemetryPanel';
 import { Footer } from '@/components/Footer';
-import { fmtClock, toMs, useEvents, useNow, useQueue, useShells, useShellState } from '@/lib/api';
+import { fmtClock, shellHref, toMs, useEvents, useNow, useQueue, useShells, useShellState } from '@/lib/api';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { useReveal } from '@/lib/useReveal';
 import { JOINTS, JOINT_LABEL } from '@/lib/joints';
@@ -246,7 +246,7 @@ function ShellCard({ shell }: { shell: Shell }) {
   const { data: state } = useShellState(shell.id, 3_000);
   const angles = state?.angles;
   return (
-    <Link to={`/shells/${shell.id}`} className="group block rounded-sm bg-bg-inset p-6 shadow-[var(--shadow-hairline)] transition-shadow duration-base hover:shadow-[inset_0_0_0_1px_var(--hairline-strong)] md:p-8">
+    <Link to={shellHref(shell)} className="group block rounded-sm bg-bg-inset p-6 shadow-[var(--shadow-hairline)] transition-shadow duration-base hover:shadow-[inset_0_0_0_1px_var(--hairline-strong)] md:p-8">
       <div className="flex items-center justify-between">
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-mute">{shell.kind} · {shell.location}</p>
         <StatusDot status={shell.status} className="text-ink" />

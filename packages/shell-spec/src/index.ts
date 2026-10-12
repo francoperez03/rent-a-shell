@@ -14,6 +14,10 @@ export interface Shell {
   joints: Record<Joint, [number, number]>;
   home: Angles;
   routines: string[];
+  /** Mediciones que expone /state, ej. ["angles","current_ma"]. */
+  sensors: string[];
+  /** URL pública del gateway del Forger que opera este shell. */
+  gateway: string;
   pricing: { block_minutes: number; usd: string };
   /** Forger: quien arma, publica y mantiene el shell, y cobra por su uso. */
   forger: { name: string; contact?: string; customizations: boolean };
@@ -26,6 +30,8 @@ export interface ShellState {
   moving: boolean;
   rutina: string | null;
   angles: Angles;
+  /** Corriente total del bus de servos (INA219); null si el shell no tiene sensor. */
+  current_ma?: number | null;
   uptime_ms?: number;
 }
 

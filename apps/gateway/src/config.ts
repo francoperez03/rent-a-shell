@@ -13,8 +13,9 @@ export interface Config {
   rails: string[];
   restMs: number;
   maxBlocks: number;
+  forgerToken: string | null;
   dataFile: string | null;
-  shell: Omit<Shell, "status" | "camera">;
+  shell: Omit<Shell, "status" | "camera" | "gateway">;
 }
 
 export function loadConfig(env: Env): Config {
@@ -33,16 +34,18 @@ export function loadConfig(env: Env): Config {
     rails: (env.RAILS ?? "fake").split(",").map((s) => s.trim()).filter(Boolean),
     restMs: Number(env.REST_SECONDS ?? 60) * 1000,
     maxBlocks: Number(env.MAX_BLOCKS ?? 6),
+    forgerToken: env.FORGER_TOKEN || null,
     dataFile: env.DATA_FILE === "" ? null : (env.DATA_FILE ?? "data/state.json"),
     // Ficha de El Tucu (docs/specs/02-robot.md; rangos de robot-a/SPEC.md §4.4)
     shell: {
-      id: "el-tucu",
-      name: "El Tucu",
+      id: env.SHELL_ID ?? "el-tucu",
+      name: env.SHELL_NAME ?? "El Tucu",
       kind: "arm-4dof",
       location: env.SHELL_LOCATION ?? "Salta, AR",
       joints: { base: [20, 160], shoulder: [50, 130], elbow: [50, 130], grip: [40, 110] },
       home: { base: 90, shoulder: 90, elbow: 90, grip: 70 },
       routines: ["robot", "lento", "saludo", "recta"],
+      sensors: (env.SHELL_SENSORS ?? "angles,current_ma").split(",").map((s) => s.trim()).filter(Boolean),
       pricing: { block_minutes: Number(env.BLOCK_MINUTES ?? 5), usd: env.BLOCK_USD ?? "1.00" },
       forger: { name: env.FORGER_NAME ?? "Franco Pérez", contact: env.FORGER_CONTACT || undefined, customizations: true },
       // ponytail: estimado (docs/costos.md): 4 SG90 + ESP32 + PLA + fuente, importado a AR, impresión + armado + calibración
