@@ -41,7 +41,9 @@ export const USDC = { symbol: "USDC", decimals: 6 } as const;
 type Env = Record<string, string | undefined>;
 
 export function solNet(env: Env): SolNet {
-  return NETWORKS[env.SOLANA_NETWORK === "mainnet" ? "mainnet" : "devnet"];
+  const net = NETWORKS[env.SOLANA_NETWORK === "mainnet" ? "mainnet" : "devnet"];
+  // ponytail: override del mint solo para el validador local (tests de escrow); en devnet/mainnet no se usa
+  return env.SOLANA_USDC_MINT ? { ...net, usdc: address(env.SOLANA_USDC_MINT) } : net;
 }
 
 export function rpcUrl(net: SolNet, env: Env) {

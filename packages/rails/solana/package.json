@@ -6,12 +6,17 @@
   "types": "src/index.ts",
   "scripts": {
     "check": "tsx --env-file-if-exists=../../../apps/gateway/.env.local src/check.ts",
-    "test": "tsx --test src/*.test.ts"
+    "test": "tsx --test src/*.test.ts",
+    "e2e": "tsx src/escrow.e2e.ts",
+    "init-escrow": "tsx --env-file-if-exists=../../../apps/gateway/.env.local src/init-escrow.ts"
   },
   "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
     "@ras/rails-core": "workspace:*",
     "@ras/shell-spec": "workspace:*",
     "@solana/kit": "^6.1.0",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.98.0",
     "@x402/core": "2.27.0",
     "@x402/hono": "2.27.0",
     "@x402/svm": "2.27.0",
