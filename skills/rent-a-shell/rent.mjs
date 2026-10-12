@@ -1,20 +1,20 @@
 #!/usr/bin/env node
-// Cliente de Rent a Shell para agentes: alquila hardware real, corre un plan de pasos y devuelve un reporte medido.
-// Un solo archivo; dependencias en la misma carpeta:
+// Rent a Shell client for agents: rents real hardware, runs a plan of steps and returns a measured report.
+// Single file; dependencies in the same folder:
 //   npm i @x402/fetch@2.27.0 @x402/core@2.27.0 @x402/svm@2.27.0 @solana/kit@^6
 //
-//   node rent.mjs wallet                          crea/lee la wallet del agente y muestra la address
-//   node rent.mjs catalog [--hub URL]             lista los shells del catálogo
-//   node rent.mjs info --gateway URL              ficha, sensores, precio y cola del shell
-//   node rent.mjs run --gateway URL --plan plan.json [--shell ID] [--blocks 1] --max-usd 1 [--out reporte.json] [--frames carpeta]
+//   node rent.mjs wallet                          creates/reads the agent wallet and shows the address
+//   node rent.mjs catalog [--hub URL]             lists the shells in the catalog
+//   node rent.mjs info --gateway URL              shell spec, sensors, price and queue
+//   node rent.mjs run --gateway URL --plan plan.json [--shell ID] [--blocks 1] --max-usd 1 [--out report.json] [--frames folder]
 //
-// Plan: JSON con una lista de pasos:
-//   {"joint":"base","angle":120}   mueve una articulación y mide hasta que llega (ángulo real y pico de mA)
-//   {"dance":"saludo"}             corre una rutina del shell
-//   {"wait":500}                   espera en ms
-//   {"frame":"nombre"}             guarda una foto de la cámara (con --frames)
-//   {"stop":true}                  frena en el lugar
-// La wallet vive en ~/.rent-a-shell/wallet.json (o RAS_WALLET). Solo necesita USDC en la red del shell: el fee lo paga el facilitator.
+// Plan: JSON with a list of steps:
+//   {"joint":"base","angle":120}   moves a joint and measures until it arrives (real angle and peak mA)
+//   {"dance":"saludo"}             runs a shell routine
+//   {"wait":500}                   waits in ms
+//   {"frame":"name"}               saves a camera photo (with --frames)
+//   {"stop":true}                  stops in place
+// The wallet lives in ~/.rent-a-shell/wallet.json (or RAS_WALLET). It only needs USDC on the shell's network: the facilitator pays the fee.
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
@@ -43,7 +43,7 @@ async function getJson(url, init) {
 async function loadSigner(create = false) {
   const kit = await import("@solana/kit");
   if (!existsSync(WALLET)) {
-    if (!create) die(`No hay wallet en ${WALLET}. Corré: node rent.mjs wallet`);
+    if (!create) die(`No wallet at ${WALLET}. Run: node rent.mjs wallet`);
     const seed = crypto.getRandomValues(new Uint8Array(32));
     const s = await kit.createKeyPairSignerFromPrivateKeyBytes(seed);
     const secret = new Uint8Array([...seed, ...kit.getAddressEncoder().encode(s.address)]);
@@ -60,32 +60,32 @@ async function loadSigner(create = false) {
 
 if (cmd === "wallet") {
   const { signer, created } = await loadSigner(true);
-  console.log(`${created ? "wallet creada" : "wallet"}: ${signer.address}`);
-  console.log(`archivo: ${WALLET} (secreto: no compartir)`);
-  console.log("Para alquilar, cargale USDC en la red del shell (devnet: faucet.circle.com → Solana Devnet).");
+  console.log(`${created ? "wallet created" : "wallet"}: ${signer.address}`);
+  console.log(`file: ${WALLET} (secret: do not share)`);
+  console.log("To rent, fund it with USDC on the shell's network (devnet: faucet.circle.com → Solana Devnet).");
   process.exit(0);
 }
 
 if (cmd === "catalog") {
-  if (!HUB) die("Falta --hub URL (o RAS_HUB).");
+  if (!HUB) die("Missing --hub URL (or RAS_HUB).");
   const { j } = await getJson(`${HUB}/api/catalog`);
-  if (!Array.isArray(j) || !j.length) die("El catálogo está vacío.");
+  if (!Array.isArray(j) || !j.length) die("The catalog is empty.");
   for (const s of j) {
-    console.log(`${s.id.padEnd(16)} ${s.status.padEnd(8)} USD ${s.pricing.usd}/${s.pricing.block_minutes} min · ${s.kind} · sensores ${(s.sensors ?? []).join(",")} · Forger ${s.forger?.name ?? "?"}\n${"".padEnd(16)} gateway ${s.gateway}`);
+    console.log(`${s.id.padEnd(16)} ${s.status.padEnd(8)} USD ${s.pricing.usd}/${s.pricing.block_minutes} min · ${s.kind} · sensors ${(s.sensors ?? []).join(",")} · Forger ${s.forger?.name ?? "?"}\n${"".padEnd(16)} gateway ${s.gateway}`);
   }
   process.exit(0);
 }
 
 async function shellOf(gw, id) {
   const { j } = await getJson(`${gw}/api/shells`);
-  if (!Array.isArray(j) || !j.length) die(`El gateway ${gw} no devolvió shells.`);
+  if (!Array.isArray(j) || !j.length) die(`The gateway ${gw} returned no shells.`);
   const s = id ? j.find((x) => x.id === id) : j[0];
-  if (!s) die(`No existe el shell ${id} en ${gw}. Hay: ${j.map((x) => x.id).join(", ")}`);
+  if (!s) die(`Shell ${id} doesn't exist on ${gw}. Available: ${j.map((x) => x.id).join(", ")}`);
   return s;
 }
 
 if (cmd === "info") {
-  if (!GW) die("Falta --gateway URL.");
+  if (!GW) die("Missing --gateway URL.");
   const s = await shellOf(GW, opt("shell"));
   const q = (await getJson(`${GW}/api/shells/${s.id}/queue`)).j;
   const st = (await getJson(`${GW}/api/shells/${s.id}/state`)).j;
@@ -93,37 +93,37 @@ if (cmd === "info") {
   process.exit(0);
 }
 
-if (cmd !== "run") die("Uso: node rent.mjs wallet | catalog --hub URL | info --gateway URL | run --gateway URL --plan plan.json --max-usd N");
+if (cmd !== "run") die("Usage: node rent.mjs wallet | catalog --hub URL | info --gateway URL | run --gateway URL --plan plan.json --max-usd N");
 
 // ---------- run ----------
-if (!GW) die("Falta --gateway URL.");
+if (!GW) die("Missing --gateway URL.");
 const planFile = opt("plan");
-if (!planFile) die("Falta --plan plan.json.");
+if (!planFile) die("Missing --plan plan.json.");
 const plan = JSON.parse(readFileSync(planFile, "utf8"));
-if (!Array.isArray(plan) || !plan.length) die("El plan tiene que ser una lista de pasos.");
+if (!Array.isArray(plan) || !plan.length) die("The plan must be a list of steps.");
 const blocks = Number(opt("blocks", "1"));
 const maxUsd = Number(opt("max-usd", "NaN"));
-if (!(maxUsd > 0)) die("Falta --max-usd: el tope de gasto que aprobó la persona.");
+if (!(maxUsd > 0)) die("Missing --max-usd: the spending cap the person approved.");
 const framesDir = opt("frames");
 const shell = await shellOf(GW, opt("shell"));
 const expected = Number(shell.pricing.usd) * blocks;
-if (expected > maxUsd) die(`El alquiler cuesta USD ${expected.toFixed(2)} y el tope es USD ${maxUsd}.`);
+if (expected > maxUsd) die(`The rental costs USD ${expected.toFixed(2)} and the cap is USD ${maxUsd}.`);
 
 const payUrl = `${GW}/api/sessions/x402?shell=${shell.id}&blocks=${blocks}`;
 let grant;
 if (process.env.RAS_FAKE_PAY === "1") {
-  // solo para gateways de desarrollo con el riel "fake"
+  // only for development gateways with the "fake" rail
   grant = (await getJson(payUrl, { method: "POST", headers: { "x-fake-pay": "1" } })).j;
 } else {
-  // 1) leer el 402 y chequear el monto contra el tope ANTES de firmar
+  // 1) read the 402 and check the amount against the cap BEFORE signing
   const probe = await fetch(payUrl, { method: "POST", signal: AbortSignal.timeout(15_000) });
-  if (probe.status !== 402) die(`Esperaba 402 y vino ${probe.status}: ${await probe.text()}`);
+  if (probe.status !== 402) die(`Expected 402 and got ${probe.status}: ${await probe.text()}`);
   const req = JSON.parse(Buffer.from(probe.headers.get("payment-required") ?? "", "base64").toString("utf8") || "{}");
   const acc = req.accepts?.find((a) => String(a.network).startsWith("solana:"));
-  if (!acc) die(`El shell no acepta pago en Solana: ${JSON.stringify(req.accepts ?? req)}`);
-  const usd = Number(acc.amount) / 1e6; // USDC tiene 6 decimales
-  if (usd > maxUsd) die(`El 402 pide USD ${usd} y el tope es USD ${maxUsd}. No pago.`);
-  // 2) pagar con x402 (firma una transferencia de USDC; el facilitator la envía y paga el fee)
+  if (!acc) die(`The shell doesn't accept payment on Solana: ${JSON.stringify(req.accepts ?? req)}`);
+  const usd = Number(acc.amount) / 1e6; // USDC has 6 decimals
+  if (usd > maxUsd) die(`The 402 asks for USD ${usd} and the cap is USD ${maxUsd}. Not paying.`);
+  // 2) pay with x402 (signs a USDC transfer; the facilitator submits it and pays the fee)
   const { x402Client, wrapFetchWithPayment } = await import("@x402/fetch");
   const { ExactSvmScheme } = await import("@x402/svm/exact/client");
   const { toClientSvmSigner } = await import("@x402/svm");
@@ -134,14 +134,14 @@ if (process.env.RAS_FAKE_PAY === "1") {
   if (!res.ok) {
     const pr = res.headers.get("payment-required");
     const why = pr ? JSON.parse(Buffer.from(pr, "base64").toString("utf8")).error : await res.text();
-    die(`Pago rechazado (${res.status}): ${why}${String(why).includes("simulation") || String(why).includes("insufficient") ? " · ¿la wallet tiene USDC en esta red?" : ""}`);
+    die(`Payment rejected (${res.status}): ${why}${String(why).includes("simulation") || String(why).includes("insufficient") ? " · does the wallet have USDC on this network?" : ""}`);
   }
   grant = await res.json();
 }
-if (!grant?.token) die(`No recibí la sesión: ${JSON.stringify(grant)}`);
-console.error(`pagado · ${grant.payment?.explorerUrl ?? grant.payment?.tx ?? "(sin tx)"}`);
+if (!grant?.token) die(`Didn't receive the session: ${JSON.stringify(grant)}`);
+console.error(`paid · ${grant.payment?.explorerUrl ?? grant.payment?.tx ?? "(no tx)"}`);
 if (grant.starts_at > Date.now()) {
-  console.error(`el shell está ocupado: arranco en ${Math.ceil((grant.starts_at - Date.now()) / 1000)} s`);
+  console.error(`the shell is busy: starting in ${Math.ceil((grant.starts_at - Date.now()) / 1000)} s`);
   await sleep(grant.starts_at - Date.now() + 300);
 }
 
@@ -155,7 +155,7 @@ const t0 = Date.now();
 try {
   for (const [i, p] of plan.entries()) {
     if (Date.now() > grant.expires_at - 1500) {
-      steps.push({ i, step: p, skipped: "sesión vencida" });
+      steps.push({ i, step: p, skipped: "session expired" });
       continue;
     }
     if (p.joint) {
@@ -194,13 +194,13 @@ try {
         file = path.join(framesDir, `${String(i).padStart(2, "0")}-${String(p.frame).replace(/[^\w-]/g, "_")}.jpg`);
         writeFileSync(file, Buffer.from(await r.arrayBuffer()));
       }
-      steps.push({ i, step: p, frame: file, camera: r?.ok ? "ok" : "sin cámara" });
-    } else steps.push({ i, step: p, error: "paso desconocido" });
+      steps.push({ i, step: p, frame: file, camera: r?.ok ? "ok" : "no camera" });
+    } else steps.push({ i, step: p, error: "unknown step" });
     const last = steps.at(-1);
-    console.error(`  ${i}. ${JSON.stringify(p)} → ${last.error ?? last.skipped ?? (last.measured !== undefined ? `${last.measured}°${last.peak_ma != null ? ` · pico ${last.peak_ma} mA` : ""}` : "ok")}`);
+    console.error(`  ${i}. ${JSON.stringify(p)} → ${last.error ?? last.skipped ?? (last.measured !== undefined ? `${last.measured}°${last.peak_ma != null ? ` · peak ${last.peak_ma} mA` : ""}` : "ok")}`);
   }
 } finally {
-  // siempre cerrar: el shell vuelve a HOME y queda libre
+  // always close: the shell returns to HOME and is freed
   await getJson(`${GW}/api/sessions/end`, { method: "POST", headers: auth }).catch(() => null);
 }
 

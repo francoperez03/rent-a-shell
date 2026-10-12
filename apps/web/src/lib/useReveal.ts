@@ -2,7 +2,7 @@ import type { MotionProps } from 'framer-motion';
 import { useReducedMotion } from './useReducedMotion';
 import { dur, easeOut } from './motion';
 
-/** Reveal de landing2 al entrar en viewport (opacity + y). Con reduced motion: nada, aparece directo. */
+/** landing2 reveal on entering the viewport (opacity + y). With reduced motion: nothing, it just appears. */
 export function useReveal() {
   const reduced = useReducedMotion();
   return (delay = 0): MotionProps =>

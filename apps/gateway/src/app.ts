@@ -21,7 +21,7 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
   const blockMs = cfg.shell.pricing.block_minutes * 60_000;
   const sessions = new Sessions(cfg.secret, blockMs, cfg.restMs, cfg.dataFile);
   const frames = new Frames(cfg.rtspUrl);
-  const hits = new Map<string, number[]>(); // rate limit por sesión
+  const hits = new Map<string, number[]>(); // rate limit per session
 
   let status: ShellStatus = "online";
   let lastActive: string | null = null;
@@ -60,13 +60,13 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     });
     if (p) await settleIntent(id, p);
     else if (Date.now() > rec.intent.expiresAt + 5 * 60_000) {
-      // 5 min de gracia por pagos que llegan tarde
+      // 5 min grace for late payments
       rec.status = "expired";
       sessions.save();
     }
   }
 
-  /** Cierra en el riel los pagos de sesiones terminadas: settle al Forger o reembolso si el shell se cayó. */
+  /** Closes payments of finished sessions on their rail: settle to the Forger, or refund if the shell went down. */
   async function finalizeEnded() {
     for (const s of sessions.sessions.values()) {
       if (!s.ended || s.finalized || !s.payment) continue;
@@ -78,16 +78,16 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
         s.finalized = outcome;
         if (r && r.tx) s.finalize_tx = r.tx;
         sessions.save();
-        if (rail?.finalize) console.log(`[finalize] sesión ${s.sid} ${outcome}${r && r.tx ? ` tx ${r.tx}` : ""}`);
+        if (rail?.finalize) console.log(`[finalize] session ${s.sid} ${outcome}${r && r.tx ? ` tx ${r.tx}` : ""}`);
       } catch (e) {
-        // se reintenta en el próximo tick; los fondos quedan en escrow y el pagador puede reclamar si nunca se cierra
-        console.error(`[finalize] sesión ${s.sid} ${outcome}:`, (e as Error).message);
+        // retried on a later tick; funds stay in escrow and the payer can reclaim them if it never closes
+        console.error(`[finalize] session ${s.sid} ${outcome}:`, (e as Error).message);
         s.finalize_retry_at = Date.now() + 30_000;
       }
     }
   }
 
-  /** Reloj: arranca y corta sesiones, detecta robot caído, revisa pagos pendientes. */
+  /** Clock: starts and ends sessions, detects a dead robot, checks pending payments. */
   let ticks = 0;
   async function tick() {
     ticks++;
@@ -110,7 +110,7 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
       status = next;
       bus.emit({ type: "status", shell: cfg.shell.id, status });
     }
-    // spec 04: si el robot se cae con una sesión paga y no vuelve en offlineRefundMs, se corta y se reembolsa
+    // spec 04: if the robot drops during a paid session and is not back within offlineRefundMs, end it and refund
     if (act && !robot.online) {
       act.offline_since ??= now;
       if (now - act.offline_since >= cfg.offlineRefundMs) sessions.end(act.sid, "offline");
@@ -154,13 +154,13 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
   });
 
   app.get("/api/rails", (c) => c.json(rails.map((r) => r.manifest())));
-  // Rutas propias de cada riel (ej. transaction request de Solana Pay); el gateway no sabe qué hacen.
+  // Rail-owned routes (e.g. the Solana Pay transaction request); the gateway does not know what they do.
   app.all("/api/rails/:id/*", (c) => {
     const r = byId.get(c.req.param("id"));
     return r?.fetch ? r.fetch(c.req.raw) : c.json({ error: "unknown_rail" }, 404);
   });
 
-  // Pedidos de personalización al Forger: públicos para crear, privados para leer.
+  // Customization requests to the Forger: public to create, private to read.
   const reqHits = new Map<string, number[]>();
   app.post("/api/shells/:id/requests", async (c) => {
     if (c.req.param("id") !== cfg.shell.id) return c.json({ error: "unknown_shell" }, 404);
@@ -180,7 +180,7 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     const contact = typeof b.contact === "string" ? b.contact.trim() : "";
     const message = typeof b.message === "string" ? b.message.trim() : "";
     if (!contact || contact.length > 200 || message.length < 10 || message.length > 2000) {
-      return c.json({ error: "invalid_request", hint: "contact (1 a 200) y message (10 a 2000 caracteres)" }, 400);
+      return c.json({ error: "invalid_request", hint: "contact (1 to 200) and message (10 to 2000 characters)" }, 400);
     }
     reqHits.set(ip, [...h, now]);
     const r = { id: crypto.randomUUID(), shell: cfg.shell.id, contact, message, at: now };
@@ -219,12 +219,12 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     return rec ? c.json(sessions.view(rec)) : c.json({ error: "unknown_intent" }, 404);
   });
 
-  // x402: se valida el pedido ANTES del paywall para no cobrar pedidos inválidos.
+  // x402: validate the request BEFORE the paywall so invalid requests are never charged.
   const x402Rails = rails.filter((r) => r.paywall);
   const paywalls = new Map(
     x402Rails.map((r) => [
       r.id,
-      r.paywall!("/api/sessions/x402", (q) => price(parseBlocks(q.blocks) ?? 1), `Sesión de ${cfg.shell.pricing.block_minutes} min por bloque con ${cfg.shell.name}`),
+      r.paywall!("/api/sessions/x402", (q) => price(parseBlocks(q.blocks) ?? 1), `${cfg.shell.pricing.block_minutes}-minute session block with ${cfg.shell.name}`),
     ]),
   );
   app.post(
@@ -293,7 +293,7 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
   );
 
   const card = () => agentCard(cfg, rails);
-  // Proxy del HLS de MediaMTX: la cámara del Forger sale por el mismo túnel que la API.
+  // MediaMTX HLS proxy: the Forger's camera goes out through the same tunnel as the API.
   app.get("/live/*", async (c) => {
     if (!cfg.hlsUpstream) return c.json({ error: "no_camera" }, 404);
     const path = c.req.path.slice("/live".length);

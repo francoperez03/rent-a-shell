@@ -5,12 +5,12 @@ import { Roll } from '@/motion-kit/split';
 
 const LINKS = [
   { to: '/#shells', label: 'Shells' },
-  { to: '/agents', label: 'Agentes' },
+  { to: '/agents', label: 'Agents' },
 ];
 
 /**
- * Nav de landing2: wordmark en Fraunces y dos links con roll. Fixed, transparente,
- * gana blur al scrollear. Siempre sobre oscuro (el sitio abre y cierra en navy).
+ * landing2 nav: Fraunces wordmark and two links with roll. Fixed, transparent,
+ * gains blur on scroll. Always on dark (the site opens and closes in navy).
  */
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
@@ -26,7 +26,7 @@ export function Nav() {
       <div
         className={cn('absolute inset-0 border-b border-transparent transition-colors duration-base ease-out-quint', scrolled && 'border-white/10 bg-[rgba(0,12,41,0.92)] backdrop-blur-md')}
       />
-      <nav aria-label="Principal" className="relative mx-auto flex h-[72px] w-full max-w-container items-center justify-between px-5 md:h-[84px] md:px-8">
+      <nav aria-label="Main" className="relative mx-auto flex h-[72px] w-full max-w-container items-center justify-between px-5 md:h-[84px] md:px-8">
         <Link to="/" className="pointer-events-auto font-display text-[24px] font-medium tracking-[-0.01em] text-white md:text-[28px]">
           Rent a Shell
         </Link>

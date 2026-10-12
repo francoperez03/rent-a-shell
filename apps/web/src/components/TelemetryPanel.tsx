@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 /**
- * Panel de telemetría de landing2: módulo de sala de control. Grid sutil, Plex Mono,
- * hairlines y un dot de estado. Acá además acepta `children` (la consola vive adentro).
+ * landing2 telemetry panel: a control-room module. Subtle grid, Plex Mono,
+ * hairlines and a status dot. Here it also takes `children` (the console lives inside).
  */
 export interface TelemetryRow {
   label: string;
@@ -12,7 +12,7 @@ export interface TelemetryRow {
 
 interface TelemetryPanelProps {
   label: string;
-  /** Texto a la derecha del encabezado (ej. reloj de sesión). */
+  /** Text on the right of the header (e.g. session clock). */
   aside?: ReactNode;
   rows?: TelemetryRow[];
   live?: boolean;

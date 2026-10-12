@@ -1,22 +1,22 @@
 ---
 name: rent-a-shell
-description: Alquila hardware real (robots y shells de Rent a Shell) por minutos para probar código de robótica en el mundo físico. Paga en USDC sobre Solana con x402, corre un plan de movimientos, mide ángulos reales y corriente, saca fotos y devuelve un reporte. Usar cuando la persona dice "probá esto en un robot real", "validá estos ángulos en hardware", "cuánta corriente consume este movimiento", "alquilá un brazo", "Rent a Shell" o quiere comparar una simulación contra hardware.
+description: Rents real hardware (Rent a Shell robots, called shells) by the minute to test robotics code in the physical world. Pays in USDC on Solana with x402, runs a motion plan, measures real angles and current, takes photos and returns a report. Use when the person says "test this on a real robot", "validate these angles on hardware", "how much current does this move draw", "rent an arm", "Rent a Shell", "probá esto en un robot real", "alquilá un brazo", or wants to compare a simulation against hardware.
 ---
 
-# Rent a Shell · alquilar hardware real
+# Rent a Shell · renting real hardware
 
-Rent a Shell tiene un catálogo de **shells**: robots reales (hoy brazos de 4 ejes con ESP32) que publican **Forgers** y que se alquilan por bloques de 5 minutos. Esta skill sirve para que el código que escribís con la persona se pruebe en hardware real en lugar de quedarse en el simulador: pagás un bloque, corrés un plan, medís y volvés con datos.
+Rent a Shell has a catalog of **shells**: real robots (today 4-axis ESP32 arms) published by **Forgers** and rented in 5-minute blocks. This skill gets the code you write with the person tested on real hardware instead of staying in the simulator: you pay for a block, run a plan, measure and come back with data.
 
-Qué se mide hoy en cada shell: ángulo real de cada articulación (y si el pedido se recortó por rango seguro), si sigue en movimiento, la corriente total del bus de servos en mA (si el shell tiene el sensor `current_ma`) y una foto de cámara por paso.
+What each shell measures today: the real angle of each joint (and whether the request was clamped to the safe range), whether it's still moving, the total servo bus current in mA (if the shell has the `current_ma` sensor) and a camera photo per step.
 
-## Reglas
+## Rules
 
-- **Plata real.** Antes de pagar, mostrale a la persona el shell, cuántos bloques y el precio total, y esperá un sí explícito. Ese monto es el `--max-usd` y nunca lo subas sin preguntar.
-- La wallet del agente vive en `~/.rent-a-shell/wallet.json`. **Nunca muestres ni copies el secreto**: solo la address.
-- Usá el rango seguro de la ficha. El gateway recorta lo que se pasa, pero es mejor planear dentro del rango.
-- Si un paso falla o el shell queda offline, no reintentes pagando otra vez sin preguntar. Cuando el shell se cae, el pago por Solana Pay con escrow se reembolsa solo; por x402 hay que avisarle al Forger.
+- **Real money.** Before paying, show the person the shell, how many blocks and the total price, and wait for an explicit yes. That amount is `--max-usd`; never raise it without asking.
+- The agent's wallet lives in `~/.rent-a-shell/wallet.json`. **Never show or copy the secret**: only the address.
+- Plan within the spec's safe range. The gateway clamps whatever goes past it, but planning inside the range is better.
+- If a step fails or the shell goes offline, don't retry by paying again without asking. When the shell goes down, a Solana Pay payment with escrow is refunded automatically; with x402 the Forger has to be told.
 
-## 1. Instalar el cliente (una vez)
+## 1. Install the client (once)
 
 macOS / Linux:
 ```bash
@@ -24,89 +24,89 @@ mkdir -p ~/.rent-a-shell && cd ~/.rent-a-shell
 curl -fsSL <HUB_URL>/skills/rent/rent.mjs -o rent.mjs
 npm init -y >/dev/null && npm i @x402/fetch@2.27.0 @x402/core@2.27.0 @x402/svm@2.27.0 @solana/kit@^6
 ```
-Windows (PowerShell, con `curl.exe`):
+Windows (PowerShell, with `curl.exe`):
 ```powershell
 mkdir $HOME\.rent-a-shell -Force; cd $HOME\.rent-a-shell
 curl.exe -fsSL <HUB_URL>/skills/rent/rent.mjs -o rent.mjs
 npm init -y | Out-Null; npm i @x402/fetch@2.27.0 @x402/core@2.27.0 @x402/svm@2.27.0 @solana/kit@^6
 ```
-Necesita Node 22+. `<HUB_URL>`: `[a confirmar: URL pública del hub]`. Todos los comandos siguientes se corren dentro de `~/.rent-a-shell`.
+Requires Node 22+. `<HUB_URL>`: public hub URL, TBD. The client is also in the repo: `https://github.com/francoperez03/rent-a-shell/blob/main/skills/rent-a-shell/rent.mjs`. Run every following command inside `~/.rent-a-shell`.
 
-## 2. Wallet del agente
+## 2. Agent wallet
 
 ```bash
 node rent.mjs wallet
 ```
-Crea la wallet la primera vez e imprime la address. Para pagar solo necesita **USDC** en la red del shell, sin SOL: el fee lo paga el facilitator de x402. Pedile a la persona que la fondee:
-- devnet: faucet.circle.com → Solana Devnet → la address;
-- mainnet: cualquier wallet o exchange que mande USDC en Solana.
+Creates the wallet the first time and prints the address. To pay it only needs **USDC** on the shell's network, no SOL: the x402 facilitator pays the fee. Ask the person to fund it:
+- devnet: faucet.circle.com → Solana Devnet → the address;
+- mainnet: any wallet or exchange that sends USDC on Solana.
 
-## 3. Elegir el shell
+## 3. Pick the shell
 
 ```bash
 node rent.mjs catalog --hub <HUB_URL>
-node rent.mjs info --gateway <gateway del shell>
+node rent.mjs info --gateway <shell gateway>
 ```
-`info` trae la ficha (articulaciones y rango seguro, HOME, rutinas, sensores, precio, Forger), la cola y el estado actual. Si está `busy`, el alquiler queda en cola y arranca cuando se libera (el cliente espera solo).
+`info` returns the spec (joints and safe range, HOME, routines, sensors, price, Forger), the queue and the current state. If it's `busy`, the rental is queued and starts when the shell frees up (the client waits on its own).
 
-Alternativa sin cliente: el hub y cada gateway exponen `llms.txt` y MCP (`claude mcp add --transport http rent-a-shell <HUB_URL>/mcp`) para explorar el catálogo. El pago se hace igual con este cliente.
+Without the client: the hub and each gateway expose `llms.txt` and MCP (`claude mcp add --transport http rent-a-shell <HUB_URL>/mcp`) to explore the catalog. Payment still goes through this client.
 
-## 4. Escribir el plan
+## 4. Write the plan
 
-Traducí lo que la persona quiere probar a un `plan.json` (lista de pasos):
+Translate what the person wants to test into a `plan.json` (list of steps):
 
 ```json
 [
-  {"frame": "inicio"},
+  {"frame": "start"},
   {"joint": "base", "angle": 130},
   {"joint": "shoulder", "angle": 110},
   {"joint": "elbow", "angle": 70},
   {"wait": 300},
-  {"frame": "alcance"},
+  {"frame": "reach"},
   {"joint": "grip", "angle": 100},
   {"dance": "saludo"},
   {"stop": true}
 ]
 ```
 
-| Paso | Qué hace | Qué devuelve |
+| Step | What it does | What it returns |
 |---|---|---|
-| `{"joint","angle"}` | mueve y espera hasta que llega (máx. 4 s) | ángulo aceptado, si se recortó, ángulo medido, si llegó, ms, pico de mA |
-| `{"dance"}` | corre una rutina de la ficha | duración, pico de mA |
-| `{"wait"}` | espera (máx. 30 s) | |
-| `{"frame"}` | foto de la cámara (con `--frames`) | ruta del JPG |
-| `{"stop"}` | frena en el lugar | |
+| `{"joint","angle"}` | moves and waits until it arrives (max 4 s) | accepted angle, whether it was clamped, measured angle, whether it arrived, ms, peak mA |
+| `{"dance"}` | runs a routine from the spec | duration, peak mA |
+| `{"wait"}` | waits (max 30 s) | |
+| `{"frame"}` | camera photo (with `--frames`) | JPG path |
+| `{"stop"}` | stops in place | |
 
-Calculá cuántos bloques hacen falta: un bloque son 5 minutos y un movimiento tarda alrededor de 1 s. Casi todo entra en 1 bloque.
+Work out how many blocks are needed: one block is 5 minutes and a move takes about 1 s. Almost everything fits in 1 block.
 
-## 5. Correr (con el sí de la persona)
+## 5. Run (with the person's yes)
 
 ```bash
-node rent.mjs run --gateway <gateway> --shell <id> --plan plan.json --blocks 1 --max-usd <monto aprobado> --frames fotos --out reporte.json
+node rent.mjs run --gateway <gateway> --shell <id> --plan plan.json --blocks 1 --max-usd <approved amount> --frames photos --out report.json
 ```
-El cliente lee el 402 y, si el monto supera `--max-usd`, no paga. Si no lo supera, paga por x402, espera turno, ejecuta el plan, **cierra la sesión** (el shell vuelve a HOME) y deja el reporte en `reporte.json`. El progreso sale por stderr.
+The client reads the 402 and, if the amount exceeds `--max-usd`, doesn't pay. Otherwise it pays with x402, waits its turn, runs the plan, **closes the session** (the shell returns to HOME) and leaves the report in `report.json`. Progress goes to stderr.
 
-## 6. Leer el reporte y contestar
+## 6. Read the report and answer
 
-`reporte.json` tiene:
-- `payment` con la tx en el explorer;
-- `summary` (movimientos, cuántos llegaron, cuántos se recortaron y el pico de mA);
-- `steps` paso a paso.
+`report.json` has:
+- `payment` with the tx on the explorer;
+- `summary` (moves, how many arrived, how many were clamped and the peak mA);
+- `steps`, step by step.
 
-Contale a la persona en concreto:
-- qué llegó y qué no (ángulo pedido contra medido, recortes por rango);
-- los consumos (pico de mA por movimiento: sirven para dimensionar la fuente o detectar un servo forzado);
-- las fotos (mostralas si la persona las quiere ver);
-- el costo y la tx.
+Tell the person concretely:
+- what arrived and what didn't (requested versus measured angle, clamping to the range);
+- the consumption (peak mA per move: useful to size the power supply or spot a strained servo);
+- the photos (show them if the person wants to see them);
+- the cost and the tx.
 
-Si el resultado contradice la simulación, proponé el ajuste en el código y, si la persona quiere, otra corrida.
+If the result contradicts the simulation, propose the code fix and, if the person wants, another run.
 
-## Problemas comunes
+## Common problems
 
-| Mensaje | Qué pasa | Qué hacer |
+| Message | What's happening | What to do |
 |---|---|---|
-| `invalid_exact_svm_transaction_simulation_failed` o `insufficient` | la wallet no tiene USDC en esa red | fondearla (paso 2) y revisar devnet o mainnet |
-| `El 402 pide USD X y el tope es…` | cuesta más de lo aprobado | preguntar a la persona |
-| `sesión vencida` en pasos | el plan dura más que los bloques | más bloques o un plan más corto |
-| `robot_offline` / 503 | el shell se cayó | avisar; con escrow el reembolso es automático |
-| `rate_limited` | más de 10 comandos por segundo | sumar `wait` entre pasos |
+| `invalid_exact_svm_transaction_simulation_failed` or `insufficient` | the wallet has no USDC on that network | fund it (step 2) and check devnet versus mainnet |
+| the 402 asks for more than the cap | it costs more than approved | ask the person |
+| `session expired` in steps | the plan lasts longer than the blocks | more blocks or a shorter plan |
+| `robot_offline` / 503 | the shell went down | tell the person; with escrow the refund is automatic |
+| `rate_limited` | more than 10 commands per second | add `wait` between steps |

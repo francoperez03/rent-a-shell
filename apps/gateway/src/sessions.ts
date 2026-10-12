@@ -1,4 +1,4 @@
-// Sesiones por tiempo con cola FIFO por shell, token firmado y corte automático (docs/specs/03-gateway-local.md).
+// Timed sessions with a per-shell FIFO queue, signed token and automatic cutoff (docs/specs/03-gateway-local.md).
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { sign, verify } from "hono/jwt";
@@ -14,7 +14,7 @@ export interface Session {
   expires_at: number;
   ended?: "expired" | "ended" | "offline";
   offline_since?: number;
-  /** Cómo se cerró el pago en el riel (settle al Forger o reembolso); ausente = pendiente. */
+  /** How the payment was closed on the rail (settle to the Forger or refund); absent = pending. */
   finalized?: "completed" | "refund";
   finalize_tx?: string;
   finalize_retry_at?: number;
@@ -30,7 +30,7 @@ export interface IntentRec {
   lastCheck?: number;
 }
 
-/** Pedido de personalización que un cliente le deja al Forger. */
+/** Customization request a customer leaves for the Forger. */
 export interface CustomRequest {
   id: string;
   shell: string;
@@ -49,7 +49,7 @@ export class Sessions {
   sessions = new Map<string, Session>();
   intents = new Map<string, IntentRec>();
   requests: CustomRequest[] = [];
-  private tokens = new Map<string, string>(); // sid -> token, para devolverlo al consultar un intent pagado
+  private tokens = new Map<string, string>(); // sid -> token, returned when a paid intent is queried
 
   constructor(
     private secret: string,
@@ -60,7 +60,7 @@ export class Sessions {
     this.load();
   }
 
-  /** Sesión que hoy controla el shell (empezó y no venció). */
+  /** Session currently controlling the shell (started and not expired). */
   active(shell: string, now = Date.now()): Session | null {
     for (const s of this.sessions.values()) {
       if (s.shell === shell && !s.ended && s.starts_at <= now && now < s.expires_at) return s;
@@ -74,7 +74,7 @@ export class Sessions {
       .sort((a, b) => a.starts_at - b.starts_at);
   }
 
-  /** Emite una sesión para un pago confirmado. Si el shell está ocupado, queda en cola tras el descanso. */
+  /** Issues a session for a confirmed payment. If the shell is busy, it queues after the rest period. */
   async grant(shell: string, blocks: number, payment: Payment): Promise<SessionGrant> {
     const now = Date.now();
     const pending = [...this.sessions.values()].filter((s) => s.shell === shell && !s.ended && s.expires_at > now);
@@ -100,7 +100,7 @@ export class Sessions {
     return { token, sid: s.sid, shell, starts_at, expires_at: s.expires_at, payment };
   }
 
-  /** Valida el token y que la sesión siga vigente. Devuelve el motivo si no. */
+  /** Validates the token and that the session is still live. Returns the reason if not. */
   async validate(token: string | undefined, shell?: string): Promise<{ s?: Session; error?: string; status?: 401 | 403 }> {
     if (!token) return { error: "missing_token", status: 401 };
     let sid: string;
@@ -170,7 +170,7 @@ export class Sessions {
       for (const [k, v] of d.tokens ?? []) this.tokens.set(k, v);
       this.requests = d.requests ?? [];
     } catch {
-      /* primer arranque */
+      /* first boot */
     }
   }
 

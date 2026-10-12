@@ -1,12 +1,12 @@
-// Funciones puras del Forger (sin efectos al importar): lectura de .env.local y argumentos de cámara por sistema.
+// Pure Forger helpers (no side effects on import): .env.local parsing and per-OS camera arguments.
 import { readFileSync } from "node:fs";
 
-/** .env.local tolerante a CRLF (Windows) y a comentarios al final de la línea. */
+/** .env.local parser tolerant of CRLF (Windows) and trailing comments. */
 export function readEnvFile(file) {
   try {
     return Object.fromEntries(
       readFileSync(file, "utf8")
-        .replace(/^\uFEFF/, "") // BOM del Bloc de notas
+        .replace(/^\uFEFF/, "") // Notepad BOM
         .split(/\r?\n/)
         .map((l) => l.replace(/\s+#.*$/, "").trim())
         .filter((l) => l && !l.startsWith("#") && l.includes("="))
@@ -17,13 +17,13 @@ export function readEnvFile(file) {
   }
 }
 
-/** Argumentos de captura según el sistema. */
+/** Capture arguments per OS. */
 export function cameraInput(platform, e) {
   const size = e.CAMERA_SIZE ? ["-video_size", e.CAMERA_SIZE] : [];
-  // CAMERA=test: señal de prueba de ffmpeg, para probar todo sin webcam
+  // CAMERA=test: ffmpeg test signal, to try everything without a webcam
   if (e.CAMERA === "test") return ["-re", "-f", "lavfi", "-i", `testsrc=size=${e.CAMERA_SIZE || "1280x720"}:rate=${e.CAMERA_FPS || 15}`];
   if (platform === "win32") {
-    if (!e.CAMERA) throw new Error("Falta CAMERA: corré con --list-cameras y copiá el nombre exacto.");
+    if (!e.CAMERA) throw new Error("Missing CAMERA: run with --list-cameras and copy the exact name.");
     return ["-f", "dshow", "-rtbufsize", "100M", ...size, ...(e.CAMERA_FPS ? ["-framerate", e.CAMERA_FPS] : []), "-i", `video=${e.CAMERA}`];
   }
   if (platform === "darwin") return ["-f", "avfoundation", "-framerate", e.CAMERA_FPS || "30", ...size, "-i", e.CAMERA || "0"];
@@ -35,7 +35,7 @@ export function cameraArgs(platform, e) {
   return [
     "-loglevel", "error",
     ...cameraInput(platform, e),
-    // yuv420p: las webcams suelen dar yuyv422 y los navegadores no reproducen H.264 4:2:2
+    // yuv420p: webcams often output yuyv422 and browsers do not play H.264 4:2:2
     "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-g", String(fps),
     "-f", "rtsp", "-rtsp_transport", "tcp", `rtsp://localhost:8554/${e.SHELL_ID || "el-tucu"}`,
   ];

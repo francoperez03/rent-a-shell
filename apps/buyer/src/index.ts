@@ -1,7 +1,7 @@
-// Agente comprador de ejemplo (caso de demo, docs/specs/05-agentes.md): alquila El Tucu por x402,
-// prueba una secuencia de movimientos en hardware real y devuelve un reporte con ángulos y tx.
+// Example buyer agent (demo case, docs/specs/05-agents.md): rents El Tucu over x402,
+// tests a motion sequence on real hardware and returns a report with angles and the tx.
 //   BUYER_SOLANA_KEY=<secret key base58> GATEWAY_URL=http://localhost:8787 pnpm buyer
-// Wallet descartable con un poco de USDC en la red del gateway. No necesita SOL: el facilitator paga el fee.
+// Throwaway wallet with a little USDC on the gateway network. No SOL needed: the facilitator pays the fee.
 import { x402Client, wrapFetchWithPayment } from "@x402/fetch";
 import { ExactSvmScheme } from "@x402/svm/exact/client";
 import { toClientSvmSigner } from "@x402/svm";
@@ -11,13 +11,13 @@ const GW = (process.env.GATEWAY_URL ?? "http://localhost:8787").replace(/\/$/, "
 const SHELL = process.env.SHELL_ID ?? "el-tucu";
 const raw = process.env.BUYER_SOLANA_KEY;
 if (!raw) {
-  console.error("Falta BUYER_SOLANA_KEY (secret key base58 de 64 bytes, wallet descartable con USDC).");
+  console.error("Missing BUYER_SOLANA_KEY (64-byte base58 secret key of a throwaway wallet with USDC).");
   process.exit(1);
 }
 const account = await createKeyPairSignerFromBytes(getBase58Encoder().encode(raw.trim()));
 
-// La rutina a probar: lo que un agente de robótica querría validar en hardware real.
-const SECUENCIA: { joint: "base" | "shoulder" | "elbow" | "grip"; angle: number }[] = [
+// The routine under test: what a robotics agent would want to validate on real hardware.
+const SEQUENCE: { joint: "base" | "shoulder" | "elbow" | "grip"; angle: number }[] = [
   { joint: "base", angle: 130 },
   { joint: "shoulder", angle: 110 },
   { joint: "elbow", angle: 70 },
@@ -31,24 +31,24 @@ const get = (p: string) => fetch(GW + p).then((r) => r.json());
 
 const shells = await get("/api/shells");
 const shell = shells.find((s: { id: string }) => s.id === SHELL);
-console.log(`Shell ${shell.name} (${shell.status}) · USD ${shell.pricing.usd} por ${shell.pricing.block_minutes} min`);
+console.log(`Shell ${shell.name} (${shell.status}) · USD ${shell.pricing.usd} per ${shell.pricing.block_minutes} min`);
 
 const client = new x402Client();
 client.register("solana:*", new ExactSvmScheme(toClientSvmSigner(account)));
 const pay = wrapFetchWithPayment(fetch, client);
 
-console.log(`Pagando 1 bloque como ${account.address}…`);
+console.log(`Paying 1 block as ${account.address}…`);
 const res = await pay(`${GW}/api/sessions/x402?shell=${SHELL}&blocks=1`, { method: "POST" });
 if (!res.ok) {
   const pr = res.headers.get("payment-required");
   const why = pr ? JSON.parse(Buffer.from(pr, "base64").toString("utf8")).error : await res.text();
-  console.error("Pago rechazado:", res.status, why);
+  console.error("Payment rejected:", res.status, why);
   process.exit(1);
 }
 const grant = (await res.json()) as { token: string; starts_at: number; expires_at: number; payment?: { tx?: string; explorerUrl?: string } };
-console.log("Pago:", grant.payment?.explorerUrl ?? grant.payment?.tx ?? "(sin tx)");
+console.log("Payment:", grant.payment?.explorerUrl ?? grant.payment?.tx ?? "(no tx)");
 if (grant.starts_at > Date.now()) {
-  console.log(`El robot está ocupado. Arranco en ${Math.ceil((grant.starts_at - Date.now()) / 1000)} s.`);
+  console.log(`The robot is busy. Starting in ${Math.ceil((grant.starts_at - Date.now()) / 1000)} s.`);
   await sleep(grant.starts_at - Date.now() + 200);
 }
 
@@ -59,24 +59,24 @@ const cmd = (body: unknown) =>
     body: JSON.stringify(body),
   }).then(async (r) => ({ status: r.status, data: await r.json() }));
 
-const reporte = [];
-for (const paso of SECUENCIA) {
-  const r = await cmd({ cmd: "joint", args: paso });
-  // el firmware mueve a 2° cada 20 ms: esperar a que llegue antes de medir
+const report = [];
+for (const step of SEQUENCE) {
+  const r = await cmd({ cmd: "joint", args: step });
+  // the firmware moves 2° every 20 ms: wait until it arrives before measuring
   let st;
-  let picoMa: number | null = null; // pico de corriente del bus mientras se mueve (si el shell tiene INA219)
+  let peakMa: number | null = null; // peak bus current while moving (if the shell has an INA219)
   for (let i = 0; i < 30; i++) {
     await sleep(100);
     st = await get(`/api/shells/${SHELL}/state`);
-    if (typeof st.current_ma === "number") picoMa = Math.max(picoMa ?? 0, st.current_ma);
-    if (!st.moving && st.angles?.[paso.joint] === (r.data.angle ?? paso.angle)) break;
+    if (typeof st.current_ma === "number") peakMa = Math.max(peakMa ?? 0, st.current_ma);
+    if (!st.moving && st.angles?.[step.joint] === (r.data.angle ?? step.angle)) break;
   }
-  const medido = st?.angles?.[paso.joint];
-  reporte.push({ ...paso, aceptado: r.data.angle ?? null, recortado: Boolean(r.data.clamped), medido, pico_ma: picoMa, ok: r.status === 200 && medido === (r.data.angle ?? paso.angle) });
-  console.log(`  ${paso.joint} → ${paso.angle}°: ${r.status} medido ${medido}°${picoMa != null ? ` · pico ${picoMa} mA` : ""}${r.data.clamped ? " (recortado)" : ""}`);
+  const measured = st?.angles?.[step.joint];
+  report.push({ ...step, accepted: r.data.angle ?? null, clamped: Boolean(r.data.clamped), measured, peak_ma: peakMa, ok: r.status === 200 && measured === (r.data.angle ?? step.angle) });
+  console.log(`  ${step.joint} → ${step.angle}°: ${r.status} measured ${measured}°${peakMa != null ? ` · peak ${peakMa} mA` : ""}${r.data.clamped ? " (clamped)" : ""}`);
 }
 
 await fetch(`${GW}/api/sessions/end`, { method: "POST", headers: { authorization: `Bearer ${grant.token}` } });
-const okN = reporte.filter((p) => p.ok).length;
-console.log(`\nReporte: ${okN}/${reporte.length} pasos llegaron a la posición pedida. Sesión cerrada, El Tucu vuelve a HOME.`);
-console.log(JSON.stringify({ shell: SHELL, pago: grant.payment, pasos: reporte }, null, 2));
+const okN = report.filter((p) => p.ok).length;
+console.log(`\nReport: ${okN}/${report.length} steps reached the requested position. Session closed, El Tucu returns to HOME.`);
+console.log(JSON.stringify({ shell: SHELL, payment: grant.payment, steps: report }, null, 2));

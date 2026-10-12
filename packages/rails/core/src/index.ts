@@ -5,13 +5,13 @@ export type { Intent, Money, Payment, RailManifest };
 
 export interface IntentOpts {
   asset?: string;
-  /** id estable para que el riel lo use como referencia; lo pone el gateway */
+  /** stable id the rail can use as a reference; set by the gateway */
   id: string;
 }
 
 /**
- * Un medio de pago. El gateway solo conoce esta interfaz (spec 08).
- * Rieles síncronos (x402) exponen paywall(); asíncronos (Solana Pay, approval) exponen check().
+ * A payment method. The gateway only knows this interface (spec 08).
+ * Synchronous rails (x402) expose paywall(); asynchronous ones (Solana Pay, approval) expose check().
  */
 export interface PaymentRail {
   id: string;
@@ -19,18 +19,18 @@ export interface PaymentRail {
   createIntent?(price: Money, opts: IntentOpts): Promise<Intent>;
   check?(intent: Intent): Promise<Payment | null>;
   /**
-   * Middleware que cobra antes de llegar al handler. Si el pago se liquidó,
-   * deja el Payment en c.get("payment") (lo lee el gateway después de next()).
-   * priceFor devuelve el precio según el request (bloques pedidos).
+   * Middleware that charges before reaching the handler. Once the payment settles,
+   * it leaves the Payment in c.get("payment") (the gateway reads it after next()).
+   * priceFor returns the price for the request (blocks requested).
    */
   paywall?(path: string, priceFor: (query: Record<string, string>) => Money, description: string): MiddlewareHandler;
-  /** Ejemplo de cliente para llms.txt y /agents: cómo paga un agente este riel. `url` es el endpoint a pagar. */
+  /** Client example for llms.txt and /agents: how an agent pays on this rail. `url` is the endpoint to pay. */
   clientExample?(url: string): string;
-  /** Rutas propias del riel (ej. transaction request de Solana Pay). El gateway las monta en /api/rails/:id/*. */
+  /** Rail-owned routes (e.g. the Solana Pay transaction request). The gateway mounts them at /api/rails/:id/*. */
   fetch?(req: Request): Promise<Response>;
   /**
-   * Cierra el pago cuando termina la sesión: "completed" libera al Forger (con la comisión de la plataforma),
-   * "refund" devuelve al pagador. Rieles que cobran directo (x402) no lo implementan.
+   * Closes the payment when the session ends: "completed" releases it to the Forger (minus the platform fee),
+   * "refund" returns it to the payer. Rails that charge directly (x402) do not implement it.
    */
   finalize?(payment: Payment, outcome: Outcome): Promise<{ tx?: string } | void>;
 }
@@ -39,10 +39,10 @@ export type Outcome = "completed" | "refund";
 
 export type RailFactory = (env: Record<string, string | undefined>) => PaymentRail | PaymentRail[];
 
-/** Convierte "1.50" USD a unidades atómicas con `decimals` decimales, sin floats. */
+/** Converts "1.50" USD to atomic units with `decimals` decimals, without floats. */
 export function toAtomic(amount: string, decimals: number): bigint {
   const [i, f = ""] = amount.split(".");
-  if (!/^\d+$/.test(i) || !/^\d*$/.test(f)) throw new Error(`monto inválido: ${amount}`);
+  if (!/^\d+$/.test(i) || !/^\d*$/.test(f)) throw new Error(`invalid amount: ${amount}`);
   return BigInt(i + f.padEnd(decimals, "0").slice(0, decimals));
 }
 
@@ -58,7 +58,7 @@ export function mulUsd(usd: string, n: number): string {
 }
 
 /**
- * Riel de desarrollo: paga solo al segundo check(). Para tests y para correr el sitio sin chain.
+ * Development rail: pays on the second check(). For tests and for running the site without a chain.
  */
 export function fakeRail(): PaymentRail {
   const seen = new Map<string, number>();
@@ -66,8 +66,8 @@ export function fakeRail(): PaymentRail {
     id: "fake",
     manifest: () => ({
       id: "fake",
-      label: "Pago de prueba",
-      description: "Simula un pago confirmado. Solo para desarrollo.",
+      label: "Test payment",
+      description: "Simulates a confirmed payment. Development only.",
       audience: ["human", "agent"],
       available: true,
       assets: [{ symbol: "USD", decimals: 2 }],
@@ -79,7 +79,7 @@ export function fakeRail(): PaymentRail {
         amount: price.usd,
         asset: "USD",
         expiresAt: Date.now() + 15 * 60_000,
-        instructions: { kind: "approval", ref: id, note: "Pago simulado: se confirma solo en unos segundos." },
+        instructions: { kind: "approval", ref: id, note: "Simulated payment: confirms on its own in a few seconds." },
       };
     },
     async check(intent) {
@@ -88,11 +88,11 @@ export function fakeRail(): PaymentRail {
       return n >= 2 ? { intentId: intent.id, rail: "fake", payer: "dev", paidAt: Date.now() } : null;
     },
     paywall(_path, priceFor) {
-      // Sin header X-Fake-Pay devuelve 402 como un riel real; con él, deja pasar.
+      // Without the X-Fake-Pay header it answers 402 like a real rail; with it, it lets the request through.
       return async (c, next) => {
         const price = priceFor(c.req.query());
         if (c.req.header("x-fake-pay") !== "1") {
-          return c.json({ error: "payment_required", rail: "fake", price, hint: "reintentar con header X-Fake-Pay: 1" }, 402);
+          return c.json({ error: "payment_required", rail: "fake", price, hint: "retry with header X-Fake-Pay: 1" }, 402);
         }
         c.set("payment" as never, { intentId: crypto.randomUUID(), rail: "fake", payer: "dev-agent", paidAt: Date.now() } as never);
         await next();

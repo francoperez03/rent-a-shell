@@ -9,15 +9,15 @@ type Surface = 'dark' | 'light';
 
 interface CommonProps {
   variant?: Variant;
-  /** Superficie donde vive el pill: ajusta colores para contraste. */
+  /** Surface the pill sits on: adjusts colors for contrast. */
   surface?: Surface;
-  /** Texto del CTA. Con `roll` hace el roll por carácter del motion-kit en hover. */
+  /** CTA text. With `roll` it does the motion-kit per-character roll on hover. */
   label: string;
   roll?: boolean;
   className?: string;
 }
 
-/** CTA de landing2: pill, uppercase, tracking sutil. El primario usa el acento. */
+/** landing2 CTA: pill, uppercase, subtle tracking. The primary one uses the accent. */
 function classesFor(variant: Variant, surface: Surface): string {
   if (variant === 'primary') return 'bg-accent text-accent-ink hover:bg-accent-hover';
   return surface === 'dark'

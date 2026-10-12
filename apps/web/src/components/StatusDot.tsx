@@ -1,9 +1,9 @@
 import type { ShellStatus } from '@ras/shell-spec';
 import { cn } from '@/lib/cn';
 
-const LABEL: Record<ShellStatus, string> = { online: 'Online', busy: 'En uso', offline: 'Offline' };
+const LABEL: Record<ShellStatus, string> = { online: 'Online', busy: 'In use', offline: 'Offline' };
 
-/** Estado del shell. Un solo acento: online pulsa, en uso queda fijo, offline va apagado. */
+/** Shell status. One accent: online pulses, in use stays solid, offline is dimmed. */
 export function StatusDot({ status, className }: { status: ShellStatus | undefined; className?: string }) {
   const s = status ?? 'offline';
   return (

@@ -5,6 +5,6 @@ import { solanaPayEscrow } from "./pay-escrow.ts";
 
 export const rails: Record<string, RailFactory> = {
   "solana-x402": solanaX402,
-  // con operador el pago de personas va al programa de escrow; sin él, transferencia directa (dev local)
+  // with an operator, human payments go to the escrow program; without one, direct transfer (local dev)
   "solana-pay": (env) => (env.SOLANA_OPERATOR_KEY ? solanaPayEscrow(env) : solanaPay(env)),
 };

@@ -4,7 +4,7 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { createHub } from "./hub.ts";
 
-// Dos gateways de Forgers falsos que responden /api/shells.
+// Two fake Forger gateways that answer /api/shells.
 const shell = (id: string) => ({ id, name: id, kind: "arm-4dof", location: "AR", status: "online", joints: {}, pricing: { usd: "1.00", block_minutes: 5 }, sensors: ["angles"], forger: { name: "F", customizations: false } });
 const servers: http.Server[] = [];
 const urls: string[] = [];
@@ -26,7 +26,7 @@ before(async () => {
 after(() => servers.forEach((s) => s.close()));
 const req = (p: string, init?: RequestInit) => hub.app.request(p, init);
 
-test("agrega gateways, marca offline el caído y registra uno nuevo", async () => {
+test("aggregates gateways, marks the dead one offline and registers a new one", async () => {
   await hub.poll();
   let cat = await (await req("/api/catalog")).json();
   assert.deepEqual(cat.map((s: { id: string }) => s.id), ["tucu-a"]);
@@ -41,7 +41,7 @@ test("agrega gateways, marca offline el caído y registra uno nuevo", async () =
   cat = await (await req("/api/catalog")).json();
   assert.equal(cat.length, 2);
 
-  // mismo id desde otro gateway vivo: conflicto; si el original se cae, el nuevo lo reemplaza
+  // same id from another live gateway: conflict; once the original drops, the new one replaces it
   const dup = await fakeGateway("tucu-b");
   r = await req("/api/forgers", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ gateway: dup }) });
   assert.equal(r.status, 409);
@@ -55,7 +55,7 @@ test("agrega gateways, marca offline el caído y registra uno nuevo", async () =
   assert.match(llms, /tucu-b/);
   assert.match(llms, /api\/sessions\/x402\?shell=tucu-b/);
 
-  // baja solo con token de admin; al apagar un gateway su shell queda offline
+  // removal needs the admin token; when a gateway goes down its shell shows offline
   assert.equal((await req("/api/forgers", { method: "DELETE", body: JSON.stringify({ gateway: urls[1] }) })).status, 401);
   servers[0].close();
   await hub.poll();
@@ -63,7 +63,7 @@ test("agrega gateways, marca offline el caído y registra uno nuevo", async () =
   assert.equal(cat.find((s: { id: string }) => s.id === "tucu-a").status, "offline");
 });
 
-test("MCP del catálogo lista shells", async () => {
+test("catalog MCP lists shells", async () => {
   const r = await req("/mcp", {
     method: "POST",
     headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
@@ -73,7 +73,7 @@ test("MCP del catálogo lista shells", async () => {
   assert.deepEqual(j.result.tools.map((t: { name: string }) => t.name).sort(), ["get_shell", "list_shells"]);
 });
 
-test("sirve las skills y el cliente, nada más", async () => {
+test("serves the skills and the client, nothing else", async () => {
   assert.match(await (await req("/skills/forger/SKILL.md")).text(), /^---\nname: rent-a-shell-forger/);
   assert.match(await (await req("/skills/rent/SKILL.md")).text(), /^---\nname: rent-a-shell\n/);
   assert.match(await (await req("/skills/rent/rent.mjs")).text(), /x402/);

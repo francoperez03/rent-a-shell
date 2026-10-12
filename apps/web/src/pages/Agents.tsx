@@ -1,19 +1,19 @@
 import { Eyebrow } from '@/components/Eyebrow';
 import { Footer } from '@/components/Footer';
 import { Pill } from '@/components/Pill';
-// El ejemplo es texto para copiar: se importa crudo, el sitio no depende del cliente de pagos.
+// The example is copyable text: imported raw, so the site does not depend on the payment client.
 import exampleRaw from '@/content/x402-fetch.example.txt?raw';
 
 const ENDPOINTS: { method: string; path: string; what: string; auth?: boolean }[] = [
-  { method: 'GET', path: '/api/shells', what: 'Fichas: rangos, HOME, rutinas, precio, cámara y estado.' },
-  { method: 'GET', path: '/api/shells/:id/state', what: 'Ángulos reales y si se está moviendo.' },
-  { method: 'GET', path: '/api/shells/:id/frame', what: 'Cuadro JPEG de la cámara en este momento.' },
-  { method: 'GET', path: '/api/shells/:id/queue', what: 'Sesión en curso y cuántos esperan.' },
-  { method: 'POST', path: '/api/sessions/x402?shell=&blocks=', what: 'Responde 402 con el requerimiento. Con el pago firmado devuelve el token.' },
-  { method: 'GET', path: '/api/session', what: 'Estado de tu sesión: inicio, vencimiento, si está activa.', auth: true },
-  { method: 'POST', path: '/api/cmd', what: 'joint, dance o stop. Fuera de rango se recorta al rango seguro.', auth: true },
-  { method: 'POST', path: '/api/sessions/end', what: 'Cierra la sesión y manda el robot a HOME.', auth: true },
-  { method: 'GET', path: '/api/events', what: 'SSE con estado, sesiones y pagos.' },
+  { method: 'GET', path: '/api/shells', what: 'Shell specs: ranges, HOME, routines, price, camera and status.' },
+  { method: 'GET', path: '/api/shells/:id/state', what: 'Real angles and whether it is moving.' },
+  { method: 'GET', path: '/api/shells/:id/frame', what: 'Current JPEG camera frame.' },
+  { method: 'GET', path: '/api/shells/:id/queue', what: 'Current session and how many are waiting.' },
+  { method: 'POST', path: '/api/sessions/x402?shell=&blocks=', what: 'Answers 402 with the requirement. With the signed payment it returns the token.' },
+  { method: 'GET', path: '/api/session', what: 'Your session status: start, expiry, whether it is active.', auth: true },
+  { method: 'POST', path: '/api/cmd', what: 'joint, dance or stop. Out-of-range values are clamped to the safe range.', auth: true },
+  { method: 'POST', path: '/api/sessions/end', what: 'Ends the session and sends the robot to HOME.', auth: true },
+  { method: 'GET', path: '/api/events', what: 'SSE with status, sessions and payments.' },
 ];
 
 const COMMANDS = `{ "cmd": "joint", "args": { "joint": "base", "angle": 130 } }
@@ -22,7 +22,7 @@ const COMMANDS = `{ "cmd": "joint", "args": { "joint": "base", "angle": 130 } }
 
 const MCP_TOOLS = ['list_shells', 'rent_shell', 'send_command', 'get_frame', 'get_state', 'end_session'];
 
-/** Guía para agentes y devs. Página de documentación: sin Lenis ni cursor. */
+/** Guide for agents and devs. Documentation page: no Lenis, no cursor. */
 export default function AgentsPage() {
   const origin = window.location.origin;
   const example = exampleRaw.replace('{{ORIGIN}}', origin);
@@ -30,12 +30,12 @@ export default function AgentsPage() {
   return (
     <>
       <main className="mx-auto w-full max-w-container px-5 pb-24 pt-28 md:px-8 md:pt-32">
-        <Eyebrow dark>Para agentes y devs</Eyebrow>
+        <Eyebrow dark>For agents and devs</Eyebrow>
         <h1 className="max-w-[20ch] font-display font-light tracking-[-0.01em] text-white" style={{ fontSize: 'clamp(2.5rem, 5vw, 4.25rem)', lineHeight: 1.04 }}>
-          Tu agente prueba su código en un brazo real.
+          Your agent tests its code on a real arm.
         </h1>
         <p className="mt-6 max-w-[60ch] text-[1.125rem] font-light leading-[1.55] text-white/80">
-          Descubre el shell, paga un bloque en USDC por x402, recibe un token y manda comandos. Todo por HTTP o por MCP, sin cuenta.
+          It discovers the shell, pays for a block in USDC with x402, gets a token and sends commands. All over HTTP or MCP, no account.
         </p>
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
           <Pill as="a" href="/llms.txt" label="llms.txt" />
@@ -47,9 +47,9 @@ export default function AgentsPage() {
             <table className="w-full min-w-[640px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-white/15 font-mono text-[11px] uppercase tracking-[0.12em] text-white/50">
-                  <th className="px-4 py-3 font-normal">Método</th>
-                  <th className="px-4 py-3 font-normal">Ruta</th>
-                  <th className="px-4 py-3 font-normal">Qué hace</th>
+                  <th className="px-4 py-3 font-normal">Method</th>
+                  <th className="px-4 py-3 font-normal">Path</th>
+                  <th className="px-4 py-3 font-normal">What it does</th>
                 </tr>
               </thead>
               <tbody>
@@ -68,20 +68,20 @@ export default function AgentsPage() {
           </div>
         </Section>
 
-        <Section index="0.2" title="Pagar por x402">
+        <Section index="0.2" title="Pay with x402">
           <ol className="mb-6 flex max-w-[64ch] list-decimal flex-col gap-2 pl-5 text-[1.0625rem] font-light leading-[1.6] text-white/80">
-            <li>POST a /api/sessions/x402 con shell y bloques. La respuesta es 402 con el requerimiento de pago.</li>
-            <li>Tu cliente firma el pago en USDC y reintenta con el header. Sin gas: lo paga el facilitator.</li>
-            <li>Recibís token, starts_at y expires_at. Si el robot está ocupado, tu bloque arranca cuando termine el anterior.</li>
-            <li>Mandás comandos con Authorization: Bearer. Al vencer, el robot vuelve solo a HOME.</li>
+            <li>POST to /api/sessions/x402 with shell and blocks. The response is a 402 with the payment requirement.</li>
+            <li>Your client signs the USDC payment and retries with the header. No gas: the facilitator pays it.</li>
+            <li>You get token, starts_at and expires_at. If the robot is busy, your block starts when the previous one ends.</li>
+            <li>Send commands with Authorization: Bearer. When time runs out, the robot returns to HOME on its own.</li>
           </ol>
-          <Code label="TypeScript · cliente fetch de x402">{example}</Code>
-          <Code label="Comandos (body de POST /api/cmd)" className="mt-6">{COMMANDS}</Code>
+          <Code label="TypeScript · x402 fetch client">{example}</Code>
+          <Code label="Commands (POST /api/cmd body)" className="mt-6">{COMMANDS}</Code>
         </Section>
 
         <Section index="0.3" title="MCP">
           <p className="mb-6 max-w-[60ch] text-[1.0625rem] font-light leading-[1.6] text-white/80">
-            El gateway expone un servidor MCP en <span className="font-mono text-white">{origin}/mcp</span> con estas tools:
+            The gateway exposes an MCP server at <span className="font-mono text-white">{origin}/mcp</span> with these tools:
           </p>
           <ul className="flex flex-wrap gap-2">
             {MCP_TOOLS.map((t) => (

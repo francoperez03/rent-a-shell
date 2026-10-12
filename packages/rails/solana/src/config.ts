@@ -1,5 +1,5 @@
-// Único lugar del repo con mints, redes CAIP-2 y URLs de Solana (spec 08).
-// Fuentes: @x402/svm 2.27.0 (assets por defecto), /supported de x402.org y PayAI (2026-10-12).
+// The only place in the repo with Solana mints, CAIP-2 networks and URLs (spec 08).
+// Sources: @x402/svm 2.27.0 (default assets), /supported from x402.org and PayAI (2026-10-12).
 import { address, type Address } from "@solana/kit";
 
 export interface SolNet {
@@ -42,7 +42,7 @@ type Env = Record<string, string | undefined>;
 
 export function solNet(env: Env): SolNet {
   const net = NETWORKS[env.SOLANA_NETWORK === "mainnet" ? "mainnet" : "devnet"];
-  // ponytail: override del mint solo para el validador local (tests de escrow); en devnet/mainnet no se usa
+  // ponytail: mint override only for the local validator (escrow tests); unused on devnet/mainnet
   return env.SOLANA_USDC_MINT ? { ...net, usdc: address(env.SOLANA_USDC_MINT) } : net;
 }
 
@@ -56,6 +56,6 @@ export function facilitatorUrl(net: SolNet, env: Env) {
 
 export function payTo(env: Env): Address {
   const v = env.SOLANA_PAY_TO;
-  if (!v) throw new Error("Falta SOLANA_PAY_TO: la wallet que cobra (dueño del shell).");
+  if (!v) throw new Error("Missing SOLANA_PAY_TO: the wallet that gets paid (shell owner).");
   return address(v);
 }

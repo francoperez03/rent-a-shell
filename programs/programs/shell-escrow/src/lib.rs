@@ -1,8 +1,8 @@
-// Escrow por sesión de Rent a Shell.
-// La persona deposita USDC en un vault del escrow. Al terminar bien la sesión, el operator (keypair del
-// gateway del Forger) liquida: fee_bps a la tesorería y el resto al Forger. Si el shell se cae, el
-// operator reembolsa al payer. Si el gateway desaparece, cualquiera puede devolverle todo al payer una
-// hora después de expires_at. Ningún camino manda fondos fuera de forger, treasury o payer.
+// Per-session escrow for Rent a Shell.
+// The renter deposits USDC into the escrow vault. When the session ends well, the operator (the Forger
+// gateway's keypair) settles: fee_bps to the treasury and the rest to the Forger. If the shell drops, the
+// operator refunds the payer. If the gateway disappears, anyone can return everything to the payer one
+// hour after expires_at. No path sends funds anywhere other than forger, treasury or payer.
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token_interface::{
@@ -111,7 +111,7 @@ pub mod shell_escrow {
     }
 }
 
-/// Movimientos firmados por el PDA del escrow desde su vault.
+/// Transfers out of the vault, signed by the escrow PDA.
 struct Payout<'a, 'info> {
     token_program: &'a Interface<'info, TokenInterface>,
     mint: &'a InterfaceAccount<'info, Mint>,
@@ -137,8 +137,8 @@ impl<'a, 'info> Payout<'a, 'info> {
         )
     }
 
-    /// El vault vacío se cierra y su rent vuelve al payer, que fue quien lo creó.
-    /// ponytail: la cuenta Escrow queda abierta con su estado final (auditoría y bloqueo de session_id repetido).
+    /// The empty vault is closed and its rent goes back to the payer, who created it.
+    /// ponytail: the Escrow account stays open with its final state (audit trail and blocks session_id reuse).
     fn close(&self, rent_to: &AccountInfo<'info>, seeds: &[&[u8]]) -> Result<()> {
         close_account(CpiContext::new_with_signer(
             self.token_program.to_account_info(),
@@ -251,11 +251,11 @@ pub struct Settle<'info> {
         associated_token::token_program = token_program
     )]
     pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    /// CHECK: validado por has_one en escrow; solo recibe tokens.
+    /// CHECK: validated by has_one on escrow; only receives tokens.
     pub forger: UncheckedAccount<'info>,
-    /// CHECK: validado por has_one en config; solo recibe tokens.
+    /// CHECK: validated by has_one on config; only receives tokens.
     pub treasury: UncheckedAccount<'info>,
-    /// CHECK: validado por has_one en escrow; recibe el rent del vault.
+    /// CHECK: validated by has_one on escrow; receives the vault rent.
     #[account(mut)]
     pub payer: UncheckedAccount<'info>,
     #[account(
@@ -302,7 +302,7 @@ pub struct Refund<'info> {
         associated_token::token_program = token_program
     )]
     pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    /// CHECK: validado por has_one en escrow.
+    /// CHECK: validated by has_one on escrow.
     #[account(mut)]
     pub payer: UncheckedAccount<'info>,
     #[account(
@@ -320,7 +320,7 @@ pub struct Refund<'info> {
 
 #[derive(Accounts)]
 pub struct Reclaim<'info> {
-    /// Cualquiera puede disparar el reclamo; solo paga el ATA del payer si hace falta.
+    /// Anyone can trigger the reclaim; they only pay for the payer ATA if it is needed.
     #[account(mut)]
     pub caller: Signer<'info>,
     #[account(
@@ -341,7 +341,7 @@ pub struct Reclaim<'info> {
         associated_token::token_program = token_program
     )]
     pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    /// CHECK: validado por has_one en escrow.
+    /// CHECK: validated by has_one on escrow.
     #[account(mut)]
     pub payer: UncheckedAccount<'info>,
     #[account(
@@ -359,20 +359,20 @@ pub struct Reclaim<'info> {
 
 #[error_code]
 pub enum EscrowError {
-    #[msg("El operator no es el del escrow")]
+    #[msg("Operator does not match the escrow")]
     WrongOperator,
-    #[msg("El escrow no está en estado Funded")]
+    #[msg("Escrow is not in the Funded state")]
     InvalidState,
-    #[msg("El mint no es el USDC configurado")]
+    #[msg("Mint is not the configured USDC")]
     WrongMint,
-    #[msg("Todavía no pasó expires_at + 1 h")]
+    #[msg("expires_at + 1 h has not passed yet")]
     NotReclaimableYet,
-    #[msg("El monto tiene que ser mayor a cero")]
+    #[msg("Amount must be greater than zero")]
     ZeroAmount,
-    #[msg("fee_bps no puede superar 10000")]
+    #[msg("fee_bps cannot exceed 10000")]
     FeeTooHigh,
-    #[msg("La tesorería no es la configurada")]
+    #[msg("Treasury is not the configured one")]
     WrongTreasury,
-    #[msg("Solo el admin puede cambiar la configuración")]
+    #[msg("Only the admin can change the config")]
     WrongAdmin,
 }

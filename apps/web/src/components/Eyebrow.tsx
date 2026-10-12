@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn';
 
-/** Firma de sección de landing2: uppercase chico, tracking abierto. `index` agrega el número tipo manual (0.1, 0.2). */
+/** landing2 section signature: small uppercase, open tracking. `index` adds the manual-style number (0.1, 0.2). */
 export function Eyebrow({ children, index, dark = false, className }: { children: string; index?: string; dark?: boolean; className?: string }) {
   return (
     <p className={cn('mb-5 font-sans text-[13px] font-medium uppercase tracking-[0.14em]', dark ? 'text-white/70' : 'text-ink-mute', className)}>

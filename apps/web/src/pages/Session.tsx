@@ -12,7 +12,7 @@ import { cn } from '@/lib/cn';
 const STEP = 5;
 const COALESCE_MS = 100;
 
-// Teclado: flechas base y hombro, W/S codo, A/D pinza, espacio STOP.
+// Keyboard: arrows for base and shoulder, W/S elbow, A/D grip, space STOP.
 const KEYS: Record<string, [Joint, 1 | -1]> = {
   ArrowLeft: ['base', -1],
   ArrowRight: ['base', 1],
@@ -26,16 +26,16 @@ const KEYS: Record<string, [Joint, 1 | -1]> = {
 
 type Ended = 'expired' | 'ended' | 'revoked' | 'offline';
 
-/** Consola de sesión. Sin Lenis, sin cursor custom, sin pins: un producto vivo. */
+/** Session console. No Lenis, no custom cursor, no pins: a live product. */
 export default function SessionPage() {
   const [grant] = useState(loadGrant);
   if (!grant) {
     return (
       <main className="mx-auto grid min-h-viewport max-w-container place-items-center px-5 text-center text-white">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Sin sesión</p>
-          <h1 className="mt-4 font-display text-[clamp(2rem,4vw,3rem)] font-light">No hay una sesión activa en esta pestaña.</h1>
-          <Pill as="link" to="/#shells" label="Elegir un shell" className="mt-8" />
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">No session</p>
+          <h1 className="mt-4 font-display text-[clamp(2rem,4vw,3rem)] font-light">There is no active session in this tab.</h1>
+          <Pill as="link" to="/#shells" label="Pick a shell" className="mt-8" />
         </div>
       </main>
     );
@@ -58,12 +58,12 @@ function Console({ grant }: { grant: SessionGrant }) {
   const pending = useRef<Partial<Angles>>({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Si el robot estaba ocupado, el bloque arranca después: hasta entonces los controles esperan.
+  // If the robot was busy, the block starts later: until then the controls wait.
   const waiting = now < startsAt;
   const left = waiting ? startsAt - now : expiresAt - now;
   const locked = !!ended || waiting;
 
-  // El gateway confirma que el token sigue vivo (otra pestaña pudo cerrarla).
+  // The gateway confirms the token is still alive (another tab may have ended it).
   const check = useQuery({
     queryKey: ['session', grant.sid],
     queryFn: () => api<SessionInfo>('/api/session', { token: grant.token }),
@@ -72,7 +72,7 @@ function Console({ grant }: { grant: SessionGrant }) {
   });
   useEffect(() => {
     if (check.data?.ended) setEnded(check.data.ended);
-    // Un token de un bloque en cola todavía no es válido (nbf): no cuenta como vencido.
+    // A token for a queued block is not valid yet (nbf): it does not count as expired.
     if (check.error instanceof ApiError && check.error.status === 401 && Date.now() >= startsAt) setEnded('revoked');
   }, [check.data, check.error, startsAt]);
 
@@ -88,9 +88,9 @@ function Console({ grant }: { grant: SessionGrant }) {
     if (ended) clearGrant();
   }, [ended]);
 
-  // Los sliders arrancan (y se reacomodan tras STOP o rutina) en los ángulos reales.
+  // Sliders start (and resync after STOP or a routine) at the real angles.
   useEffect(() => {
-    // Mientras corre una rutina los sliders siguen al robot; al terminar quedan en la pose final.
+    // While a routine runs the sliders follow the robot; when it ends they stay at the final pose.
     if (state && (resync.current || state.rutina)) {
       resync.current = !!state.rutina;
       setTarget(state.angles);
@@ -101,17 +101,17 @@ function Console({ grant }: { grant: SessionGrant }) {
     async (cmd: Command) => {
       try {
         const res = await api<{ clamped?: boolean; error?: string }>('/api/cmd', { method: 'POST', token: grant.token, body: JSON.stringify(cmd) });
-        setNote(res.clamped ? 'El robot recortó el ángulo a su rango seguro.' : null);
+        setNote(res.clamped ? 'The robot clamped the angle to its safe range.' : null);
       } catch (err) {
         const status = err instanceof ApiError ? err.status : 0;
         const code = err instanceof ApiError ? err.code : '';
-        if (code === 'session_not_started') setNote('Tu bloque todavía no arrancó.');
+        if (code === 'session_not_started') setNote('Your block has not started yet.');
         else if (code === 'session_expired') setEnded('expired');
         else if (code.startsWith('session_')) setEnded((code.slice(8) as Ended) || 'ended');
         else if (status === 401 || status === 403) setEnded('revoked');
-        else if (status === 409) setNote('Está corriendo una rutina. Esperá a que termine o tocá STOP.');
-        else if (status === 429) setNote('Más despacio: el robot recibe un comando por vez.');
-        else setNote(`No llegó el comando: ${(err as Error).message}`);
+        else if (status === 409) setNote('A routine is running. Wait for it to finish or press STOP.');
+        else if (status === 429) setNote('Slow down: the robot takes one command at a time.');
+        else setNote(`The command did not go through: ${(err as Error).message}`);
       }
     },
     [grant.token]
@@ -127,7 +127,7 @@ function Console({ grant }: { grant: SessionGrant }) {
     }
   }, [send]);
 
-  /** Mientras arrastra: junta valores y manda el último cada 100 ms. */
+  /** While dragging: collect values and send the latest every 100 ms. */
   const queueJoint = useCallback(
     (joint: Joint, angle: number) => {
       setTarget((t) => (t ? { ...t, [joint]: angle } : t));
@@ -137,7 +137,7 @@ function Console({ grant }: { grant: SessionGrant }) {
     [flush]
   );
 
-  /** Al soltar: manda el valor final ya. */
+  /** On release: send the final value right away. */
   const commitJoint = useCallback(
     (joint: Joint, angle: number) => {
       delete pending.current[joint];
@@ -169,7 +169,7 @@ function Console({ grant }: { grant: SessionGrant }) {
     if (timer.current) clearTimeout(timer.current);
   }, []);
 
-  // Teclado global. Si el foco está en un slider, las flechas las maneja el slider.
+  // Global keyboard. If focus is on a slider, the slider handles the arrows.
   useEffect(() => {
     if (locked || !shell) return;
     const onDown = (e: KeyboardEvent) => {
@@ -210,11 +210,11 @@ function Console({ grant }: { grant: SessionGrant }) {
         </LiveVideo>
 
         <TelemetryPanel
-          label={`Sesión · ${shell?.name ?? grant.shell}`}
+          label={`Session · ${shell?.name ?? grant.shell}`}
           live={!ended}
           aside={
-            <span className={cn('font-mono text-[13px] tabular-nums tracking-[0.06em]', left < 60_000 ? 'text-alert-dark' : 'text-white')} aria-label={`${waiting ? 'Arranca en' : 'Quedan'} ${fmtClock(left)}`}>
-              {waiting && <span className="mr-2 text-[11px] uppercase text-white/50">arranca en</span>}
+            <span className={cn('font-mono text-[13px] tabular-nums tracking-[0.06em]', left < 60_000 ? 'text-alert-dark' : 'text-white')} aria-label={`${waiting ? 'Starts in' : 'Time left'} ${fmtClock(left)}`}>
+              {waiting && <span className="mr-2 text-[11px] uppercase text-white/50">starts in</span>}
               {fmtClock(left)}
             </span>
           }
@@ -222,7 +222,7 @@ function Console({ grant }: { grant: SessionGrant }) {
           footer={
           <div>
             <p className="mb-3 hidden font-mono text-[10px] uppercase leading-relaxed tracking-[0.1em] text-white/40 md:block">
-              ← → base · ↑ ↓ hombro · W S codo · A D pinza · espacio STOP
+              ← → base · ↑ ↓ shoulder · W S elbow · A D grip · space STOP
             </p>
             <button
               type="button"
@@ -233,14 +233,14 @@ function Console({ grant }: { grant: SessionGrant }) {
               STOP
             </button>
             <button type="button" onClick={end} disabled={!!ended} className="mt-3 w-full text-center font-mono text-[11px] uppercase tracking-[0.16em] text-white/45 hover:text-white disabled:opacity-40">
-              Terminar sesión
+              End session
             </button>
           </div>
           }
         >
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 [scrollbar-color:rgba(255,255,255,0.2)_transparent] [scrollbar-width:thin]">
           <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.1em] text-white/50" aria-live="polite">
-            {waiting ? 'El robot está ocupado. Tu bloque arranca solo cuando termine el anterior.' : state ? (state.rutina ? `Rutina ${state.rutina}` : state.moving ? 'Moviéndose' : 'Quieto') : 'Leyendo estado…'}
+            {waiting ? 'The robot is busy. Your block starts on its own when the previous one ends.' : state ? (state.rutina ? `Routine ${state.rutina}` : state.moving ? 'Moving' : 'Idle') : 'Reading state…'}
           </p>
 
           <div className="mt-3 flex flex-col gap-3">
@@ -260,7 +260,7 @@ function Console({ grant }: { grant: SessionGrant }) {
           </div>
 
           <div className="mt-5 border-t border-white/15 pt-4">
-            <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.12em] text-white/50">Rutinas</p>
+            <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.12em] text-white/50">Routines</p>
             <div className="grid grid-cols-2 gap-2">
               {shell?.routines.map((r) => (
                 <button
@@ -315,7 +315,7 @@ function JointSlider({
     <div>
       <div className="mb-1 flex items-baseline justify-between font-mono text-[11px] uppercase tracking-[0.1em]">
         <label htmlFor={id} className="text-white/70">
-          {JOINT_LABEL[joint]} <span className="text-white/35">{lo}° a {hi}°</span>
+          {JOINT_LABEL[joint]} <span className="text-white/35">{lo}° to {hi}°</span>
         </label>
         <span className="tabular-nums text-white/85">
           {value !== undefined ? `${Math.round(value)}°` : '·'}
@@ -333,7 +333,7 @@ function JointSlider({
           disabled={disabled}
           onChange={(e) => onDrag(Number(e.target.value))}
           onPointerUp={(e) => onCommit(Number(e.currentTarget.value))}
-          aria-valuetext={`${value ?? lo} grados`}
+          aria-valuetext={`${value ?? lo} degrees`}
           className="joint-range w-full"
         />
         {real !== undefined && (
@@ -345,7 +345,7 @@ function JointSlider({
 }
 
 function EndedOverlay({ shell, reason }: { shell: Shell | undefined; reason: Ended }) {
-  const name = shell?.name ?? 'El shell';
+  const name = shell?.name ?? 'The shell';
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => ref.current?.focus(), []);
   return (
@@ -359,17 +359,17 @@ function EndedOverlay({ shell, reason }: { shell: Shell | undefined; reason: End
     >
       <div className="max-w-[40rem] text-center">
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/55">
-          {reason === 'offline' ? 'El robot se desconectó' : reason === 'revoked' ? 'Token vencido' : 'Fin del bloque'}
+          {reason === 'offline' ? 'The robot disconnected' : reason === 'revoked' ? 'Token expired' : 'Block over'}
         </p>
         <h1 id="ended-title" className="mt-4 font-display text-[clamp(2rem,4.5vw,3.5rem)] font-light leading-[1.05] text-white">
-          Sesión terminada · {name} vuelve a HOME
+          Session ended · {name} returns to HOME
         </h1>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Pill as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Alquilar otro bloque" />
-          <Pill as="link" to="/" variant="secondary" label="Volver al inicio" />
+          <Pill as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Rent another block" />
+          <Pill as="link" to="/" variant="secondary" label="Back to home" />
         </div>
         <Link to="/agents" className="mt-8 inline-block font-mono text-[11px] uppercase tracking-[0.16em] text-white/45 hover:text-white">
-          ¿Lo querés usar desde un agente?
+          Want to use it from an agent?
         </Link>
       </div>
     </div>

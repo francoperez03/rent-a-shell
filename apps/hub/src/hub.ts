@@ -1,6 +1,6 @@
-// Hub del marketplace: indexa los gateways de los Forgers y arma un catálogo único.
-// Cada Forger corre su gateway al lado de su robot (su wallet, su cola, sus pagos); el hub solo
-// descubre, chequea salud y publica el catálogo para el sitio y para agentes (API, llms.txt, MCP).
+// Marketplace hub: indexes the Forgers' gateways into a single catalog.
+// Each Forger runs its gateway next to its robot (its wallet, queue and payments); the hub only
+// discovers, checks health and publishes the catalog for the website and for agents (API, llms.txt, MCP).
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { Hono } from "hono";
@@ -22,7 +22,7 @@ export interface GatewayEntry {
 
 const norm = (u: string) => u.trim().replace(/\/$/, "");
 
-/** Valida lo mínimo que el sitio y los agentes necesitan de cada shell. */
+/** Validates the minimum the website and agents need from each shell. */
 function isShell(s: unknown): s is Shell {
   const v = s as Shell;
   return Boolean(v && typeof v.id === "string" && typeof v.name === "string" && v.pricing && typeof v.pricing.usd === "string" && v.joints);
@@ -32,8 +32,8 @@ async function fetchShells(url: string, timeoutMs: number): Promise<Shell[]> {
   const r = await fetch(`${url}/api/shells`, { signal: AbortSignal.timeout(timeoutMs) });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const list = (await r.json()) as unknown[];
-  if (!Array.isArray(list) || !list.every(isShell)) throw new Error("respuesta sin forma de shells");
-  // ponytail: el gateway del Forger define su propia URL; si no la manda, se usa la registrada
+  if (!Array.isArray(list) || !list.every(isShell)) throw new Error("response is not a list of shells");
+  // ponytail: the Forger gateway sets its own URL; if missing, the registered one is used
   return list.map((s) => ({ ...s, gateway: s.gateway || url }));
 }
 
@@ -68,14 +68,14 @@ export function createHub(env: Env) {
           g.online = true;
           g.lastSeen = Date.now();
         } catch {
-          g.online = false; // se conserva la última ficha conocida para mostrarla como offline
+          g.online = false; // keep the last known spec sheet so it shows as offline
         }
       }),
     );
     save();
   }
 
-  /** Catálogo plano: cada shell con su gateway y el estado del gateway. */
+  /** Flat catalog: every shell with its gateway and the gateway status. */
   const catalog = () =>
     [...gateways.values()].flatMap((g) =>
       g.shells.map((s) => ({ ...s, status: g.online ? s.status : ("offline" as const), gateway: s.gateway || g.url })),
@@ -83,22 +83,22 @@ export function createHub(env: Env) {
 
   const llms = () => {
     const live = catalog();
-    return `# Rent a Shell · catálogo
+    return `# Rent a Shell · catalog
 
-> Hardware real por minutos. Cada shell lo arma y mantiene un Forger, que corre su propio gateway. Elegí un shell, leé el llms.txt de su gateway y pagá ahí (x402 en USDC sobre Solana).
+> Real hardware by the minute. Each shell is built and maintained by a Forger, who runs their own gateway. Pick a shell, read its gateway's llms.txt and pay there (x402 in USDC on Solana).
 
 ## Shells
 
-${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}, ${s.status}. USD ${s.pricing.usd} por ${s.pricing.block_minutes} min. Sensores: ${(s.sensors ?? []).join(", ") || "angles"}. Forger: ${s.forger?.name ?? "?"}. Gateway: ${s.gateway} · instrucciones ${s.gateway}/llms.txt · pago POST ${s.gateway}/api/sessions/x402?shell=${s.id}&blocks=1`).join("\n") : "- Todavía no hay shells registrados."}
+${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}, ${s.status}. USD ${s.pricing.usd} per ${s.pricing.block_minutes} min. Sensors: ${(s.sensors ?? []).join(", ") || "angles"}. Forger: ${s.forger?.name ?? "?"}. Gateway: ${s.gateway} · instructions ${s.gateway}/llms.txt · payment POST ${s.gateway}/api/sessions/x402?shell=${s.id}&blocks=1`).join("\n") : "- No shells registered yet."}
 
-## Otras entradas
+## Other entry points
 
-- Catálogo JSON: ${publicUrl}/api/catalog
-- MCP (Streamable HTTP): ${publicUrl}/mcp, tools list_shells y get_shell
-- Sumar tu hardware como Forger: POST ${publicUrl}/api/forgers {"gateway":"https://tu-gateway"}
-- Skill de Claude Code para alquilar y probar código en hardware real:
+- Catalog JSON: ${publicUrl}/api/catalog
+- MCP (Streamable HTTP): ${publicUrl}/mcp, tools list_shells and get_shell
+- Add your hardware as a Forger: POST ${publicUrl}/api/forgers {"gateway":"https://your-gateway"}
+- Claude Code skill to rent and test code on real hardware:
   mkdir -p ~/.claude/skills/rent-a-shell && curl -fsSL ${publicUrl}/skills/rent/SKILL.md -o ~/.claude/skills/rent-a-shell/SKILL.md
-- Skill de Claude Code para Forgers (instala y configura el gateway, la cámara y el túnel):
+- Claude Code skill for Forgers (installs and configures the gateway, camera and tunnel):
   mkdir -p ~/.claude/skills/rent-a-shell-forger && curl -fsSL ${publicUrl}/skills/forger/SKILL.md -o ~/.claude/skills/rent-a-shell-forger/SKILL.md
 `;
   };
@@ -109,7 +109,7 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
   app.get("/api/catalog", (c) => c.json(catalog()));
   app.get("/api/forgers", (c) => c.json([...gateways.values()].map(({ url, online, lastSeen, shells }) => ({ url, online, lastSeen, shells: shells.map((s) => s.id) }))));
 
-  // Alta abierta: el hub verifica que el gateway responda con shells válidos antes de listarlo.
+  // Open sign-up: the hub checks that the gateway answers with valid shells before listing it.
   app.post("/api/forgers", async (c) => {
     const b = await c.req.json<{ gateway?: unknown }>().catch(() => ({}) as { gateway?: unknown });
     if (typeof b.gateway !== "string" || !/^https?:\/\//.test(b.gateway)) return c.json({ error: "invalid_gateway" }, 400);
@@ -120,12 +120,12 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
     } catch (e) {
       return c.json({ error: "gateway_unreachable", message: (e as Error).message }, 422);
     }
-    // ids únicos en el catálogo: si otro gateway publica el mismo id y sigue vivo, conflicto; si está caído
-    // (ej. el túnel rápido del mismo Forger cambió de URL), se reemplaza
+    // unique ids in the catalog: if another live gateway publishes the same id, conflict; if it is down
+    // (e.g. the same Forger's quick tunnel changed URL), it gets replaced
     for (const g of [...gateways.values()]) {
       if (g.url === url || !g.shells.some((s) => shells.some((n) => n.id === s.id))) continue;
       const alive = await fetchShells(g.url, timeoutMs).then(() => true, () => false);
-      if (alive) return c.json({ error: "shell_id_taken", message: `El id ya lo publica ${g.url}. Usá otro SHELL_ID.` }, 409);
+      if (alive) return c.json({ error: "shell_id_taken", message: `${g.url} already publishes this id. Pick another SHELL_ID.` }, 409);
       gateways.delete(g.url);
     }
     gateways.set(url, { url, addedAt: gateways.get(url)?.addedAt ?? Date.now(), online: true, lastSeen: Date.now(), shells });
@@ -143,7 +143,7 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
 
   app.get("/llms.txt", (c) => c.text(llms()));
 
-  // Skills de Claude Code (carpeta skills/ del repo): forger = publicar hardware, rent = alquilarlo.
+  // Claude Code skills (skills/ folder in the repo): forger = publish hardware, rent = rent it.
   const SKILLS: Record<string, { dir: string; files: Record<string, string> }> = {
     forger: { dir: "rent-a-shell-forger", files: { "SKILL.md": "text/markdown; charset=utf-8" } },
     rent: { dir: "rent-a-shell", files: { "SKILL.md": "text/markdown; charset=utf-8", "rent.mjs": "text/javascript; charset=utf-8" } },
@@ -162,10 +162,10 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
   app.all("/mcp", async (c) => {
     const s = new McpServer({ name: "rent-a-shell-hub", version: "0.1.0" });
     const text = (v: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(v, null, 2) }] });
-    s.registerTool("list_shells", { description: "Catálogo completo de hardware real alquilable: shells, Forger, sensores, precio y gateway donde se paga." }, async () => text(catalog()));
+    s.registerTool("list_shells", { description: "Full catalog of rentable real hardware: shells, Forger, sensors, price and the gateway where you pay." }, async () => text(catalog()));
     s.registerTool(
       "get_shell",
-      { description: "Ficha de un shell y cómo alquilarlo (gateway, llms.txt y endpoint x402).", inputSchema: { id: z.string() } },
+      { description: "A shell's spec sheet and how to rent it (gateway, llms.txt and x402 endpoint).", inputSchema: { id: z.string() } },
       async ({ id }) => {
         const sh = catalog().find((x) => x.id === id);
         if (!sh) return { ...text({ error: "unknown_shell" }), isError: true };

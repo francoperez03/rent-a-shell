@@ -1,98 +1,94 @@
-# 03 · Gateway local (Legion)
+# 03 · Local gateway
 
-Un solo proceso Node 22 con Hono en `localhost:8787`, más MediaMTX y ffmpeg para la cámara. Corre en la Lenovo Legion (Windows nativo), igual que el agente de El Tucu.
+A single Node 22 process with Hono on `localhost:8787`, plus MediaMTX and ffmpeg for the camera. It runs on the computer next to the robot; `pnpm forger` (`scripts/forger/run.mjs`) starts and supervises everything on macOS, Windows or Linux.
 
-## Responsabilidades
+## Responsibilities
 
-1. Publicar el catálogo y el estado de cada shell.
-2. Cobrar a través de la interfaz `PaymentRail` (`08-rieles-adaptador.md`) y emitir un token de sesión. El gateway no importa nada de Solana ni de ninguna red.
-3. Hacer de candado: solo el token vigente puede mover el robot.
-4. Pasar comandos al ESP32 por una allowlist.
-5. Cortar la sesión al vencer y dejar el robot en HOME.
-6. Servir el MCP para agentes (`05-agentes.md`).
+1. Publish the catalog and the state of each shell.
+2. Charge through the `PaymentRail` interface (`08-rail-adapter.md`) and issue a session token. The gateway imports nothing from Solana or any network.
+3. Act as the lock: only the valid token can move the robot.
+4. Pass commands to the ESP32 through an allowlist.
+5. Cut the session at expiry and leave the robot at HOME.
+6. Serve the MCP for agents (`05-agents.md`).
 
 ## API
 
-| Método | Ruta | Auth | Qué hace |
+| Method | Path | Auth | What it does |
 |---|---|---|---|
-| GET | `/api/shells` | | lista de fichas (`02-robot.md`) con `status` en vivo |
-| GET | `/api/shells/:id/state` | | proxy a `GET /state`, cache de 500 ms |
-| GET | `/api/shells/:id/frame` | | último frame JPEG de la cámara (para agentes sin HLS) |
-| GET | `/api/shells/:id/queue` | | sesión activa (vence a las…) y cola |
-| GET | `/api/rails` | | manifiestos de los rieles activos (`08-rieles-adaptador.md`) |
-| POST | `/api/sessions/x402` | x402 | agente paga y recibe token en la misma respuesta; usa el primer riel con `settle()` o `?rail=` |
-| POST | `/api/sessions/intent` | | `{shell, blocks, rail, asset?}`: el riel devuelve un `Intent` con sus instrucciones (solana-pay, approval) |
-| GET | `/api/sessions/intent/:id` | | llama `check()` del riel; estado `pending`, `paid` o `expired`; con `paid` trae el token |
-| POST | `/api/cmd` | Bearer token | `{cmd, args}` de la allowlist, proxy al ESP32 |
-| POST | `/api/sessions/end` | Bearer token | cierra antes de tiempo (sin reembolso parcial en v1) |
-| GET | `/api/events` | | SSE con `state`, `session_started`, `session_ended`, `payment_seen` para el HUD |
-| POST | `/mcp` | | servidor MCP (Streamable HTTP) |
-| POST | `/api/shells/:id/requests` | | pedido de personalización al Forger `{contact, message}`: 1 a 200 y 10 a 2000 caracteres, cuerpo de 4 KB como máximo (413), 5 por IP cada 10 min (429). Se guarda en `DATA_FILE` |
-| GET | `/api/forger/requests` | Bearer `FORGER_TOKEN` | lista de pedidos para el Forger; sin token 401 |
-| * | `/api/rails/:id/*` | | rutas propias de cada riel (`fetch` en `08-rieles-adaptador.md`); hoy el transaction request de Solana Pay |
+| GET | `/api/shells` | | list of specs (`02-robot.md`) with live `status` |
+| GET | `/api/shells/:id/state` | | proxy to `GET /state`, 500 ms cache |
+| GET | `/api/shells/:id/frame` | | latest JPEG frame from the camera (for agents without HLS) |
+| GET | `/api/shells/:id/queue` | | active session (expires at…) and queue |
+| GET | `/api/rails` | | manifests of the active rails (`08-rail-adapter.md`) |
+| POST | `/api/sessions/x402` | x402 | the agent pays and gets the token in the same response; uses the first rail with a paywall or `?rail=` |
+| POST | `/api/sessions/intent` | | `{shell, blocks, rail, asset?}`: the rail returns an `Intent` with its instructions (solana-pay, approval) |
+| GET | `/api/sessions/intent/:id` | | calls the rail's `check()`; status `pending`, `paid` or `expired`; with `paid` it brings the token |
+| POST | `/api/cmd` | Bearer token | `{cmd, args}` from the allowlist, proxied to the ESP32 |
+| POST | `/api/sessions/end` | Bearer token | closes early (no partial refund in v1) |
+| GET | `/api/events` | | SSE with `state`, `session_started`, `session_ended`, `payment_seen` for the HUD |
+| POST | `/mcp` | | MCP server (Streamable HTTP) |
+| POST | `/api/shells/:id/requests` | | customization request to the Forger `{contact, message}`: 1 to 200 and 10 to 2000 characters, body up to 4 KB (413), 5 per IP every 10 min (429). Stored in `DATA_FILE` |
+| GET | `/api/forger/requests` | Bearer `FORGER_TOKEN` | list of requests for the Forger; without token 401 |
+| * | `/api/rails/:id/*` | | each rail's own routes (`fetch` in `08-rail-adapter.md`); today the Solana Pay transaction request |
+| GET | `/live/*` | | proxy to MediaMTX's HLS (`HLS_UPSTREAM`), so one tunnel covers API and video |
 
-## Token de sesión
+## Session token
 
-- JWT HS256 firmado con `SESSION_SECRET`: `{sid, shell, payer, rail, tx, exp}`.
-- `exp` = inicio + minutos pagados. El inicio es cuando el shell queda libre (si hay cola, el token se emite igual con `nbf` futuro).
-- Una sola sesión activa por shell. La cola es FIFO en memoria. `[a verificar]` si hace falta persistir en un JSON para sobrevivir a un reinicio.
-- El token se guarda en el navegador (sessionStorage) o lo guarda el agente.
+- HS256 JWT signed with `SESSION_SECRET`: `{sid, shell, rail, exp}`.
+- `exp` = start + paid minutes. The start is when the shell becomes free (if there's a queue, the token is issued anyway and the session reports `active: false` until it starts).
+- One active session per shell. FIFO queue, persisted in `DATA_FILE`.
+- The token is stored in the browser (sessionStorage) or kept by the agent.
 
-## Reglas de `/api/cmd`
+## `/api/cmd` rules
 
-- Rechaza con `401` sin token, `403` si el token es de otro shell o venció, `409` si el ESP32 responde 409.
-- Rate limit: 10 comandos por segundo por sesión; los `joint` seguidos se coalescen (gana el último).
-- `stop` nunca se rate-limita.
-- Timeout de 2 s hacia el ESP32. Tres fallas seguidas pasan el shell a `offline`.
+- Rejects with `401` without a token, `403` if the token belongs to another shell or expired, `409` if the ESP32 answers 409.
+- Rate limit: 10 commands per second per session.
+- `stop` is never rate-limited.
+- 2 s timeout to the ESP32. Three failures in a row put the shell `offline`.
 
-## Corte al vencer
+## Cut at expiry
 
-Un timer por sesión. Al vencer: `POST /stop`, `joint` a HOME en cada articulación, evento `session_ended`, se arranca la siguiente de la cola tras 60 s de descanso.
+A tick every second. At expiry: `POST /stop`, `joint` to HOME on each joint, `session_ended` event, and the next session in the queue starts after the rest period (`REST_SECONDS`, 60 s).
 
-## Cierre del pago (`finalizeEnded`)
+## Payment close (`finalizeEnded`)
 
-En cada tick, para cada sesión terminada con pago y sin `finalized`:
-- terminó por vencimiento o por `POST /api/sessions/end`: `finalize(payment, "completed")`;
-- terminó por robot caído (`ended: "offline"`): `finalize(payment, "refund")`.
+On each tick, for each ended session with a payment and without `finalized`:
+- ended by expiry or by `POST /api/sessions/end`: `finalize(payment, "completed")`;
+- ended because the robot went down (`ended: "offline"`): `finalize(payment, "refund")`.
 
-Los rieles sin `finalize` (x402, fake) quedan marcados al instante. Si `finalize` falla, se reintenta 30 s después (`finalize_retry_at`); mientras tanto los fondos siguen en escrow y el pagador puede reclamarlos solo pasado el plazo (`04-pagos.md`). La sesión guarda `finalized` y `finalize_tx`.
+Rails without `finalize` (x402, fake) are marked immediately. If `finalize` fails, it's retried 30 s later (`finalize_retry_at`); meanwhile the funds stay in escrow and the payer can reclaim them on their own after the deadline (`04-payments.md`). The session stores `finalized` and `finalize_tx`.
 
-## Corte por robot caído
+## Cut when the robot goes down
 
-Si el robot queda offline (3 fallos seguidos) con una sesión activa, el gateway anota `offline_since`. Si no vuelve en `OFFLINE_REFUND_SECONDS` (120 por defecto), corta la sesión con `ended: "offline"` y el cierre del pago la reembolsa. Si vuelve antes, se borra la marca y la sesión sigue.
+If the robot goes offline (3 failures in a row) with an active session, the gateway records `offline_since`. If it doesn't come back within `OFFLINE_REFUND_SECONDS` (120 by default), it cuts the session with `ended: "offline"` and the payment close refunds it. If it comes back earlier, the mark is cleared and the session continues.
 
-## Cámara
+## Camera
 
-Mismo esquema que El Tucu (`robot-a/SPEC.md` §4.3):
+Same scheme as El Tucu (`robot-a/SPEC.md` §4.3):
 
-| Pieza | Valor |
+| Piece | Value |
 |---|---|
-| Servidor | MediaMTX para Windows, único proceso que abre la webcam |
-| Captura | ffmpeg con entrada `dshow` publicando a MediaMTX en la ruta `tucu` `[a verificar]` comando exacto |
-| Salida | HLS en `localhost:8888`, expuesta como `/live`, CORS para el dominio del sitio |
-| Atraso | unos segundos con HLS. WebRTC queda fuera: usa UDP y no pasa por el túnel |
-| Frame para agentes | el gateway lee un JPEG por ffmpeg desde el RTSP de MediaMTX cada 1 s y lo cachea |
+| Server | MediaMTX with `scripts/forger/mediamtx.yml`, the only process that opens the webcam |
+| Capture | ffmpeg (`avfoundation` on macOS, `dshow` on Windows, `v4l2` on Linux) publishing to MediaMTX at the `SHELL_ID` path |
+| Output | HLS on `localhost:8888`, exposed by the gateway at `/live` |
+| Latency | a few seconds with HLS. WebRTC is out: it uses UDP and doesn't go through the tunnel |
+| Frame for agents | the gateway reads a JPEG via ffmpeg from MediaMTX's RTSP and caches it for 1 s |
 
-## Procesos (pm2 en la Legion)
+## Processes
 
-| Nombre | Comando |
-|---|---|
-| `shell-gateway` | `node apps/gateway/dist/index.js` |
-| `shell-camera` | `mediamtx` |
-| `shell-capture` | ffmpeg `dshow` → MediaMTX `[a verificar]` |
-| `shell-tunnel` | `tailscale funnel` (o `cloudflared`) |
+`pnpm forger` starts MediaMTX, the ffmpeg capture, the tunnel (`cloudflared`) and the gateway as children, restarts whatever crashes and re-registers in the hub when the tunnel URL changes. Autostart: Login Items on macOS, a scheduled task on Windows, pm2 or systemd on Linux (see the Forger skill).
 
-## Fallas
+## Failures
 
-| Qué se cae | Qué ve el usuario | Qué hace el gateway |
+| What fails | What the user sees | What the gateway does |
 |---|---|---|
-| ESP32 | pill `offline`, consola deshabilitada | reintenta `/state` en cada tick; si no vuelve en `OFFLINE_REFUND_SECONDS`, corta la sesión y la reembolsa por el riel (`04-pagos.md`) |
-| Cámara | "Sin video" sobre el último frame | sigue aceptando comandos; el HUD muestra ángulos desde `/state` |
-| Túnel | el sitio muestra "El Tucu está desconectado" y reintenta cada 10 s (patrón `Camera.tsx` de El Tucu) | nada que hacer del lado del gateway |
-| Gateway | lo mismo que el túnel | pm2 lo reinicia; las sesiones en memoria se pierden `[a verificar]` |
+| ESP32 | `offline` pill, console disabled | retries `/state` on each tick; if it doesn't come back within `OFFLINE_REFUND_SECONDS`, cuts the session and refunds it through the rail (`04-payments.md`) |
+| Camera | "No video" over the last frame | keeps accepting commands; the HUD shows angles from `/state` |
+| Tunnel | the website shows "El Tucu is disconnected" and retries every 10 s | `pnpm forger` restarts the tunnel and re-registers |
+| Gateway | same as the tunnel | `pnpm forger` restarts it; sessions are persisted in `DATA_FILE` |
 
-## Código que se reutiliza
+## Reused code
 
-- Proxy y manejo de 409: `robot-a/apps/agent/app/agent/src/tucu.ts` (`dance`, consulta a `/state`).
-- Pagos x402 y Solana Pay: `packages/rails/solana` (`x402.ts`, `pay.ts`).
-- Middleware 402 de referencia (sin su esquema propio): `paybot/packages/x402/src/middleware.ts`. El 402 lo arma el gateway con el `requirement` que devuelve el riel.
+- Proxy and 409 handling: `robot-a/apps/agent/app/agent/src/tucu.ts` (`dance`, `/state` query).
+- x402 and Solana Pay payments: `packages/rails/solana` (`x402.ts`, `pay.ts`, `pay-escrow.ts`).
+- Reference 402 middleware: `paybot/packages/x402/src/middleware.ts`. The 402 is built from the `requirement` the rail returns.

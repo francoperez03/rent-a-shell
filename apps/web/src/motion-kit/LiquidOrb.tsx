@@ -3,9 +3,9 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { reducedMotion } from './gsap';
 
-// Orb líquido en R3F: quad de pantalla completa + ShaderMaterial (fbm + domain warping) con uniforms
-// u_mouse (posición suavizada en el espacio del orb, deforma el warp) y u_scroll (avanza el flujo).
-// Patrón toolbox "objeto líquido continuo". Paleta medida en offbrand analysis.md §3 (default).
+// Liquid orb in R3F: full-screen quad + ShaderMaterial (fbm + domain warping) with uniforms
+// u_mouse (smoothed position in orb space, deforms the warp) and u_scroll (advances the flow).
+// Toolbox pattern "continuous liquid object". Palette measured in offbrand analysis.md §3 (default).
 export type OrbColors = { a: string; b: string; c: string; d: string; e: string };
 export const OFFBRAND_COLORS: OrbColors = { a: '#f06ba8', b: '#facb0e', c: '#78bae6', d: '#f4a26a', e: '#e8d8c8' };
 
@@ -35,7 +35,7 @@ const VERT = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.x
 function Quad({ host, colors }: { host: RefObject<HTMLElement | null>; colors: OrbColors }) {
   const mat = useRef<THREE.ShaderMaterial>(null);
   const pointer = useRef({ x: -9999, y: -9999 });
-  const target = useRef(new THREE.Vector2(0.6, 0.6)); // fuera del orb hasta que entre el mouse
+  const target = useRef(new THREE.Vector2(0.6, 0.6)); // outside the orb until the mouse enters
   const mouse = useRef(new THREE.Vector2(0.6, 0.6));
   const uniforms = useMemo(() => ({
     u_t: { value: 0 }, u_mouse: { value: mouse.current }, u_scroll: { value: 0 },
@@ -50,7 +50,7 @@ function Quad({ host, colors }: { host: RefObject<HTMLElement | null>; colors: O
     const el = host.current; if (!el || !mat.current) return;
     const r = el.getBoundingClientRect();
     target.current.set((pointer.current.x - r.left) / r.width - 0.5, 0.5 - (pointer.current.y - r.top) / r.height);
-    mouse.current.lerp(target.current, 0.08); // lag, como el cursor del original
+    mouse.current.lerp(target.current, 0.08); // lag, like the original's cursor
     uniforms.u_t.value = clock.elapsedTime; uniforms.u_scroll.value = window.scrollY;
   });
   return (
@@ -62,7 +62,7 @@ function Quad({ host, colors }: { host: RefObject<HTMLElement | null>; colors: O
 }
 
 export default function LiquidOrb({ host, colors = OFFBRAND_COLORS }: { host: RefObject<HTMLElement | null>; colors?: OrbColors }) {
-  // ponytail: dpr 1; el original renderiza 1440². Subir dpr si se ve pixelado.
+  // ponytail: dpr 1; the original renders 1440². Raise dpr if it looks pixelated.
   return (
     <Canvas dpr={1} frameloop={reducedMotion() ? 'demand' : 'always'} gl={{ antialias: false, alpha: false, powerPreference: 'low-power' }} style={{ position: 'absolute', inset: 0 }} aria-hidden>
       <Quad host={host} colors={colors} />

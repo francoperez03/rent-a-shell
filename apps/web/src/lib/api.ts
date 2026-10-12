@@ -3,12 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import type { GatewayEvent, IntentView, RailManifest, SessionGrant, Shell, ShellState } from '@ras/shell-spec';
 
 export const API = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-/** Hub del marketplace: si está, el catálogo sale de ahí y cada shell se opera en el gateway de su Forger. */
+/** Marketplace hub: when set, the catalog comes from it and each shell is operated on its Forger's gateway. */
 export const HUB = ((import.meta.env.VITE_HUB_URL as string | undefined) ?? '').replace(/\/$/, '');
 
-// Gateway "actual" (el del shell que se está alquilando). Persiste en la pestaña para checkout y consola.
+// "Current" gateway (the one of the shell being rented). Persists in the tab for checkout and console.
 const GW_KEY = 'ras:gateway';
 let gateway = (() => {
+  if (!HUB) return API; // without a hub there is a single gateway: never reuse one stored by a previous hub session
   try {
     return sessionStorage.getItem(GW_KEY) ?? API;
   } catch {
@@ -20,20 +21,20 @@ export const setGateway = (url: string) => {
   try {
     sessionStorage.setItem(GW_KEY, gateway);
   } catch {
-    /* sin storage: queda en memoria */
+    /* no storage: keep it in memory */
   }
 };
 const gwById = new Map<string, string>();
-/** Base de API para un shell: su gateway si viene del hub, si no el gateway actual. */
+/** API base for a shell: its gateway when it comes from the hub, otherwise the current gateway. */
 const baseFor = (id?: string) => (HUB && id && gwById.get(id)) || gateway;
-/** Link a la ficha que fija el gateway del shell (necesario con hub, inocuo sin él). */
+/** Link to the shell page that pins the shell's gateway (needed with a hub, harmless without one). */
 export const shellHref = (s: Pick<Shell, 'id' | 'gateway'>) => (HUB && s.gateway ? `/shells/${s.id}?gw=${encodeURIComponent(s.gateway)}` : `/shells/${s.id}`);
 
-/** URL absoluta contra el gateway (las rutas del gateway pueden venir relativas, ej. camera.frame). */
+/** Absolute URL against the gateway (gateway routes may come relative, e.g. camera.frame). */
 export const apiUrl = (path: string, base = gateway) => (path.startsWith('http') ? path : `${base}${path}`);
 
 export class ApiError extends Error {
-  /** `code` es el `error` del gateway (ej. session_not_started); `message` su detalle si lo manda. */
+  /** `code` is the gateway `error` (e.g. session_not_started); `message` its detail if sent. */
   constructor(public status: number, public code: string, message: string) {
     super(message);
   }
@@ -111,7 +112,7 @@ export const createIntent = (body: { shell: string; blocks: number; rail: string
 
 export const getIntent = (id: string) => api<IntentView>(`/api/sessions/intent/${id}`);
 
-// La sesión pagada vive en sessionStorage: sobrevive un refresh, no otra pestaña.
+// The paid session lives in sessionStorage: it survives a refresh, not another tab.
 const GRANT_KEY = 'ras:session';
 export const saveGrant = (g: SessionGrant) => sessionStorage.setItem(GRANT_KEY, JSON.stringify(g));
 export const loadGrant = (): SessionGrant | null => {
@@ -124,8 +125,8 @@ export const loadGrant = (): SessionGrant | null => {
 export const clearGrant = () => sessionStorage.removeItem(GRANT_KEY);
 
 /**
- * Suscripción a /api/events (SSE). Llama `onEvent` por cada GatewayEvent.
- * EventSource reconecta solo; acá solo parseamos.
+ * Subscription to /api/events (SSE). Calls `onEvent` for each GatewayEvent.
+ * EventSource reconnects on its own; here we only parse.
  */
 export function useEvents(onEvent: (e: GatewayEvent) => void) {
   const [connected, setConnected] = useState(false);
@@ -137,11 +138,11 @@ export function useEvents(onEvent: (e: GatewayEvent) => void) {
       try {
         onEvent(JSON.parse(m.data) as GatewayEvent);
       } catch {
-        /* mensaje que no es JSON (keepalive): se ignora */
+        /* non-JSON message (keepalive): ignored */
       }
     };
     return () => es.close();
-    // onEvent se lee en cada mensaje vía closure del primer render: los callers usan setState funcional.
+    // onEvent is read on each message via the first render's closure: callers use functional setState.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return connected;
@@ -152,7 +153,7 @@ export const fmtClock = (ms: number) => {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 };
 
-/** Reloj que avanza cada segundo (para countdowns). */
+/** Clock that ticks every second (for countdowns). */
 export function useNow(every = 1000) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -162,5 +163,5 @@ export function useNow(every = 1000) {
   return now;
 }
 
-/** epoch en ms aunque el gateway mande segundos. */
+/** epoch in ms even if the gateway sends seconds. */
 export const toMs = (t: number) => (t < 1e12 ? t * 1000 : t);

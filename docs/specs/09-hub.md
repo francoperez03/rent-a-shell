@@ -1,33 +1,35 @@
-# 09 · Hub del marketplace
+# 09 · Marketplace hub
 
-Cada Forger corre su propio gateway al lado de su robot: su wallet, su cola, su operator. El hub (`apps/hub`, Hono, puerto 8790) no toca pagos ni robots: descubre gateways, chequea su salud y publica un catálogo único para el sitio y para los agentes.
+Each Forger runs their own gateway next to their robot: their wallet, their queue, their operator. The hub (`apps/hub`, Hono, port 8790) doesn't touch payments or robots: it discovers gateways, checks their health and publishes a single catalog for the website and for agents.
 
-## Registro de Forgers
+## Forger registration
 
-- `POST /api/forgers {gateway}`: alta abierta. El hub pide `GET {gateway}/api/shells` (timeout `HUB_TIMEOUT_MS`, 3 s) y valida la forma de cada ficha (`id`, `name`, `pricing.usd`, `joints`). Si no responde o la forma no es válida: 422. Si responde: 201 y queda listado.
-- `DELETE /api/forgers {gateway}`: baja, con `Authorization: Bearer $HUB_ADMIN_TOKEN`.
-- `GET /api/forgers`: gateways con `online`, `lastSeen` y los ids de sus shells.
-- Seed por env: `HUB_GATEWAYS=url1,url2` arranca con esos gateways registrados.
-- Persistencia en `HUB_DATA_FILE` (`data/hub.json`).
+- `POST /api/forgers {gateway}`: open registration. The hub fetches `GET {gateway}/api/shells` (timeout `HUB_TIMEOUT_MS`, 3 s) and validates the shape of each spec (`id`, `name`, `pricing.usd`, `joints`). If it doesn't respond or the shape is invalid: 422. If it responds: 201 and it's listed.
+- Shell ids are unique in the catalog: if another live gateway already publishes the same id, 409 `shell_id_taken`. If that gateway is down (e.g. a quick tunnel from the same Forger changed URL), the new registration replaces it.
+- `DELETE /api/forgers {gateway}`: removal, with `Authorization: Bearer $HUB_ADMIN_TOKEN`.
+- `GET /api/forgers`: gateways with `online`, `lastSeen` and the ids of their shells.
+- Seed via env: `HUB_GATEWAYS=url1,url2` starts with those gateways registered.
+- Persistence in `HUB_DATA_FILE` (`data/hub.json`).
 
-## Catálogo y salud
+## Catalog and health
 
-- Cada `POLL_SECONDS` (30) el hub vuelve a pedir `/api/shells` a cada gateway. Si no responde, el gateway queda `online: false` y sus shells siguen en el catálogo con `status: "offline"` (última ficha conocida).
-- `GET /api/catalog`: lista plana de shells, cada uno con su `gateway` (la URL pública que publica el gateway del Forger, o la registrada si no la manda), su Forger, sensores y precio.
+- Every `POLL_SECONDS` (30) the hub fetches `/api/shells` from each gateway again. If it doesn't respond, the gateway becomes `online: false` and its shells stay in the catalog with `status: "offline"` (last known spec).
+- `GET /api/catalog`: flat list of shells, each with its `gateway` (the public URL the Forger's gateway publishes, or the registered one if it doesn't send it), its Forger, sensors and price.
 
-## Para agentes
+## For agents
 
-- `GET /llms.txt`: todos los shells con su Forger, sensores, precio, el `llms.txt` de su gateway y el endpoint x402 donde se paga. Al final, cómo sumar hardware como Forger.
-- `/mcp` (Streamable HTTP, sin estado): `list_shells` (catálogo completo) y `get_shell {id}` (ficha + `how_to_rent` con `llms`, `x402` y `mcp` del gateway).
-- El pago y el control siempre van contra el gateway del Forger, nunca contra el hub.
+- `GET /llms.txt`: every shell with its Forger, sensors, price, its gateway's `llms.txt` and the x402 endpoint where it's paid. At the end, how to add hardware as a Forger and how to install the Claude Code skills.
+- `/mcp` (Streamable HTTP, stateless): `list_shells` (full catalog) and `get_shell {id}` (spec + `how_to_rent` with the gateway's `llms`, `x402` and `mcp`).
+- `GET /skills/rent/SKILL.md`, `/skills/rent/rent.mjs` and `/skills/forger/SKILL.md`: the Claude Code skills (allowlist; anything else is 404).
+- Payment and control always go to the Forger's gateway, never to the hub.
 
-## Sitio
+## Website
 
-- `VITE_HUB_URL`: si está, el catálogo (`useShells`) sale de `GET {hub}/api/catalog`. Si no, del gateway (`VITE_API_URL`), como antes.
-- Cada shell se opera en su gateway. Los links del catálogo llevan `?gw=<gateway>`; `App.tsx` lo lee en el render y fija el gateway actual antes de que salgan las consultas. Queda en `sessionStorage` (`ras:gateway`) para que checkout, consola y SSE sigan hablando con ese gateway. La ficha (`/shells/:id`) también lo fija apenas carga el shell.
-- Estado y cola de cada shell en la landing usan el gateway de ese shell (`baseFor(id)` en `src/lib/api.ts`).
+- `VITE_HUB_URL`: if set, the catalog (`useShells`) comes from `GET {hub}/api/catalog`. Otherwise, from the gateway (`VITE_API_URL`), as before.
+- Each shell is operated on its own gateway. Catalog links carry `?gw=<gateway>`; `App.tsx` reads it during render and sets the current gateway before queries go out. It's stored in `sessionStorage` (`ras:gateway`) so checkout, console and SSE keep talking to that gateway. The spec page (`/shells/:id`) also sets it as soon as the shell loads.
+- State and queue for each shell on the landing use that shell's gateway (`baseFor(id)` in `src/lib/api.ts`).
 
-## Verificado (2026-10-12)
+## Verified (2026-10-12)
 
-- `apps/hub/src/hub.test.ts`: dos gateways falsos y uno caído. El caído queda `offline`, el alta de uno inexistente da 422, `llms.txt` lista el endpoint x402 de cada gateway, la baja sin token da 401 y el MCP lista `list_shells` y `get_shell`.
-- En vivo: mock + dos gateways (8787 `el-tucu`, 8788 `tucu-2`) + hub. El catálogo lista los dos con `sensors: ["angles","current_ma"]`; al apagar el 8788, `GET /api/forgers` lo marca `online: false`.
+- `apps/hub/src/hub.test.ts`: two fake gateways and one down. The down one becomes `offline`, registering a nonexistent one returns 422, a duplicated id from a live gateway returns 409 and replaces it once the original is down, `llms.txt` lists each gateway's x402 endpoint, removal without token returns 401, the MCP lists `list_shells` and `get_shell`, and the skills are served.
+- Live: mock + two gateways (8787 `el-tucu`, 8788 `tucu-2`) + hub. The catalog lists both with `sensors: ["angles","current_ma"]`; when 8788 is turned off, `GET /api/forgers` marks it `online: false`.

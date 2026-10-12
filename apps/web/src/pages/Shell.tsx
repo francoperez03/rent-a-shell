@@ -11,11 +11,11 @@ import { cn } from '@/lib/cn';
 
 const BLOCKS = [1, 2, 3, 4, 5, 6];
 
-/** Ficha del shell: video, rangos, rutinas, precio, cola y selector de bloques. */
+/** Shell page: video, ranges, routines, price, queue and block picker. */
 export default function ShellPage() {
   const { id } = useParams();
   const { data: shell, isLoading, isError } = useShell(id);
-  // con hub, alquilar este shell es hablar con el gateway de su Forger (checkout y consola incluidos)
+  // with a hub, renting this shell means talking to its Forger's gateway (checkout and console included)
   useEffect(() => {
     if (HUB && shell?.gateway) setGateway(shell.gateway);
   }, [shell?.gateway]);
@@ -24,12 +24,12 @@ export default function ShellPage() {
   const now = useNow();
   const [blocks, setBlocks] = useState(1);
 
-  if (isLoading) return <Layout><p className="font-mono text-[12px] uppercase tracking-[0.12em] text-white/60">Cargando ficha…</p></Layout>;
+  if (isLoading) return <Layout><p className="font-mono text-[12px] uppercase tracking-[0.12em] text-white/60">Loading shell…</p></Layout>;
   if (isError || !shell)
     return (
       <Layout>
-        <h1 className="font-display text-[40px] font-light text-white">{isError ? 'No pudimos hablar con el gateway.' : 'Ese shell no existe.'}</h1>
-        <p className="mt-4 text-white/70">{isError ? 'Probá de nuevo en unos segundos.' : 'Volvé al inicio para ver los disponibles.'}</p>
+        <h1 className="font-display text-[40px] font-light text-white">{isError ? 'We could not reach the gateway.' : 'That shell does not exist.'}</h1>
+        <p className="mt-4 text-white/70">{isError ? 'Try again in a few seconds.' : 'Go back home to see the available ones.'}</p>
       </Layout>
     );
 
@@ -59,8 +59,8 @@ export default function ShellPage() {
 
         <aside className="flex flex-col gap-6 lg:pt-[1.75rem]">
           <fieldset className="rounded-sm border border-white/15 p-6 md:p-8">
-            <legend className="px-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/60">Bloques</legend>
-            <div className="grid grid-cols-6 gap-2" role="radiogroup" aria-label="Cantidad de bloques">
+            <legend className="px-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/60">Blocks</legend>
+            <div className="grid grid-cols-6 gap-2" role="radiogroup" aria-label="Number of blocks">
               {BLOCKS.map((b) => (
                 <button
                   key={b}
@@ -84,16 +84,16 @@ export default function ShellPage() {
               as="link"
               to={`/checkout?shell=${shell.id}&blocks=${blocks}`}
               state={{ shell: shell.id, blocks }}
-              label="Ir a pagar"
+              label="Go to payment"
               className={cn('mt-6 w-full', offline && 'pointer-events-none opacity-40')}
               aria-disabled={offline}
             />
-            {offline && <p className="mt-3 text-[15px] text-white/60">{shell.name} está offline. Volvé en un rato.</p>}
+            {offline && <p className="mt-3 text-[15px] text-white/60">{shell.name} is offline. Come back in a while.</p>}
           </fieldset>
           <div className="rounded-sm bg-bg-inset p-6 shadow-[var(--shadow-hairline)] md:p-8">
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">Ficha</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">Spec sheet</p>
 
-            <Label>Rangos</Label>
+            <Label>Ranges</Label>
             <dl className="flex flex-col gap-2">
               {JOINTS.map((j) => (
                 <div key={j} className="grid grid-cols-[6rem_1fr_auto] items-baseline gap-3 font-mono text-[12px] md:text-[13px]">
@@ -104,38 +104,38 @@ export default function ShellPage() {
               ))}
             </dl>
 
-            <Label>Rutinas</Label>
+            <Label>Routines</Label>
             <p className="font-mono text-[12px] text-ink-soft md:text-[13px]">{shell.routines.join(' · ')}</p>
 
-            <Label>Precio</Label>
+            <Label>Price</Label>
             <p className="font-display text-[40px] font-light leading-none text-ink">
               USD {shell.pricing.usd}
               <span className="ml-3 font-mono text-[11px] uppercase tracking-[0.2em] text-ink-mute">por {shell.pricing.block_minutes} min</span>
             </p>
 
-            <Label>Tenerlo propio</Label>
+            <Label>Owning one</Label>
             <p className="text-[15px] leading-[1.55] text-ink-soft">
-              Unos USD {shell.build.parts_usd} en partes, {shell.build.lead_days} días de espera y {shell.build.build_hours} h de armado antes de la primera prueba.
-              Acá probás hoy: {((shell.build.parts_usd / Number(shell.pricing.usd)) * shell.pricing.block_minutes / 60).toLocaleString('es-AR', { maximumFractionDigits: 2 })} h de uso cuestan lo mismo que las partes.
+              About USD {shell.build.parts_usd} in parts, {shell.build.lead_days} days of waiting and {shell.build.build_hours} h of assembly before the first test.
+              Here you test today: {((shell.build.parts_usd / Number(shell.pricing.usd)) * shell.pricing.block_minutes / 60).toLocaleString('en-US', { maximumFractionDigits: 2 })} h of use cost the same as the parts.
             </p>
 
             <Label>Forger</Label>
             <p className="text-[15px] leading-[1.55] text-ink-soft">
-              {shell.forger.name} lo armó y lo mantiene.{shell.forger.customizations && ' Acepta pedidos de personalización'}
-              {shell.forger.customizations && (shell.forger.contact ? <>: <a href={shell.forger.contact} className="underline underline-offset-4">contacto</a>.</> : '.')}
+              {shell.forger.name} built it and maintains it.{shell.forger.customizations && ' Takes customization requests'}
+              {shell.forger.customizations && (shell.forger.contact ? <>: <a href={shell.forger.contact} className="underline underline-offset-4">contact</a>.</> : '.')}
             </p>
 
             {shell.forger.customizations && <CustomRequest shellId={shell.id} forger={shell.forger.name} />}
 
-            <Label>Cola</Label>
+            <Label>Queue</Label>
             <p className="font-mono text-[12px] text-ink-soft md:text-[13px]">
               {!queue
                 ? '·'
                 : queue.active
-                  ? `En uso, quedan ${fmtClock(toMs(queue.active.expires_at) - now)}. ${queue.waiting} esperando.`
+                  ? `In use, ${fmtClock(toMs(queue.active.expires_at) - now)} left. ${queue.waiting} waiting.`
                   : queue.waiting
-                    ? `${queue.waiting} esperando.`
-                    : 'Libre ahora.'}
+                    ? `${queue.waiting} waiting.`
+                    : 'Free now.'}
             </p>
           </div>
 
@@ -158,7 +158,7 @@ function Label({ children }: { children: string }) {
   return <p className="mb-3 mt-6 border-t border-hairline pt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">{children}</p>;
 }
 
-/** Pedido de personalización al Forger (un sensor extra, otro efector, otro montaje). */
+/** Customization request to the Forger (an extra sensor, another end effector, another mount). */
 function CustomRequest({ shellId, forger }: { shellId: string; forger: string }) {
   const [open, setOpen] = useState(false);
   const [contact, setContact] = useState('');
@@ -167,11 +167,11 @@ function CustomRequest({ shellId, forger }: { shellId: string; forger: string })
     mutationFn: () => api<{ ok: true }>(`/api/shells/${shellId}/requests`, { method: 'POST', body: JSON.stringify({ contact, message }) }),
   });
 
-  if (send.isSuccess) return <p className="mt-4 text-[15px] text-ink-soft">Listo. {forger} te va a escribir a {contact}.</p>;
+  if (send.isSuccess) return <p className="mt-4 text-[15px] text-ink-soft">Done. {forger} will reach out at {contact}.</p>;
   if (!open)
     return (
       <button type="button" onClick={() => setOpen(true)} className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-accent hover:underline">
-        Pedir una personalización
+        Request a customization
       </button>
     );
   return (
@@ -183,14 +183,14 @@ function CustomRequest({ shellId, forger }: { shellId: string; forger: string })
       }}
     >
       <label className="flex flex-col gap-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-mute">
-        Contacto
-        <input required maxLength={200} value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Telegram, mail o X" className="rounded-sm border border-hairline bg-white px-3 py-2 font-sans text-[15px] normal-case tracking-normal text-ink" />
+        Contact
+        <input required maxLength={200} value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Telegram, email or X" className="rounded-sm border border-hairline bg-white px-3 py-2 font-sans text-[15px] normal-case tracking-normal text-ink" />
       </label>
       <label className="flex flex-col gap-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-mute">
-        Qué necesitás
-        <textarea required minLength={10} maxLength={2000} rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Ej: un sensor de distancia en la pinza" className="rounded-sm border border-hairline bg-white px-3 py-2 font-sans text-[15px] normal-case tracking-normal text-ink" />
+        What you need
+        <textarea required minLength={10} maxLength={2000} rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="E.g. a distance sensor on the grip" className="rounded-sm border border-hairline bg-white px-3 py-2 font-sans text-[15px] normal-case tracking-normal text-ink" />
       </label>
-      <Pill type="submit" surface="light" label={send.isPending ? 'Enviando…' : 'Enviar al Forger'} disabled={send.isPending} />
+      <Pill type="submit" surface="light" label={send.isPending ? 'Sending…' : 'Send to the Forger'} disabled={send.isPending} />
       {send.isError && <p role="alert" className="text-[15px] text-alert">{(send.error as Error).message}</p>}
     </form>
   );

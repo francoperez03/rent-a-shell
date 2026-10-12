@@ -1,4 +1,4 @@
-// Contrato compartido entre gateway, rieles, sitio y agentes. Sin dependencias.
+// Shared contract between gateway, rails, website and agents. No dependencies.
 
 export type Joint = "base" | "shoulder" | "elbow" | "grip";
 export type Angles = Record<Joint, number>;
@@ -14,14 +14,14 @@ export interface Shell {
   joints: Record<Joint, [number, number]>;
   home: Angles;
   routines: string[];
-  /** Mediciones que expone /state, ej. ["angles","current_ma"]. */
+  /** Measurements exposed by /state, e.g. ["angles","current_ma"]. */
   sensors: string[];
-  /** URL pública del gateway del Forger que opera este shell. */
+  /** Public URL of the Forger gateway that runs this shell. */
   gateway: string;
   pricing: { block_minutes: number; usd: string };
-  /** Forger: quien arma, publica y mantiene el shell, y cobra por su uso. */
+  /** Forger: who builds, publishes and maintains the shell, and gets paid for its use. */
   forger: { name: string; contact?: string; customizations: boolean };
-  /** Lo que cuesta tenerlo propio, para comparar contra alquilarlo (estimado por el forger). */
+  /** What owning one costs, to compare against renting (Forger estimate). */
   build: { parts_usd: number; lead_days: number; build_hours: number };
 }
 
@@ -30,7 +30,7 @@ export interface ShellState {
   moving: boolean;
   rutina: string | null;
   angles: Angles;
-  /** Corriente total del bus de servos (INA219); null si el shell no tiene sensor. */
+  /** Total servo bus current (INA219); null if the shell has no sensor. */
   current_ma?: number | null;
   uptime_ms?: number;
 }
@@ -50,11 +50,11 @@ export type Instructions =
 export interface Intent {
   id: string;
   rail: string;
-  amount: string;        // en unidades humanas del asset, ej "1.00"
-  asset: string;         // símbolo, ej "USDC"
+  amount: string;        // in human units of the asset, e.g. "1.00"
+  asset: string;         // symbol, e.g. "USDC"
   expiresAt: number;     // epoch ms
   instructions: Instructions;
-  meta?: Record<string, unknown>; // datos privados del riel (reference, monto atómico)
+  meta?: Record<string, unknown>; // rail-private data (reference, atomic amount)
 }
 
 export interface Payment {
