@@ -1,4 +1,4 @@
-// Wallet descartable para el buyer: imprime la address (para fondear) y la secret key base58 (para .env.local).
+// Throwaway wallet for the buyer: prints the address (to fund it) and the base58 secret key (for .env.local).
 import { createKeyPairSignerFromPrivateKeyBytes, getAddressEncoder, getBase58Decoder } from "@solana/kit";
 
 const seed = crypto.getRandomValues(new Uint8Array(32));

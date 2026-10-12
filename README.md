@@ -1,75 +1,77 @@
 # Rent a Shell
 
-Hardware real, alquilado por minutos, para que equipos chicos construyan soluciones físicas sin comprar ni instalar el hardware. Lo usan desarrolladores y sus agentes de IA, y se paga en USDC sobre Solana.
+![Rent a Shell: rent El Tucu, a real robot arm, from the browser or from an agent](evidence/f4/landing.png)
 
-## Tesis
+Real hardware, rented by the minute, so small teams can build physical solutions without buying or installing the hardware. Developers and their AI agents use it, and it's paid in USDC on Solana.
 
-Con la IA, un equipo chico ya puede construir soluciones que involucran hardware: el agente escribe el firmware, el control y la integración. Lo que falta es el acceso. Un equipo bootstrapped, o uno sin perfiles que sepan instalar y mantener equipos, solo tiene simuladores, y el simulador no muestra el servo que llega dos grados corto ni el sensor que lee con ruido.
+## Thesis
 
-Rent a Shell pone hardware real a un request de distancia. El desarrollador (o su agente) alquila un shell por bloques de cinco minutos, prueba su código contra el mundo físico, mide y sigue iterando. El resultado es menos tiempo de desarrollo y menos plata gastada en equipos que se usan unas horas. Del otro lado, quien ya tiene el hardware cobra por el tiempo que antes estaba ocioso.
+With AI, a small team can already build solutions that involve hardware: the agent writes the firmware, the control loop and the integration. What's missing is access. A bootstrapped team, or one without people who know how to install and maintain equipment, only has simulators, and a simulator never shows the servo that lands two degrees short or the sensor that reads noisy.
 
-Objetivo: submission a **Colosseum** (texto en [`docs/colosseum.md`](docs/colosseum.md)).
+Rent a Shell puts real hardware one request away. The developer (or their agent) rents a shell in five-minute blocks, tests their code against the physical world, measures and keeps iterating. The result is less development time and less money spent on equipment used for a few hours. On the other side, whoever already owns the hardware gets paid for time that used to sit idle.
+
+Goal: **Colosseum** submission (text in [`docs/colosseum.md`](docs/colosseum.md)).
 
 ## Idea
 
-Un agente vive en software. Cuando necesita hacer algo en el mundo físico, alquila un "shell": un cuerpo robótico disponible en la plataforma. Lo paga solo, lo programa con lo que necesita hacer, lo usa por el tiempo pagado y lo devuelve.
+An agent lives in software. When it needs to do something in the physical world, it rents a "shell": a robotic body available on the platform. It pays on its own, programs it with what it needs to do, uses it for the paid time and gives it back.
 
-- **Shells**: robots publicados por sus dueños (brazo, rover, dron, cámara móvil, etc.) con sus capacidades descritas en un formato que un agente pueda leer.
-- **Agentes**: buscan un shell que cumpla lo que necesitan, pagan por tiempo de uso y le mandan instrucciones o un programa.
-- **Personas**: también pueden alquilar, pagando con un QR de Solana Pay.
-- **Forgers**: arman, publican y mantienen los shells del catálogo. Cobran por minuto de uso directo en su wallet y pueden ofrecer personalizaciones. Costos de tenerlo propio contra alquilarlo en [`docs/costos.md`](docs/costos.md).
+- **Shells**: robots published by their owners (arm, rover, drone, mobile camera, etc.) with their capabilities described in a format an agent can read.
+- **Agents**: look for a shell that fits what they need, pay for usage time and send it instructions or a program.
+- **People**: can rent too, paying with a Solana Pay QR.
+- **Forgers**: build, publish and maintain the shells in the catalog. They get paid per minute of use straight to their wallet and can offer customizations. Cost of owning versus renting in [`docs/costs.md`](docs/costs.md).
 
-## Flujo
+## Flow
 
-1. El agente recibe una tarea que requiere un cuerpo físico.
-2. Lee `llms.txt` o el MCP del gateway y elige un shell por capacidad, ubicación y precio.
-3. Paga de forma autónoma con x402 (USDC en Solana; el facilitator paga el fee, el agente no necesita SOL).
-4. El gateway liquida el pago y **le asigna el shell** por la ventana de tiempo pagada.
-5. El agente programa el shell (comandos) y recibe feedback: cámara, estado, ángulos medidos.
-6. Al vencer el tiempo el robot vuelve a HOME y se libera. El pago llega directo a la wallet del dueño.
+1. The agent receives a task that needs a physical body.
+2. It reads the gateway's `llms.txt` or MCP and picks a shell by capability, location and price.
+3. It pays autonomously with x402 (USDC on Solana; the facilitator pays the fee, the agent needs no SOL).
+4. The gateway settles the payment and **assigns it the shell** for the paid time window.
+5. The agent programs the shell (commands) and gets feedback: camera, state, measured angles.
+6. When time runs out the robot returns to HOME and is released. The payment goes straight to the owner's wallet.
 
-## Caso de demo
+## Demo case
 
-Testing de software de robótica: el agente prueba su propio código en hardware real. Paga un bloque, corre una secuencia de movimientos, mide si cada articulación llegó a la posición pedida y devuelve un reporte con la tx (`apps/buyer`).
+Robotics software testing: the agent tests its own code on real hardware. It pays for a block, runs a motion sequence, measures whether each joint reached the requested position and returns a report with the tx (`apps/buyer`).
 
-## Piezas
+## Pieces
 
-| Pieza | Dónde |
+| Piece | Where |
 |---|---|
-| Gateway del Forger (sesiones, cola, corte a HOME, MCP, `llms.txt`, pedidos de personalización) | `apps/gateway` |
-| Hub del marketplace (catálogo de Forgers, salud, `llms.txt`, MCP) | `apps/hub` |
-| Rieles de pago Solana (`solana-x402`, `solana-pay` con escrow) | `packages/rails/solana` |
-| Programa de escrow (Anchor, 90/10 y reembolso) | `programs/programs/shell-escrow` |
-| Sitio (landing, checkout con QR, consola, guía de agentes) | `apps/web` |
-| Agente comprador de ejemplo | `apps/buyer` |
-| Robot: El Tucu (ESP32, 4 servos) | `~/repos/job/eventos/bnb-builder-session/agentes/robot-a` |
+| Forger gateway (sessions, queue, return to HOME, MCP, `llms.txt`, customization requests) | `apps/gateway` |
+| Marketplace hub (Forger catalog, health, `llms.txt`, MCP) | `apps/hub` |
+| Solana payment rails (`solana-x402`, `solana-pay` with escrow) | `packages/rails/solana` |
+| Escrow program (Anchor, 90/10 split and refund) | `programs/programs/shell-escrow` |
+| Website (landing, QR checkout, console, agent guide) | `apps/web` |
+| Example buyer agent | `apps/buyer` |
+| Robot: El Tucu (ESP32, 4 servos) | `robot-a` repo (firmware and mock) |
 
-## Correr
+## Run
 
 ```bash
 pnpm install
-pnpm check-solana          # facilitator y mint de USDC en devnet
-pnpm mock                  # El Tucu simulado (puerto 8080)
-pnpm gateway               # puerto 8787, config en apps/gateway/.env.local
-pnpm hub                   # puerto 8790, catálogo de Forgers (apps/hub/.env.local)
-pnpm web                   # puerto 5175
-pnpm --filter buyer keygen # wallet descartable para el agente
-pnpm buyer                 # el agente paga y prueba la secuencia
+pnpm check-solana          # facilitator and USDC mint on devnet
+pnpm mock                  # simulated El Tucu (port 8080)
+pnpm gateway               # port 8787, config in apps/gateway/.env.local
+pnpm hub                   # port 8790, Forger catalog (apps/hub/.env.local)
+pnpm web                   # port 5175
+pnpm --filter buyer keygen # throwaway wallet for the agent
+pnpm buyer                 # the agent pays and tests the sequence
 ```
 
-## Relación con el Proyecto A
+## Relation to Project A
 
-Comparten la misma base (hardware publicado por terceros, pago por tiempo, acceso que se abre y cierra). En el A el que alquila es una persona que practica Physical AI; en Rent a Shell el que alquila es un agente que paga solo.
+They share the same base (hardware published by third parties, pay per time, access that opens and closes). In A, the renter is a person practicing Physical AI; in Rent a Shell, the renter is an agent that pays on its own.
 
 ## Docs
 
-Specs y plan en [`docs/`](docs/README.md). El ESP32 queda solo en la red local, detrás de un gateway en la Legion expuesto por túnel. Los pagos viven detrás de un adaptador (`docs/specs/08-rieles-adaptador.md`).
+Specs and plan in [`docs/`](docs/README.md). The ESP32 stays on the local network only, behind a gateway exposed through a tunnel. Payments live behind an adapter (`docs/specs/08-rail-adapter.md`).
 
-Referencia previa: `paybot` (`github.com/superposition/paybot`), pago x402 para controlar un robot con webcam.
+Prior reference: `paybot` (`github.com/superposition/paybot`), x402 payment to control a robot with a webcam.
 
-## Skills de Claude Code
+## Claude Code skills
 
-- **`skills/rent-a-shell`** (alquilar): un Claude Code alquila un shell, corre un plan de movimientos, mide ángulos, corriente y fotos, y devuelve un reporte. Paga por x402 con tope de gasto aprobado por la persona. El cliente es `skills/rent-a-shell/rent.mjs`.
-- **`skills/rent-a-shell-forger`** (publicar): convierte una compu (macOS primero, también Windows y Linux) en Forger con `pnpm forger`, que levanta cámara, túnel, gateway y registro en el hub, y cierra con `pnpm forger:doctor`.
+- **`skills/rent-a-shell`** (rent): a Claude Code instance rents a shell, runs a motion plan, measures angles, current and photos, and returns a report. It pays with x402 under a spending cap approved by the person. The client is `skills/rent-a-shell/rent.mjs`.
+- **`skills/rent-a-shell-forger`** (publish): turns a computer (macOS first, also Windows and Linux) into a Forger with `pnpm forger`, which starts the camera, tunnel, gateway and hub registration, and finishes with `pnpm forger:doctor`.
 
-El hub sirve ambas en `/skills/rent/SKILL.md` y `/skills/forger/SKILL.md`.
+The hub serves both at `/skills/rent/SKILL.md` and `/skills/forger/SKILL.md`.

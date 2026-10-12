@@ -1,6 +1,6 @@
-// Riel solana-pay: una persona escanea un QR de Solana Pay (Phantom, Solflare) y paga USDC.
-// Cada intent lleva una `reference` (pubkey aleatoria) que la wallet agrega a la tx: así se encuentra
-// el pago con getSignaturesForAddress(reference), sin contrato ni montos con decimales mágicos.
+// solana-pay rail: a human scans a Solana Pay QR (Phantom, Solflare) and pays USDC.
+// Each intent carries a `reference` (random pubkey) that the wallet adds to the tx, so the payment
+// is found with getSignaturesForAddress(reference), with no contract and no magic decimals.
 // Spec: https://docs.solanapay.com/spec (transfer request).
 import { createSolanaRpc, getAddressDecoder, signature, type Address } from "@solana/kit";
 import { fromAtomic, toAtomic, type IntentOpts, type Money, type PaymentRail } from "@ras/rails-core";
@@ -13,14 +13,14 @@ const TTL = 15 * 60_000;
 export const newReference = (): Address => getAddressDecoder().decode(crypto.getRandomValues(new Uint8Array(32)));
 
 export function solanaPayUrl(o: { to: string; amount: string; mint: string; reference: string; label: string; message: string }) {
-  // percent-encoding (%20), como pide la spec: URLSearchParams pondría "+" y algunas wallets lo muestran literal
+  // percent-encoding (%20) as the spec asks: URLSearchParams would emit "+" and some wallets show it literally
   const q = Object.entries({ amount: o.amount, "spl-token": o.mint, reference: o.reference, label: o.label, message: o.message })
     .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
     .join("&");
   return `solana:${o.to}?${q}`;
 }
 
-/** Cuánto subió el saldo del token `mint` de `owner` en la tx (unidades atómicas). */
+/** How much the `owner` balance of token `mint` grew in the tx (atomic units). */
 export function received(
   meta: { preTokenBalances?: readonly Bal[] | null; postTokenBalances?: readonly Bal[] | null } | null | undefined,
   owner: string,
@@ -41,7 +41,7 @@ export function solanaPay(env: Env): PaymentRail {
     manifest: () => ({
       id: "solana-pay",
       label: `Solana Pay · ${net.label}`,
-      description: "Escaneás el QR con Phantom o Solflare y pagás en USDC. Se confirma en segundos.",
+      description: "Scan the QR with Phantom or Solflare and pay in USDC. Confirms in seconds.",
       audience: ["human"],
       available: Boolean(env.SOLANA_PAY_TO),
       wallet: { chains: [{ id: net.caip2, name: net.label, rpc: rpcUrl(net, env), explorer: net.explorer, nativeSymbol: "SOL" }] },
@@ -61,7 +61,7 @@ export function solanaPay(env: Env): PaymentRail {
         expiresAt: Date.now() + TTL,
         instructions: {
           kind: "solana-pay",
-          url: solanaPayUrl({ to, amount, mint: net.usdc, reference, label: "Rent a Shell", message: `Sesión ${id.slice(0, 8)}` }),
+          url: solanaPayUrl({ to, amount, mint: net.usdc, reference, label: "Rent a Shell", message: `Session ${id.slice(0, 8)}` }),
           reference,
           to,
           amount,

@@ -1,119 +1,119 @@
 ---
 name: rent-a-shell-forger
-description: Convierte esta compu (macOS primero; también Windows y Linux) en un Forger de Rent a Shell. Instala y configura el gateway que conecta un robot (ESP32) y una webcam, cobra en USDC sobre Solana, abre un túnel público y publica el shell en el catálogo del hub. Usar cuando la persona dice "quiero ser Forger", "publicar mi robot en Rent a Shell", "conectar mi ESP32 a Rent a Shell", "levantar el gateway" o "por qué mi shell no aparece en el hub".
+description: Turns this computer (macOS first; also Windows and Linux) into a Rent a Shell Forger. Installs and configures the gateway that connects a robot (ESP32) and a webcam, charges in USDC on Solana, opens a public tunnel and publishes the shell in the hub's catalog. Use when the person says "I want to be a Forger", "publish my robot on Rent a Shell", "connect my ESP32 to Rent a Shell", "start the gateway", "why doesn't my shell show up in the hub", "quiero ser Forger" or "publicar mi robot en Rent a Shell".
 ---
 
 # Rent a Shell · Forger
 
-Un **Forger** arma un robot, lo publica en Rent a Shell y cobra por cada minuto que alguien (una persona o un agente de IA) lo usa. Esta skill deja la compu del Forger funcionando como **gateway**: un proceso de Node que vive al lado del robot y hace de puente entre internet y el hardware.
+A **Forger** builds a robot, publishes it on Rent a Shell and gets paid for every minute someone (a person or an AI agent) uses it. This skill leaves the Forger's computer running as a **gateway**: a Node process that lives next to the robot and bridges the internet and the hardware.
 
 ```
 webcam ─ ffmpeg ─> MediaMTX ─┐
-ESP32 (WiFi local) <─────────┼── gateway (node :8787) ── túnel ──> sitio, agentes, hub
-                             │    cobra en USDC (x402 y Solana Pay con escrow),
-                             │    sesiones, cola, corte seguro, MCP, llms.txt
-        pnpm forger  ────────┘    (un solo proceso levanta y vigila todo)
+ESP32 (local WiFi) <─────────┼── gateway (node :8787) ── tunnel ──> website, agents, hub
+                             │    charges in USDC (x402 and Solana Pay with escrow),
+                             │    sessions, queue, safe cutoff, MCP, llms.txt
+        pnpm forger  ────────┘    (a single process starts and supervises everything)
 ```
 
-Trabajá en orden y **verificá cada paso antes de seguir**. Al final corré el doctor. Hablale a la persona en su idioma y con pasos cortos; preguntá solo lo que no podés detectar.
+Work in order and **verify each step before moving on**. At the end run the doctor. Talk to the person in their language with short steps; only ask what you can't detect.
 
-## Reglas
+## Rules
 
-- **Nunca pidas ni escribas la clave privada de la wallet principal del Forger.** Para cobrar alcanza su **address** pública (`SOLANA_PAY_TO`).
-- La única clave que se genera acá es la del **operador del escrow**. Es una wallet nueva que solo puede liberar o reembolsar pagos. El script la escribe directo en `.env.local` y nunca la muestra.
-- `.env.local` nunca va a git.
-- Antes de abrir el túnel público, confirmá con la persona: expone el gateway a internet.
-- **macOS es la plataforma principal.** Al final hay una sección con las diferencias para Windows y Linux.
+- **Never ask for or write down the private key of the Forger's main wallet.** To get paid, its public **address** is enough (`SOLANA_PAY_TO`).
+- The only key generated here is the **escrow operator**'s. It's a new wallet that can only release or refund payments. The script writes it straight into `.env.local` and never shows it.
+- `.env.local` never goes to git.
+- Before opening the public tunnel, confirm with the person: it exposes the gateway to the internet.
+- **macOS is the main platform.** At the end there's a section with the differences for Windows and Linux.
 
-## 1. Requisitos (macOS)
+## 1. Requirements (macOS)
 
-Con Homebrew (si no está: brew.sh):
+With Homebrew (if missing: brew.sh):
 ```bash
 brew install node pnpm ffmpeg mediamtx cloudflared git
 ```
-Verificá con `node -v` (22+), `ffmpeg -version`, `mediamtx --version` y `cloudflared --version`.
+Check with `node -v` (22+), `ffmpeg -version`, `mediamtx --version` and `cloudflared --version`.
 
-## 2. Bajar el gateway
+## 2. Get the gateway
 
 ```bash
-git clone https://github.com/francoperez/rent-a-shell.git   # [a confirmar: URL pública del repo]
+git clone https://github.com/francoperez03/rent-a-shell.git
 cd rent-a-shell
 pnpm install
 cp apps/gateway/.env.example apps/gateway/.env.local
 ```
 
-## 3. Robot y cámara
+## 3. Robot and camera
 
-**ESP32.** El robot tiene que estar prendido y en la misma red WiFi que la Mac.
+**ESP32.** The robot must be powered on and on the same WiFi network as the Mac.
 ```bash
 pnpm forger:find-esp32
 ```
-Imprime `http://<ip>` de cada shell que responde. En macOS 15+ la primera vez aparece el aviso "Terminal quiere encontrar dispositivos en la red local": hay que **permitirlo**, o no encuentra nada. Si se negó, se habilita en Configuración del Sistema → Privacidad y seguridad → Red local → Terminal.
+It prints `http://<ip>` for each shell that responds. On macOS 15+ the first time you'll see "Terminal would like to find devices on your local network": it must be **allowed**, or nothing is found. If it was denied, enable it in System Settings → Privacy & Security → Local Network → Terminal.
 
-Si no aparece ningún shell:
-- Pedile la IP a la persona (la muestra el monitor serie del firmware o el router).
-- Revisá que el router no tenga activado el aislamiento de clientes.
+If no shell shows up:
+- Ask the person for the IP (the firmware's serial monitor or the router shows it).
+- Check that the router doesn't have client isolation turned on.
 
-Verificá con `curl http://<ip>/state`, que tiene que traer `ok:true` y `angles`.
+Verify with `curl http://<ip>/state`, which should return `ok:true` and `angles`.
 
-**Cámara.**
+**Camera.**
 ```bash
 pnpm forger:cameras
 ```
-Imprime las cámaras con su índice. Usá el índice como `CAMERA` (la integrada suele ser `0`; una USB o el iPhone por Continuidad aparecen aparte).
-- La primera vez que ffmpeg abre la cámara, macOS pide permiso para la **Terminal** (o la app de terminal que se use) y la persona tiene que aceptarlo. Si se negó: Configuración del Sistema → Privacidad y seguridad → Cámara → activar la terminal.
-- Sin webcam a mano se puede probar todo con `CAMERA=test` (señal de prueba).
+It prints the cameras with their index. Use the index as `CAMERA` (the built-in one is usually `0`; a USB camera or the iPhone via Continuity show up separately).
+- The first time ffmpeg opens the camera, macOS asks for permission for the **Terminal** (or whichever terminal app is used) and the person has to accept it. If it was denied: System Settings → Privacy & Security → Camera → enable the terminal.
+- With no webcam at hand everything can be tested with `CAMERA=test` (test signal).
 
-## 4. Configuración (`apps/gateway/.env.local`)
+## 4. Configuration (`apps/gateway/.env.local`)
 
-Preguntá a la persona:
-- **Address de Solana** donde cobra: `SOLANA_PAY_TO`, la pública (Phantom → copiar dirección).
-- **Nombre del shell** (`SHELL_NAME`), **id** sin espacios y único en el catálogo (`SHELL_ID`) y **ubicación** (`SHELL_LOCATION`).
-- **Nombre como Forger** (`FORGER_NAME`) y un **contacto** opcional para pedidos (`FORGER_CONTACT`).
-- **Red:** `SOLANA_NETWORK=devnet` para probar o `mainnet` para cobrar en serio.
+Ask the person:
+- **Solana address** to get paid: `SOLANA_PAY_TO`, the public one (Phantom → copy address).
+- **Shell name** (`SHELL_NAME`), **id** with no spaces and unique in the catalog (`SHELL_ID`) and **location** (`SHELL_LOCATION`).
+- **Forger name** (`FORGER_NAME`) and an optional **contact** for requests (`FORGER_CONTACT`).
+- **Network:** `SOLANA_NETWORK=devnet` to test or `mainnet` to charge for real.
 
-Completá sin preguntar:
+Fill in without asking:
 ```
 SESSION_SECRET=<openssl rand -hex 32>
 FORGER_TOKEN=<openssl rand -hex 24>
-ESP32_URL=<paso 3>
-CAMERA=<paso 3>
+ESP32_URL=<step 3>
+CAMERA=<step 3>
 RAILS=solana-x402,solana-pay
-HUB_URL=<URL del hub de Rent a Shell>      # [a confirmar: URL pública del hub]
+HUB_URL=<Rent a Shell hub URL>      # public hub URL, TBD
 ```
-No pongas `PUBLIC_URL`: lo asigna el túnel en cada arranque.
+Don't set `PUBLIC_URL`: the tunnel assigns it on each start.
 
-**Escrow (recomendado).** Con operador, los pagos de personas quedan en escrow hasta que termina la sesión, y si el robot se cae se reembolsan solos.
+**Escrow (recommended).** With an operator, payments from people stay in escrow until the session ends, and if the robot goes down they're refunded automatically.
 ```bash
 pnpm --filter @ras/rails-solana -s operator-key
 ```
-Queda escrita en `.env.local` y el comando imprime solo la address. Pedile a la persona que le mande ~0,05 SOL para fees (en devnet sale de faucet.solana.com).
+It's written into `.env.local` and the command prints only the address. Ask the person to send it ~0.05 SOL for fees (on devnet, from faucet.solana.com).
 
-## 5. Arrancar (confirmar el túnel antes)
+## 5. Start (confirm the tunnel first)
 
 ```bash
 pnpm forger
 ```
-Un solo proceso levanta MediaMTX, la cámara, el túnel de Cloudflare, el gateway con la URL pública del túnel y el registro en el hub. Además:
-- Si algo se cae, lo reinicia.
-- Si el túnel cambia de URL, reinicia el gateway y se re-registra.
-- En macOS mantiene la Mac despierta mientras corre (con `caffeinate`).
-- La URL pública queda en `apps/gateway/data/public-url.txt`.
+A single process starts MediaMTX, the camera, the Cloudflare tunnel, the gateway with the tunnel's public URL and the hub registration. Also:
+- If something crashes, it restarts it.
+- If the tunnel changes URL, it restarts the gateway and re-registers.
+- On macOS it keeps the Mac awake while it runs (with `caffeinate`).
+- The public URL is saved in `apps/gateway/data/public-url.txt`.
 
-Sin túnel (para probar en la red local): `TUNNEL=none`. Con una URL fija (túnel con nombre o Tailscale Funnel): poné `PUBLIC_URL=https://...` y `TUNNEL=none`.
+Without a tunnel (to test on the local network): `TUNNEL=none`. With a fixed URL (named tunnel or Tailscale Funnel): set `PUBLIC_URL=https://...` and `TUNNEL=none`.
 
-## 6. Verificar todo
+## 6. Verify everything
 
-En otra pestaña de la terminal:
+In another terminal tab:
 ```bash
 pnpm forger:doctor
 ```
-Tiene que terminar en "Todo listo". Cada línea con ✗ (crítico) o ! (aviso) dice qué arreglar. Para una prueba real de cobro, seguí `docs/plans/PLAN.md` (buyer con USDC devnet).
+It should end with everything green and no ✗ lines. Each ✗ (critical) or ! (warning) line says what to fix. For a real payment test, follow `docs/plans/PLAN.md` (buyer with devnet USDC).
 
-## 7. Que arranque solo (macOS)
+## 7. Start automatically (macOS)
 
-El permiso de cámara de macOS es de la **Terminal**. Por eso lo más confiable es que el arranque automático abra la Terminal:
-1. Creá `~/RentAShellForger.command`:
+macOS camera permission belongs to the **Terminal**. That's why the most reliable autostart opens the Terminal:
+1. Create `~/RentAShellForger.command`:
    ```bash
    cat > ~/RentAShellForger.command <<EOF
    #!/bin/zsh
@@ -121,42 +121,42 @@ El permiso de cámara de macOS es de la **Terminal**. Por eso lo más confiable 
    EOF
    chmod +x ~/RentAShellForger.command
    ```
-2. Configuración del Sistema → General → Ítems de inicio → **+** → elegir `RentAShellForger.command`.
+2. System Settings → General → Login Items → **+** → choose `RentAShellForger.command`.
 
-Para que la Mac siga atendiendo:
-- Configuración del Sistema → Batería/Energía: "Evitar el reposo automático cuando la pantalla está apagada" (con el cargador enchufado).
-- Con la tapa cerrada, una MacBook se duerme salvo que tenga monitor externo: mejor dejarla abierta con el brillo al mínimo.
-- Si la Mac tiene contraseña al arrancar, activar el inicio de sesión automático o dejarla con la sesión abierta.
+So the Mac keeps serving:
+- System Settings → Battery/Energy: "Prevent automatic sleeping when the display is off" (with the charger plugged in).
+- With the lid closed, a MacBook sleeps unless it has an external display: better leave it open with minimum brightness.
+- If the Mac asks for a password at boot, enable automatic login or leave the session open.
 
-Evitá pm2 o `launchd` para este caso: corren fuera de la Terminal y macOS suele negarles la cámara sin mostrar el aviso.
+Avoid pm2 or `launchd` for this case: they run outside the Terminal and macOS usually denies them the camera without showing the prompt.
 
-## Operación diaria
+## Daily operation
 
-- **Pedidos de personalización:** `curl http://localhost:8787/api/forger/requests -H "Authorization: Bearer <FORGER_TOKEN>"`.
-- **Cobros:** llegan a `SOLANA_PAY_TO`. Por x402, directo; por Solana Pay con escrow, el 90% al terminar cada sesión.
-- **Robot caído:** si queda offline más de 2 minutos con una sesión paga, el gateway corta la sesión y reembolsa.
+- **Customization requests:** `curl http://localhost:8787/api/forger/requests -H "Authorization: Bearer <FORGER_TOKEN>"`.
+- **Payments:** arrive at `SOLANA_PAY_TO`. With x402, directly; with Solana Pay and escrow, 90% when each session ends.
+- **Robot down:** if it stays offline for more than 2 minutes during a paid session, the gateway cuts the session and refunds.
 
-## Problemas comunes
+## Common problems
 
-| Síntoma | Causa probable | Arreglo |
+| Symptom | Likely cause | Fix |
 |---|---|---|
-| `find-esp32` no encuentra nada | permiso de red local negado, otra red o AP isolation | Privacidad y seguridad → Red local → Terminal; misma WiFi |
-| `[camara]` se reinicia en loop | permiso de cámara negado, índice mal o cámara en uso | Privacidad y seguridad → Cámara; `pnpm forger:cameras`; cerrar FaceTime/Zoom |
-| `Selected framerate … is not supported` | la cámara no da 30 fps en ese tamaño | `CAMERA_FPS=15` o `CAMERA_SIZE=1280x720` |
-| `mediamtx` con `400 Bad Request` | config por defecto de Homebrew | ya se usa `scripts/forger/mediamtx.yml`; no lances otro mediamtx aparte |
-| hub marca offline | el túnel cayó o cambió | mirar el log de `pnpm forger`: se re-registra solo |
-| `shell_id_taken` (409) al registrar | otro Forger usa ese `SHELL_ID` | elegir otro id |
-| Solana Pay no abre la wallet | `PUBLIC_URL` sin https | usar el túnel (los transaction requests exigen https) |
+| `find-esp32` finds nothing | local network permission denied, other network or AP isolation | Privacy & Security → Local Network → Terminal; same WiFi |
+| `[camera]` restarts in a loop | camera permission denied, wrong index or camera in use | Privacy & Security → Camera; `pnpm forger:cameras`; close FaceTime/Zoom |
+| `Selected framerate … is not supported` | the camera doesn't do 30 fps at that size | `CAMERA_FPS=15` or `CAMERA_SIZE=1280x720` |
+| `mediamtx` with `400 Bad Request` | Homebrew default config | `scripts/forger/mediamtx.yml` is already used; don't start another mediamtx separately |
+| hub shows offline | the tunnel dropped or changed | check the `pnpm forger` log: it re-registers on its own |
+| `shell_id_taken` (409) when registering | another Forger uses that `SHELL_ID` | pick another id |
+| Solana Pay doesn't open the wallet | `PUBLIC_URL` without https | use the tunnel (transaction requests require https) |
 
-## Windows y Linux
+## Windows and Linux
 
-El código es el mismo y `pnpm forger` funciona igual. Cambia esto:
+The code is the same and `pnpm forger` works the same. This changes:
 - **Windows (PowerShell):**
-  - instalar con `winget install OpenJS.NodeJS.LTS Git.Git Gyan.FFmpeg Cloudflare.cloudflared`; MediaMTX sale del zip de releases (`MEDIAMTX_PATH` si no está en el PATH);
-  - `curl.exe` en lugar de `curl` y `Copy-Item` en lugar de `cp`;
-  - los secretos con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`;
-  - `CAMERA` es el **nombre exacto** que imprime `pnpm forger:cameras` (dshow);
-  - editar `.env.local` con un editor y no con redirecciones de PowerShell (escriben UTF-16);
-  - el arranque automático va como tarea programada (`Register-ScheduledTask` con `node scripts\forger\run.mjs` al iniciar sesión);
-  - el aviso del firewall se puede denegar.
-- **Linux:** `CAMERA=/dev/videoN` y arranque con systemd o pm2.
+  - install with `winget install OpenJS.NodeJS.LTS Git.Git Gyan.FFmpeg Cloudflare.cloudflared`; MediaMTX comes from the releases zip (`MEDIAMTX_PATH` if it isn't on the PATH);
+  - `curl.exe` instead of `curl` and `Copy-Item` instead of `cp`;
+  - secrets with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`;
+  - `CAMERA` is the **exact name** that `pnpm forger:cameras` prints (dshow);
+  - edit `.env.local` with an editor and not with PowerShell redirections (they write UTF-16);
+  - autostart goes as a scheduled task (`Register-ScheduledTask` with `node scripts\forger\run.mjs` at logon);
+  - the firewall prompt can be denied.
+- **Linux:** `CAMERA=/dev/videoN` and start with systemd or pm2.

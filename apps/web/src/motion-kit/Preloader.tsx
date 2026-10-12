@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { gsap, reducedMotion } from './gsap';
 
-// maneva M-NAR-01: preloader con contador 0 → 100 (1 s lineal + 0.2 s power2.out), hold 0.5 s,
-// salida yPercent −110 + clip-path diagonal 1 s expo.inOut, autoAlpha 0 en 0.05 s. Al terminar dispara PRELOADER_EVENT
-// (el hero y la escena 3D arrancan con onPreloader). Un hijo con clase .pre-fill sube yPercent −101 en 1 s (relleno del logo).
+// maneva M-NAR-01: preloader with a 0 → 100 counter (1 s linear + 0.2 s power2.out), 0.5 s hold,
+// exit yPercent −110 + diagonal clip-path 1 s expo.inOut, autoAlpha 0 in 0.05 s. When done it fires PRELOADER_EVENT
+// (the hero and the 3D scene start with onPreloader). A child with class .pre-fill rises yPercent −101 in 1 s (logo fill).
 export const PRELOADER_EVENT = 'motion-kit:preloader';
 export const onPreloader = (fn: () => void) => { window.addEventListener(PRELOADER_EVENT, fn, { once: true }); return () => window.removeEventListener(PRELOADER_EVENT, fn); };
 

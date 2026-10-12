@@ -1,81 +1,81 @@
-# Rent a Shell · submission para Colosseum
+# Rent a Shell · Colosseum submission
 
-## Nombre
+## Name
 
 Rent a Shell
 
 ## One-liner
 
-Hardware real por minutos para que equipos chicos y sus agentes de IA prueben y construyan soluciones físicas sin comprar ni instalar equipos. Se paga en USDC sobre Solana.
+Real hardware by the minute so small teams and their AI agents can test and build physical solutions without buying or installing equipment. Paid in USDC on Solana.
 
-## Tesis
+## Thesis
 
-Con la IA, un equipo chico ya puede construir soluciones con hardware: el agente escribe el firmware, el control y la integración. El cuello de botella pasó a ser el acceso. Un equipo bootstrapped, o sin perfiles que instalen y mantengan equipos, se queda en el simulador y nunca toca el mundo real. Rent a Shell les da hardware real por request: alquilan, prueban, miden e iteran. Ahorran tiempo de desarrollo y plata, y el dueño del hardware monetiza horas ociosas.
+With AI, a small team can already build solutions with hardware: the agent writes the firmware, the control loop and the integration. The bottleneck moved to access. A bootstrapped team, or one without people who install and maintain equipment, stays in the simulator and never touches the real world. Rent a Shell gives them real hardware per request: they rent, test, measure and iterate. They save development time and money, and the hardware owner monetizes idle hours.
 
-## Problema
+## Problem
 
-Los equipos chicos ya escriben, con ayuda de agentes de IA, el código de soluciones con hardware, pero no tienen dónde probarlo en hardware real. Comprar el equipo, armarlo y mantenerlo exige plata y perfiles que un equipo bootstrapped no tiene, y los simuladores no muestran el servo que llega dos grados corto. Del otro lado, quien sabe armar hardware no tiene cómo cobrar por ese trabajo más allá de venderlo una vez.
+Small teams already write, with help from AI agents, the code for solutions with hardware, but they have nowhere to test it on real hardware. Buying the equipment, building it and maintaining it takes money and skills a bootstrapped team doesn't have, and simulators don't show the servo that lands two degrees short. On the other side, people who know how to build hardware have no way to charge for that work beyond selling it once.
 
-## Solución
+## Solution
 
-Un gateway pone un robot real detrás de una API con sesiones por tiempo. El agente lee `llms.txt` o el MCP, paga un bloque por x402, recibe un token y manda comandos mientras mira la cámara. Al vencer, el robot vuelve solo a HOME y queda libre para el siguiente. Las personas alquilan el mismo robot desde el navegador, pagando con un QR de Solana Pay. El dueño cobra directo en su wallet, sin intervenir.
+A gateway puts a real robot behind an API with timed sessions. The agent reads `llms.txt` or the MCP, pays for a block with x402, gets a token and sends commands while watching the camera. When time runs out, the robot returns to HOME on its own and is free for the next renter. People rent the same robot from the browser, paying with a Solana Pay QR. The owner gets paid straight to their wallet, without intervening.
 
-## Forgers: quién pone el hardware
+## Forgers: who brings the hardware
 
-El catálogo lo construyen los **Forgers**: makers, labs y talleres que arman un shell, lo publican con su ficha (capacidades, rangos, sensores, precio) y lo mantienen online. Cobran por cada minuto de uso directo en su wallet, y pueden ofrecer personalizaciones (un sensor extra, un efector distinto, otro montaje) a los clientes que las pidan. El catálogo crece como un marketplace: cada Forger suma el hardware que conoce y la plataforma pone sesiones, pagos, cola y corte seguro.
+The catalog is built by **Forgers**: makers, labs and workshops who build a shell, publish it with its spec sheet (capabilities, ranges, sensors, price) and keep it online. They get paid for every minute of use straight to their wallet, and can offer customizations (an extra sensor, a different end effector, a different mount) to customers who ask for them. The catalog grows as a marketplace: each Forger adds the hardware they know and the platform provides sessions, payments, queue and safe cutoff.
 
-Hoy hay un Forger (el equipo, con El Tucu). La ficha ya lleva el Forger y si acepta personalizaciones, y `llms.txt` lo expone a los agentes.
+Today there is one Forger (the team, with El Tucu). The spec sheet already carries the Forger and whether it accepts customizations, and `llms.txt` exposes it to agents.
 
-## Cuánto ahorra
+## How much it saves
 
-Tener El Tucu propio cuesta unos USD 45 en partes, 14 días de espera y 10 h de armado y calibración (detalle en [`costos.md`](costos.md)). Alquilado: USD 1 por 5 minutos, desde hoy. Las partes equivalen a ≈ 3,75 h de uso, y una iteración (subir la rutina, correrla, medir) entra en un bloque de USD 1. El primer test pasa del día 15 al día 1. La diferencia crece con hardware caro, que es lo que suman los Forgers.
+Owning El Tucu costs about USD 45 in parts, 14 days of waiting and 10 h of assembly and calibration (details in [`costs.md`](costs.md)). Rented: USD 1 per 5 minutes, starting today. The parts are worth ≈ 3.75 h of use, and an iteration (upload the routine, run it, measure) fits in a USD 1 block. The first test moves from day 15 to day 1. The gap grows with expensive hardware, which is what Forgers add.
 
-## Por qué Solana
+## Why Solana
 
-Solana es la infraestructura sobre la que operan los agentes: descubren el shell, pagan, prueban y se verifican sin cuenta ni tarjeta y sin un humano en el medio.
+Solana is the infrastructure agents operate on: they discover the shell, pay, test and verify themselves with no account, no card and no human in the middle.
 
-- **Agentes que se prueban a sí mismos**: un agente que escribió un controlador lo corre en hardware real, mide (posición alcanzada y, con un sensor de corriente en el shell, los mA que consume cada servo al moverse) y corrige su propio código. Cada iteración es un pago de USD 1, y eso solo cierra con fees de fracciones de centavo y confirmación en segundos.
-
-- **x402 sin gas para el agente**: el agente firma una transferencia de USDC y el facilitator la envía y paga el fee. Con una wallet que solo tiene USDC alcanza.
-- **Solana Pay** para personas: un QR con `reference` por sesión. Se confirma buscando esa cuenta, sin contrato ni montos raros.
-- **Confirmación en segundos y fees de centavos**: permiten cobrar bloques de USD 1 y abrir la sesión apenas llega el pago.
-- **Pago global sin intermediarios**: un equipo en cualquier país paga en USDC, y el Forger cobra directo en su wallet.
+- **Agents that test themselves**: an agent that wrote a controller runs it on real hardware, measures (position reached and, with a current sensor on the shell, the mA each servo draws while moving) and fixes its own code. Each iteration is a USD 1 payment, and that only works with sub-cent fees and confirmation in seconds.
+- **Gasless x402 for the agent**: the agent signs a USDC transfer and the facilitator submits it and pays the fee. A wallet holding only USDC is enough.
+- **Solana Pay** for people: a QR with a `reference` per session. It's confirmed by looking up that account, with no contract and no odd amounts.
+- **Confirmation in seconds and sub-cent fees**: they make USD 1 blocks viable and open the session as soon as the payment lands.
+- **Global payments with no intermediaries**: a team in any country pays in USDC, and the Forger gets paid straight to their wallet.
 
 ## Demo
 
-Un agente prueba su código de robótica en hardware real:
+An agent tests its robotics code on real hardware:
 
-1. Lee `llms.txt` y ve El Tucu (brazo de 4 ejes con cámara en vivo), USD 1 por 5 minutos.
-2. Paga 1 bloque por x402 en USDC y recibe el token de sesión.
-3. Corre su secuencia de movimientos sobre el brazo real.
-4. Mide si cada articulación llegó al ángulo pedido.
-5. Devuelve el reporte con la tx en Solscan. El brazo vuelve a HOME.
-6. Cierre del video: "esta prueba costó USD 1 y 5 minutos; armar el brazo, USD 45 y dos semanas".
+1. It reads `llms.txt` and sees El Tucu (4-axis arm with live camera), USD 1 per 5 minutes.
+2. It pays for 1 block with x402 in USDC and gets the session token.
+3. It runs its motion sequence on the real arm.
+4. It measures whether each joint reached the requested angle.
+5. It returns the report with the tx on Solscan. The arm returns to HOME.
+6. Video close: "this test cost USD 1 and 5 minutes; building the arm, USD 45 and two weeks".
 
-En paralelo, una persona escanea el QR con Phantom y toma el control desde la consola web.
+In parallel, a person scans the QR with Phantom and takes control from the web console.
 
-## Estado
+## Status
 
-- Gateway con sesiones, cola FIFO, corte automático a HOME, rate limit, MCP, `llms.txt` y agent card. Tests en verde.
-- Riel `solana-x402`: 402 real en devnet con USDC y fee payer del facilitator; el agente de ejemplo firma y el facilitator simula la tx.
-- Riel `solana-pay`: QR de Solana Pay (transaction request) que deposita en escrow.
-- Escrow en Solana (programa Anchor `shell_escrow`): al terminar la sesión, 90 % al Forger y 10 % a la plataforma; si el shell se cae, reembolso automático; si el gateway desaparece, el pagador reclama solo. `anchor test` 7/7 y e2e en validador local.
-- Hub del marketplace: los Forgers registran su gateway, el hub arma el catálogo, chequea salud y lo publica en `llms.txt` y MCP.
-- Pedidos de personalización: el cliente le escribe al Forger desde la ficha; el Forger los lee con su token.
-- Sensor de corriente (INA219): driver en el firmware de El Tucu, `current_ma` en `/state`; el mock, el gateway, la consola y el agente de ejemplo ya lo muestran (mA pico por paso).
-- Sitio: landing, catálogo, checkout con QR, consola con cámara y guía para agentes.
-- Robot: El Tucu (ESP32 + 4 servos) funcionando en eventos; el ESP32 queda en red local detrás del gateway.
+- Gateway with sessions, FIFO queue, automatic return to HOME, rate limit, MCP, `llms.txt` and agent card. Tests green.
+- `solana-x402` rail: real 402 on devnet with USDC and the facilitator's fee payer; the example agent signs and the facilitator simulates the tx.
+- `solana-pay` rail: Solana Pay QR (transaction request) that deposits into escrow.
+- Escrow on Solana (Anchor program `shell_escrow`): when the session ends, 90 % to the Forger and 10 % to the platform; if the shell goes down, automatic refund; if the gateway disappears, the payer reclaims on their own. `anchor test` 7/7 and e2e on a local validator.
+- Marketplace hub: Forgers register their gateway, the hub builds the catalog, checks health and publishes it via `llms.txt` and MCP.
+- Customization requests: the customer writes to the Forger from the spec page; the Forger reads them with their token.
+- Current sensor (INA219): driver in El Tucu's firmware, `current_ma` in `/state`; the mock, the gateway, the console and the example agent already show it (peak mA per step).
+- Claude Code skills: one to rent and test code on a shell (with a spending cap) and one to turn a computer into a Forger (`pnpm forger`).
+- Website: landing, catalog, QR checkout, console with camera and agent guide.
+- Robot: El Tucu (ESP32 + 4 servos) running at events; the ESP32 stays on the local network behind the gateway.
 
 ## Roadmap
 
-- Deploy del programa de escrow a devnet y primer pago real con Phantom.
-- Túnel público y cámara en vivo de El Tucu; INA219 soldado.
-- Mainnet con bloques de USD 0,01 para la primera prueba.
-- Más shells: rover, cámara móvil, bancos de sensores.
-- Reputación por shell (uptime, sesiones completadas) visible para los agentes.
+- Deploy the escrow program to devnet and make the first real payment with Phantom.
+- Public tunnel and live camera for El Tucu; INA219 soldered.
+- Mainnet with USD 0.01 blocks for the first test.
+- More shells: rover, mobile camera, sensor benches.
+- Per-shell reputation (uptime, completed sessions) visible to agents.
 
-## Referencia y competencia
+## References and competition
 
-- **CrowdBrain** (Grand Prize de Colosseum) valida el espacio de robótica con incentivos on-chain. Rent a Shell apunta al mismo mundo desde otro lado: equipos y agentes que necesitan probar en hardware real y pagan por uso.
-- **Renesas Lab on the Cloud** y labs remotos académicos (FPGAs) validan la demanda de hardware real por web, pero cada fabricante muestra solo sus placas. Rent a Shell es neutral, multi-Forger y pensado para agentes.
-- **paybot** (ETHGlobal): pago x402 para controlar un robot con webcam. Rent a Shell suma sesiones por tiempo, cola, corte seguro, MCP y pago para personas.
+- **CrowdBrain** (Colosseum Grand Prize) validates the robotics space with on-chain incentives. Rent a Shell targets the same world from another side: teams and agents that need to test on real hardware and pay per use.
+- **Renesas Lab on the Cloud** and academic remote labs (FPGAs) validate demand for real hardware over the web, but each vendor only shows its own boards. Rent a Shell is neutral, multi-Forger and built for agents.
+- **paybot** (ETHGlobal): x402 payment to control a robot with a webcam. Rent a Shell adds timed sessions, queue, safe cutoff, MCP and payments for people.

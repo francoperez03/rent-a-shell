@@ -8,7 +8,7 @@ import { Footer } from '@/components/Footer';
 import { createIntent, fmtClock, getIntent, saveGrant, useEvents, useNow, useRails, useShell } from '@/lib/api';
 import { cn } from '@/lib/cn';
 
-/** País del navegador (es-AR → AR). Sirve solo para sugerir un riel; se pueden elegir todos. */
+/** Browser country (es-AR → AR). Only used to suggest a rail; all of them can be chosen. */
 const browserCountry = () => navigator.language.split('-')[1]?.toUpperCase();
 
 function suggest(rails: RailManifest[]): string | undefined {
@@ -26,7 +26,7 @@ export default function CheckoutPage() {
 
   const { data: shell } = useShell(shellId);
   const { data: rails, isError: railsError } = useRails();
-  // El checkout es para personas: los rieles solo de agentes (x402) se documentan en /agents.
+  // Checkout is for people: agent-only rails (x402) are documented at /agents.
   const human = useMemo(() => rails?.filter((r) => r.audience.includes('human')) ?? [], [rails]);
   const suggested = useMemo(() => suggest(human), [human]);
 
@@ -45,18 +45,18 @@ export default function CheckoutPage() {
       <main className="mx-auto min-h-viewport w-full max-w-container px-5 pb-24 pt-28 md:px-8 md:pt-32">
         <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-white/60">Checkout</p>
         <h1 className="mt-4 font-display font-light tracking-[-0.01em] text-white" style={{ fontSize: 'clamp(2.25rem, 4vw, 3.5rem)', lineHeight: 1.04 }}>
-          {shell?.name ?? shellId} · {blocks} {blocks === 1 ? 'bloque' : 'bloques'}
+          {shell?.name ?? shellId} · {blocks} {blocks === 1 ? 'block' : 'blocks'}
         </h1>
         <p className="mt-4 font-mono text-[13px] uppercase tracking-[0.12em] text-white/70">
           {shell ? `${shell.pricing.block_minutes * blocks} min · USD ${total}` : '·'}
-          <Link to={`/shells/${shellId}`} className="ml-4 text-white/50 underline-offset-4 hover:text-white hover:underline">Cambiar</Link>
+          <Link to={`/shells/${shellId}`} className="ml-4 text-white/50 underline-offset-4 hover:text-white hover:underline">Change</Link>
         </p>
 
         {!intent.data ? (
-          <section aria-labelledby="medios" className="mt-12">
-            <h2 id="medios" className="mb-5 font-sans text-[13px] font-medium uppercase tracking-[0.14em] text-white/70">Elegí cómo pagar</h2>
-            {railsError && <p className="text-white/70">No pudimos cargar los medios de pago. Probá de nuevo en unos segundos.</p>}
-            {!rails && !railsError && <p className="font-mono text-[12px] uppercase tracking-[0.12em] text-white/60">Cargando medios de pago…</p>}
+          <section aria-labelledby="methods" className="mt-12">
+            <h2 id="methods" className="mb-5 font-sans text-[13px] font-medium uppercase tracking-[0.14em] text-white/70">Choose how to pay</h2>
+            {railsError && <p className="text-white/70">We could not load the payment methods. Try again in a few seconds.</p>}
+            {!rails && !railsError && <p className="font-mono text-[12px] uppercase tracking-[0.12em] text-white/60">Loading payment methods…</p>}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {human.map((r) => (
                 <RailCard key={r.id} rail={r} suggested={r.id === suggested} busy={intent.isPending && rail?.id === r.id} onChoose={() => choose(r)} />
@@ -64,11 +64,11 @@ export default function CheckoutPage() {
             </div>
             {intent.isError && (
               <p role="alert" className="mt-6 text-[15px] text-alert-dark">
-                No se pudo crear el pago: {(intent.error as Error).message}
+                Could not create the payment: {(intent.error as Error).message}
               </p>
             )}
             <p className="mt-8 text-[15px] text-white/55">
-              ¿Sos un agente? Pagá por x402: <Link to="/agents" className="underline underline-offset-4 hover:text-white">guía para agentes</Link>.
+              Are you an agent? Pay with x402: <Link to="/agents" className="underline underline-offset-4 hover:text-white">agent guide</Link>.
             </p>
           </section>
         ) : (
@@ -94,15 +94,15 @@ function RailCard({ rail, suggested, busy, onChoose }: { rail: RailManifest; sug
     >
       <span className="flex w-full items-center justify-between gap-4">
         <span className="font-display text-[24px] font-light text-white">{rail.label}</span>
-        {suggested && rail.available && <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/70">Sugerido</span>}
-        {!rail.available && <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/60">No disponible</span>}
+        {suggested && rail.available && <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/70">Suggested</span>}
+        {!rail.available && <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/60">Unavailable</span>}
       </span>
       <span className="mt-3 text-[15px] leading-[1.55] text-white/70">{rail.description}</span>
       <span className="mt-4 font-mono text-[11px] uppercase tracking-[0.12em] text-white/50">
         {rail.assets.map((a) => a.symbol).join(' · ')}
         {rail.wallet && ` · ${rail.wallet.chains.map((c) => c.name).join(', ')}`}
       </span>
-      {busy && <span className="mt-4 font-mono text-[11px] uppercase tracking-[0.12em] text-white/70">Preparando…</span>}
+      {busy && <span className="mt-4 font-mono text-[11px] uppercase tracking-[0.12em] text-white/70">Preparing…</span>}
     </button>
   );
 }
@@ -113,7 +113,7 @@ function PayStep({ view: first, rail, onRestart }: { view: IntentView; rail: Rai
   const id = first.intent.id;
   const [seen, setSeen] = useState<{ explorerUrl?: string; tx?: string } | null>(null);
 
-  // Polling cada 3 s hasta paid o expired.
+  // Poll every 3 s until paid or expired.
   const { data } = useQuery({
     queryKey: ['intent', id],
     queryFn: () => getIntent(id),
@@ -123,7 +123,7 @@ function PayStep({ view: first, rail, onRestart }: { view: IntentView; rail: Rai
   const view = data ?? first;
   const { intent, status, session } = view;
 
-  // El SSE avisa antes que el polling cuando el riel ve el pago.
+  // SSE tells us before polling does when the rail sees the payment.
   useEvents((e) => {
     if (e.type === 'payment_seen' && e.intentId === id) setSeen({ explorerUrl: e.explorerUrl, tx: e.tx });
   });
@@ -145,11 +145,11 @@ function PayStep({ view: first, rail, onRestart }: { view: IntentView; rail: Rai
         <div className="flex items-center justify-between">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">{rail?.label ?? intent.rail}</p>
           <p className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute">
-            {expired ? 'Vencido' : status === 'paid' ? 'Pagado' : `Vence en ${fmtClock(left)}`}
+            {expired ? 'Expired' : status === 'paid' ? 'Paid' : `Expires in ${fmtClock(left)}`}
           </p>
         </div>
 
-        <p className="mb-3 mt-6 border-t border-hairline pt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">Monto</p>
+        <p className="mb-3 mt-6 border-t border-hairline pt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">Amount</p>
         <p className="break-all font-display text-[clamp(2rem,4vw,3rem)] font-light leading-none text-ink">
           {intent.amount} <span className="font-mono text-[14px] uppercase tracking-[0.12em] text-ink-mute">{intent.asset}</span>
         </p>
@@ -157,8 +157,8 @@ function PayStep({ view: first, rail, onRestart }: { view: IntentView; rail: Rai
         <div className="mt-6 border-t border-hairline pt-6">
           {expired ? (
             <div>
-              <p className="text-ink-soft">El tiempo para pagar venció. Generá otro intento.</p>
-              <Pill label="Elegir de nuevo" surface="light" className="mt-4" onClick={onRestart} />
+              <p className="text-ink-soft">The time to pay ran out. Start a new attempt.</p>
+              <Pill label="Choose again" surface="light" className="mt-4" onClick={onRestart} />
             </div>
           ) : (
             <Instruct ins={intent.instructions} rail={rail} />
@@ -170,12 +170,12 @@ function PayStep({ view: first, rail, onRestart }: { view: IntentView; rail: Rai
         <Status status={status} seen={!!seen} expired={expired} />
         {explorer && (
           <a href={explorer} target="_blank" rel="noopener" className="font-mono text-[12px] uppercase tracking-[0.12em] text-white/70 underline underline-offset-4 hover:text-white">
-            Ver la transacción ↗
+            View transaction ↗
           </a>
         )}
         {!expired && status === 'pending' && (
           <button type="button" onClick={onRestart} className="self-start font-mono text-[11px] uppercase tracking-[0.16em] text-white/50 hover:text-white">
-            Cambiar medio de pago
+            Change payment method
           </button>
         )}
       </div>
@@ -184,7 +184,7 @@ function PayStep({ view: first, rail, onRestart }: { view: IntentView; rail: Rai
 }
 
 function Status({ status, seen, expired }: { status: IntentView['status']; seen: boolean; expired: boolean }) {
-  const text = expired ? 'Sin pago a tiempo.' : status === 'paid' ? 'Pago confirmado. Abriendo la consola…' : seen ? 'Vimos tu pago. Confirmando…' : 'Esperando el pago…';
+  const text = expired ? 'No payment in time.' : status === 'paid' ? 'Payment confirmed. Opening the console…' : seen ? 'We saw your payment. Confirming…' : 'Waiting for payment…';
   return (
     <p role="status" className="flex items-center gap-3 font-mono text-[12px] uppercase tracking-[0.12em] text-white/80">
       <span aria-hidden className={cn('h-2 w-2 rounded-full', expired ? 'bg-white/30' : 'animate-status-pulse bg-accent')} />
@@ -201,15 +201,15 @@ function Instruct({ ins, rail }: { ins: Instructions; rail: RailManifest | null 
       return (
         <div>
           <p className="text-ink-soft">{ins.note}</p>
-          <p className="mt-3 font-mono text-[12px] text-ink-mute">Referencia {ins.ref}</p>
+          <p className="mt-3 font-mono text-[12px] text-ink-mute">Reference {ins.ref}</p>
         </div>
       );
     case 'x402':
-      return <p className="text-ink-soft">Este medio es para agentes. Mirá la guía en /agents.</p>;
+      return <p className="text-ink-soft">This method is for agents. See the guide at /agents.</p>;
   }
 }
 
-// ---------- Solana Pay: QR para escanear con la wallet del celular ----------
+// ---------- Solana Pay: QR to scan with the phone wallet ----------
 
 type SolanaPayIns = Extract<Instructions, { kind: 'solana-pay' }>;
 
@@ -222,19 +222,19 @@ function SolanaPay({ ins, network }: { ins: SolanaPayIns; network?: string }) {
   return (
     <div>
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-        {qr && <img src={qr} alt="QR de Solana Pay" width={220} height={220} className="h-[220px] w-[220px] shrink-0 rounded-sm bg-white p-2" />}
+        {qr && <img src={qr} alt="Solana Pay QR" width={220} height={220} className="h-[220px] w-[220px] shrink-0 rounded-sm bg-white p-2" />}
         <div>
           <p className="text-[15px] leading-[1.55] text-ink-soft">
-            Escaneá el QR con Phantom o Solflare{network ? ` en ${network}` : ''}. La wallet arma la transferencia de {ins.amount} {ins.symbol} y esta página se actualiza sola.
+            Scan the QR with Phantom or Solflare{network ? ` on ${network}` : ''}. The wallet builds the {ins.amount} {ins.symbol} transfer and this page updates on its own.
           </p>
-          <Pill as="a" href={ins.url} surface="light" label="Abrir en la wallet" className="mt-5" />
-          <div className="mt-4"><CopyButton text={ins.url} label="Copiar link de pago" /></div>
+          <Pill as="a" href={ins.url} surface="light" label="Open in wallet" className="mt-5" />
+          <div className="mt-4"><CopyButton text={ins.url} label="Copy payment link" /></div>
         </div>
       </div>
       <dl className="mt-6 grid grid-cols-[6rem_1fr] gap-x-3 gap-y-2 font-mono text-[12px]">
-        <dt className="text-ink-mute">Destino</dt>
+        <dt className="text-ink-mute">Destination</dt>
         <dd className="break-all text-ink-soft">{ins.to}</dd>
-        <dt className="text-ink-mute">Referencia</dt>
+        <dt className="text-ink-mute">Reference</dt>
         <dd className="break-all text-ink-soft">{ins.reference}</dd>
       </dl>
     </div>
@@ -252,7 +252,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       })}
       className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-accent hover:underline"
     >
-      {done ? 'Copiado' : label}
+      {done ? 'Copied' : label}
     </button>
   );
 }

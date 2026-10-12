@@ -1,4 +1,4 @@
-# Config mínima de MediaMTX para un Forger: RTSP en :8554 (ffmpeg publica), HLS en :8888 (el gateway lo sirve en /live).
+# Minimal MediaMTX config for a Forger: RTSP on :8554 (ffmpeg publishes), HLS on :8888 (the gateway serves it at /live).
 # mediamtx scripts/forger/mediamtx.yml
 logLevel: warn
 rtsp: yes

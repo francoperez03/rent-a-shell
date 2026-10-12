@@ -1,5 +1,5 @@
-// ?vh=N fija el alto de diseño (landing-research compara a 1512×812 aunque la infobar del debugger cambie innerHeight).
-// Setea --vh en px (usar `calc(var(--vh) * 100)` en vez de 100vh) y devuelve vh() para timelines en px.
+// ?vh=N pins the design height (landing-research compares at 1512×812 even if the debugger infobar changes innerHeight).
+// Sets --vh in px (use `calc(var(--vh) * 100)` instead of 100vh) and returns vh() for px timelines.
 let lock = 0;
 
 export function applyVhLock() {

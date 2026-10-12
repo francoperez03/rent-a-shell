@@ -1,6 +1,6 @@
-// Servidor MCP sin estado (Streamable HTTP, transporte Web estándar). Un server por request.
-// rent_shell no paga: devuelve cómo pagar por x402 (el cliente MCP no firma pagos). Con el token,
-// send_command y end_session operan igual que la API HTTP.
+// Stateless MCP server (Streamable HTTP, standard Web transport). One server per request.
+// rent_shell does not pay: it returns how to pay with x402 (MCP clients do not sign payments). With the token,
+// send_command and end_session behave like the HTTP API.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
@@ -28,13 +28,13 @@ const fail = (v: unknown) => ({ ...text(v), isError: true });
 function build(d: Deps) {
   const s = new McpServer({ name: "rent-a-shell", version: "0.1.0" });
 
-  s.registerTool("list_shells", { description: "Lista los cuerpos robóticos disponibles con estado, rangos, rutinas y precio." }, async () =>
+  s.registerTool("list_shells", { description: "Lists the available robot bodies with status, ranges, routines and price." }, async () =>
     text([d.shell()]),
   );
 
   s.registerTool(
     "get_state",
-    { description: "Ángulos reales del robot y si se está moviendo.", inputSchema: { shell: z.string().default("el-tucu") } },
+    { description: "Real robot angles and whether it is moving.", inputSchema: { shell: z.string().default("el-tucu") } },
     async () => {
       const st = await d.robot.state();
       return st ? text(st) : fail({ error: "robot_offline" });
@@ -43,7 +43,7 @@ function build(d: Deps) {
 
   s.registerTool(
     "get_frame",
-    { description: "Foto actual de la cámara del shell (JPEG).", inputSchema: { shell: z.string().default("el-tucu") } },
+    { description: "Current photo from the shell camera (JPEG).", inputSchema: { shell: z.string().default("el-tucu") } },
     async () => {
       const jpg = await d.frames.latest();
       if (!jpg) return fail({ error: "no_camera" });
@@ -55,7 +55,7 @@ function build(d: Deps) {
     "rent_shell",
     {
       description:
-        "Cómo alquilar un shell: devuelve el precio y el endpoint x402 a pagar. Pagá con un cliente x402 (POST al endpoint) y usá el token que devuelve en send_command.",
+        "How to rent a shell: returns the price and the x402 endpoint to pay. Pay with an x402 client (POST to the endpoint) and use the returned token in send_command.",
       inputSchema: { shell: z.string().default("el-tucu"), blocks: z.number().int().min(1).max(6).default(1) },
     },
     async ({ shell, blocks }) => {
@@ -75,7 +75,7 @@ function build(d: Deps) {
   s.registerTool(
     "send_command",
     {
-      description: "Manda un comando al robot durante una sesión pagada. cmd: joint (args joint y angle), dance (args rutina) o stop.",
+      description: "Sends a command to the robot during a paid session. cmd: joint (args joint and angle), dance (arg rutina) or stop.",
       inputSchema: {
         token: z.string(),
         cmd: z.enum(["joint", "dance", "stop"]),
@@ -89,10 +89,10 @@ function build(d: Deps) {
       if (!v.s) return fail({ error: v.error });
       let c: Command;
       if (cmd === "joint") {
-        if (!joint || angle === undefined) return fail({ error: "joint y angle son obligatorios" });
+        if (!joint || angle === undefined) return fail({ error: "joint_and_angle_required" });
         c = { cmd, args: { joint, angle } };
       } else if (cmd === "dance") {
-        if (!rutina || !d.cfg.shell.routines.includes(rutina)) return fail({ error: "rutina inválida", rutinas: d.cfg.shell.routines });
+        if (!rutina || !d.cfg.shell.routines.includes(rutina)) return fail({ error: "invalid_routine", routines: d.cfg.shell.routines });
         c = { cmd, args: { rutina } };
       } else c = { cmd: "stop" };
       const r = await d.robot.send(c);
@@ -102,7 +102,7 @@ function build(d: Deps) {
 
   s.registerTool(
     "end_session",
-    { description: "Termina la sesión antes de tiempo. El robot vuelve a HOME.", inputSchema: { token: z.string() } },
+    { description: "Ends the session early. The robot returns to HOME.", inputSchema: { token: z.string() } },
     async ({ token }) => {
       const v = await d.sessions.validate(token);
       if (!v.s) return fail({ error: v.error });

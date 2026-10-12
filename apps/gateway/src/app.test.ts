@@ -5,7 +5,7 @@ import type { AddressInfo } from "node:net";
 import { loadConfig } from "./config.ts";
 import { createApp } from "./app.ts";
 
-// ESP32 falso con la API de robot-a/SPEC.md §4.4; registra lo que recibe.
+// Fake ESP32 with the robot-a/SPEC.md §4.4 API; records what it receives.
 const calls: string[] = [];
 let angles: Record<string, number> = { base: 90, shoulder: 90, elbow: 90, grip: 70 };
 const esp = http.createServer(async (req, res) => {
@@ -47,9 +47,9 @@ async function buy(blocks = 1) {
   assert.equal(r.status, 200);
   const v = await r.json();
   assert.equal(v.status, "pending");
-  assert.equal(v.intent.meta, undefined, "meta del riel no se expone");
-  await req(`/api/sessions/intent/${v.intent.id}`); // 1er check: no pagó
-  // el gateway limita checks a 1 cada 3 s; forzamos el segundo
+  assert.equal(v.intent.meta, undefined, "rail meta is never exposed");
+  await req(`/api/sessions/intent/${v.intent.id}`); // 1st check: not paid yet
+  // the gateway allows 1 check every 3 s; force the second one
   const rec = ctx.sessions.intents.get(v.intent.id)!;
   rec.lastCheck = 0;
   const paid = await (await req(`/api/sessions/intent/${v.intent.id}`)).json();
@@ -57,7 +57,7 @@ async function buy(blocks = 1) {
   return paid.session as { token: string; starts_at: number; expires_at: number };
 }
 
-test("ficha, rieles y descubrimiento", async () => {
+test("spec sheet, rails and discovery", async () => {
   const shells = await (await req("/api/shells")).json();
   assert.equal(shells[0].id, "el-tucu");
   assert.deepEqual(shells[0].routines, ["robot", "lento", "saludo", "recta"]);
@@ -68,14 +68,14 @@ test("ficha, rieles y descubrimiento", async () => {
   assert.equal(card.name, "Rent a Shell");
 });
 
-test("sin token no se mueve", async () => {
+test("no token, no motion", async () => {
   const r = await req("/api/cmd", json({ cmd: "stop" }));
   assert.equal(r.status, 401);
   const r2 = await req("/api/cmd", json({ cmd: "stop" }, "basura"));
   assert.equal(r2.status, 401);
 });
 
-test("pagar, mover, validar allowlist, cola y corte a HOME", async () => {
+test("pay, move, enforce allowlist, queue and cutoff to HOME", async () => {
   const s1 = await buy();
   assert.ok(s1.token);
 
@@ -90,7 +90,7 @@ test("pagar, mover, validar allowlist, cola y corte a HOME", async () => {
   r = await req("/api/cmd", json({ cmd: "joint", args: { joint: "cabeza", angle: 1 } }, s1.token));
   assert.equal(r.status, 400);
 
-  // segunda compra mientras s1 está activa: queda en cola
+  // second purchase while s1 is active: it queues
   const s2 = await buy();
   assert.ok(s2.starts_at >= s1.expires_at);
   r = await req("/api/cmd", json({ cmd: "stop" }, s2.token));
@@ -99,16 +99,16 @@ test("pagar, mover, validar allowlist, cola y corte a HOME", async () => {
   const q = await (await req("/api/shells/el-tucu/queue")).json();
   assert.equal(q.waiting, 1);
 
-  // vence s1 (bloque de 0.3 s): el reloj corta y vuelve a HOME
+  // s1 expires (0.3 s block): the clock ends it and returns to HOME
   await sleep(s1.expires_at - Date.now() + 20);
   calls.length = 0;
   await ctx.tick();
-  assert.ok(calls.some((c) => c.startsWith("POST /stop")), "manda stop al vencer");
+  assert.ok(calls.some((c) => c.startsWith("POST /stop")), "sends stop on expiry");
   assert.equal(angles.base, 90, "base vuelve a HOME");
   r = await req("/api/cmd", json({ cmd: "stop" }, s1.token));
   assert.equal(r.status, 403);
   r = await req("/api/cmd", json({ cmd: "stop" }, s2.token));
-  assert.equal(r.status, 200, "arranca la siguiente de la cola");
+  assert.equal(r.status, 200, "the next queued session starts");
 
   r = await req("/api/sessions/end", json({}, s2.token));
   assert.equal(r.status, 200);
@@ -116,7 +116,7 @@ test("pagar, mover, validar allowlist, cola y corte a HOME", async () => {
   assert.equal(r.status, 403);
 });
 
-test("rate limit de 10 comandos por segundo, stop siempre pasa", async () => {
+test("rate limit of 10 commands per second, stop always goes through", async () => {
   const s = await buy();
   await sleep(Math.max(0, s.starts_at - Date.now()) + 5);
   const codes = [];
@@ -126,9 +126,9 @@ test("rate limit de 10 comandos por segundo, stop siempre pasa", async () => {
   await req("/api/sessions/end", json({}, s.token));
 });
 
-test("x402: valida antes de cobrar, 402 sin pago, sesión con pago", async () => {
+test("x402: validates before charging, 402 without payment, session with payment", async () => {
   let r = await req("/api/sessions/x402?shell=el-tucu&blocks=99", { method: "POST" });
-  assert.equal(r.status, 400, "no cobra un pedido inválido");
+  assert.equal(r.status, 400, "does not charge an invalid request");
   r = await req("/api/sessions/x402?shell=el-tucu&blocks=2", { method: "POST" });
   assert.equal(r.status, 402);
   assert.equal((await r.json()).price.usd, "2");
@@ -138,7 +138,7 @@ test("x402: valida antes de cobrar, 402 sin pago, sesión con pago", async () =>
   assert.ok(g.token && g.expires_at > g.starts_at);
 });
 
-test("MCP: lista tools y rent_shell devuelve cómo pagar", async () => {
+test("MCP: lists tools and rent_shell returns how to pay", async () => {
   const rpc = (id: number, method: string, params: unknown) =>
     req("/mcp", {
       method: "POST",
@@ -155,21 +155,21 @@ test("MCP: lista tools y rent_shell devuelve cómo pagar", async () => {
   assert.match(body.pay.url, /api\/sessions\/x402\?shell=el-tucu&blocks=2/);
 });
 
-test("pedidos de personalización: se guardan y solo el Forger los lee", async () => {
-  let r = await req("/api/shells/el-tucu/requests", json({ contact: "@equipo", message: "Necesito un sensor de distancia en la pinza" }));
+test("customization requests: stored and readable only by the Forger", async () => {
+  let r = await req("/api/shells/el-tucu/requests", json({ contact: "@team", message: "I need a distance sensor on the gripper" }));
   assert.equal(r.status, 201);
-  r = await req("/api/shells/el-tucu/requests", json({ contact: "@equipo", message: "x".repeat(5000) }));
+  r = await req("/api/shells/el-tucu/requests", json({ contact: "@team", message: "x".repeat(5000) }));
   assert.equal(r.status, 413);
-  r = await req("/api/shells/el-tucu/requests", json({ contact: "", message: "corto" }));
+  r = await req("/api/shells/el-tucu/requests", json({ contact: "", message: "short" }));
   assert.equal(r.status, 400);
   assert.equal((await req("/api/forger/requests")).status, 401);
   r = await req("/api/forger/requests", { headers: { authorization: "Bearer forger-test" } });
   const list = await r.json();
   assert.equal(list.length, 1);
-  assert.equal(list[0].contact, "@equipo");
+  assert.equal(list[0].contact, "@team");
 });
 
-test("al terminar, el riel cierra el pago: completed si vence, refund si el robot se cae", async () => {
+test("on finish the rail closes the payment: completed on expiry, refund if the robot drops", async () => {
   const { fakeRail } = await import("@ras/rails-core");
   const calls: string[] = [];
   const rail = { ...fakeRail(), finalize: async (p: { intentId: string }, outcome: string) => void calls.push(outcome) };
@@ -184,10 +184,10 @@ test("al terminar, el riel cierra el pago: completed si vence, refund si el robo
   await a.tick();
   assert.deepEqual(calls, ["completed"]);
 
-  // robot caído con sesión activa: se corta y se reembolsa
+  // robot down during an active session: it ends and gets refunded
   const b = createApp(loadConfig({ ...env, BLOCK_MINUTES: "1", ESP32_URL: `http://localhost:${(down.address() as AddressInfo).port}` }), env, { rails: [rail] });
   assert.equal((await b.app.request("/api/sessions/x402?shell=el-tucu&blocks=1", { method: "POST", headers: { "x-fake-pay": "1" } })).status, 200);
-  for (let i = 0; i < 4; i++) await b.tick(); // 3 fallos seguidos = offline
+  for (let i = 0; i < 4; i++) await b.tick(); // 3 failures in a row = offline
   assert.deepEqual(calls, ["completed", "refund"]);
   down.close();
 });

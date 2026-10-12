@@ -243,7 +243,7 @@
         {
           "name": "caller",
           "docs": [
-            "Cualquiera puede disparar el reclamo; solo paga el ATA del payer si hace falta."
+            "Anyone can trigger the reclaim; they only pay for the payer ATA if it is needed."
           ],
           "writable": true,
           "signer": true
@@ -960,42 +960,42 @@
     {
       "code": 6000,
       "name": "WrongOperator",
-      "msg": "El operator no es el del escrow"
+      "msg": "Operator does not match the escrow"
     },
     {
       "code": 6001,
       "name": "InvalidState",
-      "msg": "El escrow no está en estado Funded"
+      "msg": "Escrow is not in the Funded state"
     },
     {
       "code": 6002,
       "name": "WrongMint",
-      "msg": "El mint no es el USDC configurado"
+      "msg": "Mint is not the configured USDC"
     },
     {
       "code": 6003,
       "name": "NotReclaimableYet",
-      "msg": "Todavía no pasó expires_at + 1 h"
+      "msg": "expires_at + 1 h has not passed yet"
     },
     {
       "code": 6004,
       "name": "ZeroAmount",
-      "msg": "El monto tiene que ser mayor a cero"
+      "msg": "Amount must be greater than zero"
     },
     {
       "code": 6005,
       "name": "FeeTooHigh",
-      "msg": "fee_bps no puede superar 10000"
+      "msg": "fee_bps cannot exceed 10000"
     },
     {
       "code": 6006,
       "name": "WrongTreasury",
-      "msg": "La tesorería no es la configurada"
+      "msg": "Treasury is not the configured one"
     },
     {
       "code": 6007,
       "name": "WrongAdmin",
-      "msg": "Solo el admin puede cambiar la configuración"
+      "msg": "Only the admin can change the config"
     }
   ],
   "types": [

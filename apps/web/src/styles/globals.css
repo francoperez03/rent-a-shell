@@ -3,42 +3,42 @@
 @tailwind utilities;
 
 :root {
-  /* ===== Colors: base landing2 (navy + acento azul + ámbar de alerta) ===== */
-  --bg:               oklch(99.3% 0.003 248);   /* #FBFDFF  página, blanco azulado */
-  --bg-elevated:      oklch(94.0% 0.015 251);   /* #E4ECF5  well azul claro / superficies elevadas */
-  --bg-inset:         oklch(96.2% 0.010 253);   /* #EEF3F9  well más sutil (más claro, no más oscuro) */
+  /* ===== Colors: landing2 base (navy + blue accent + alert amber) ===== */
+  --bg:               oklch(99.3% 0.003 248);   /* #FBFDFF  page, bluish white */
+  --bg-elevated:      oklch(94.0% 0.015 251);   /* #E4ECF5  light blue well / elevated surfaces */
+  --bg-inset:         oklch(96.2% 0.010 253);   /* #EEF3F9  subtler well (lighter) */
 
-  /* Navy/ink alineados al AZUL ELÉCTRICO de los videos: hue ~250 (azul puro, sin el
-     componente violáceo previo de 272) y más croma, para que las superficies oscuras
-     se sientan "retroiluminadas" como pide el manual, no navy corporativo apagado. */
-  --ink:              oklch(29.6% 0.088 250);   /* navy azul eléctrico: headings / texto fuerte */
-  --ink-soft:         oklch(33.0% 0.030 252);   /* cuerpo: carbón con tinte azul frío */
-  --ink-mute:         oklch(54.9% 0.040 252);   /* mute frío azulado (mantiene AA) */
+  /* Navy/ink aligned to the ELECTRIC BLUE of the videos: hue ~250 (pure blue, without the
+     earlier violet component of 272) and more chroma, so dark surfaces
+     feel "backlit" as the manual asks. */
+  --ink:              oklch(29.6% 0.088 250);   /* electric blue navy: headings / strong text */
+  --ink-soft:         oklch(33.0% 0.030 252);   /* body: charcoal with a cold blue tint */
+  --ink-mute:         oklch(54.9% 0.040 252);   /* cold bluish mute (keeps AA) */
 
-  --hairline:         oklch(84.0% 0.018 250);   /* bordes / divisores, tinte azul */
-  --hairline-strong:  oklch(76.0% 0.026 250);   /* hover / divisor fuerte */
+  --hairline:         oklch(84.0% 0.018 250);   /* borders / dividers, blue tint */
+  --hairline-strong:  oklch(76.0% 0.026 250);   /* hover / strong divider */
 
-  --accent:           oklch(58.0% 0.205 248);   /* azul eléctrico vivo: links / CTAs / señal */
-  --accent-hover:     oklch(52.0% 0.190 248);   /* más oscuro en hover (tema claro) */
-  --accent-ink:       oklch(99.3% 0.003 248);   /* #FBFDFF  texto sobre accent = blanco de página */
+  --accent:           oklch(58.0% 0.205 248);   /* vivid electric blue: links / CTAs / signal */
+  --accent-hover:     oklch(52.0% 0.190 248);   /* darker on hover (light theme) */
+  --accent-ink:       oklch(99.3% 0.003 248);   /* #FBFDFF  text on accent = page white */
 
-  /* Alerta contenida: ámbar para riesgo alto / hallazgo / severidad (manual §5). */
-  --alert:            oklch(54.9% 0.125 63);    /* #A35E00  ámbar oscurecido para pasar AA como texto */
-  --alert-on-dark:    oklch(80% 0.14 70);       /* el mismo ámbar, aclarado para texto y STOP sobre navy */
-  /* La "señal" de marca es el azul eléctrico (manual §5): alias del accent, para que
-     el nombre `signal` quede disponible alineado al manual sin reescribir usos de accent. */
+  /* Contained alert: amber for high risk / finding / severity (manual §5). */
+  --alert:            oklch(54.9% 0.125 63);    /* #A35E00  darkened amber to pass AA as text */
+  --alert-on-dark:    oklch(80% 0.14 70);       /* the same amber, lightened for text and STOP on navy */
+  /* The brand "signal" is the electric blue (manual §5): an alias of accent, so the
+     `signal` name is available, aligned to the manual, without rewriting accent uses. */
   --signal:           var(--accent);
 
   --grid:             oklch(29.6% 0.088 250 / 0.05);  /* ink @ 5% */
 
-  /* Paneles "dark" (fondo de video / placeholder oscuro): mismo hue eléctrico 250,
-     más croma → azul tinta profundo retroiluminado, no grisáceo. */
+  /* "Dark" panels (video background / dark placeholder): same electric hue 250,
+     more chroma → deep backlit ink blue. */
   --panel-dark:       oklch(22.0% 0.078 250);
   --panel-dark-deep:  oklch(16.0% 0.068 250);
 
   /* ===== Fonts ===== */
-  /* Display: Fraunces (serif moderna editorial) para titulares.
-     Sans: IBM Plex Sans para body, eyebrows, CTAs, datos. Mono: IBM Plex Mono. */
+  /* Display: Fraunces (modern editorial serif) for headlines.
+     Sans: IBM Plex Sans for body, eyebrows, CTAs, data. Mono: IBM Plex Mono. */
   --font-display:  "Fraunces", Georgia, "Times New Roman", serif;
   --font-sans:     "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono:     "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -59,7 +59,7 @@
   --shadow-medium:   0 2px 4px rgba(16, 38, 86, 0.07), 0 16px 40px rgba(16, 38, 86, 0.09);
 }
 
-/* ===== Base reset / tipografía base ===== */
+/* ===== Base reset / base typography ===== */
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -68,10 +68,10 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  /* Mata el rebote elástico del overscroll (no muestra fondo más allá del contenido). */
+  /* Kills the elastic overscroll bounce (shows nothing beyond the content). */
   overscroll-behavior: none;
-  /* Fondo oscuro detrás de todo: si hay rebote residual, matchea hero/footer
-     oscuros en vez de mostrar blanco. */
+  /* Dark background behind everything: any residual bounce matches the dark
+     hero/footer instead of flashing white. */
   background-color: var(--panel-dark-deep);
 }
 
@@ -86,25 +86,25 @@ body {
   letter-spacing: -0.005em;
 }
 
-/* Fraunces: ejes SOFT y WONK fijados en 0 para que la serif quede filosa
-   (editorial técnica), nunca la versión blanda de panadería. */
+/* Fraunces: SOFT and WONK axes pinned at 0 so the serif stays sharp
+   (technical editorial). */
 @layer utilities {
   .font-display {
     font-variation-settings: "SOFT" 0, "WONK" 0;
   }
 }
 
-/* Focus visible global */
+/* Global focus visible */
 *:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* ===== Alto de viewport con fallback ===== */
-/* Algunos in-app browsers (X, Instagram) ignoran `dvh` sin avisar: la línea
-   con `vh` queda como piso y la `dvh` la reemplaza solo si el navegador la
-   soporta. Sin esto, el panel colapsa a la altura de su contenido. */
+/* ===== Viewport height with fallback ===== */
+/* Some in-app browsers (X, Instagram) silently ignore `dvh`: the `vh` line
+   stays as the floor and the `dvh` one replaces it only if the browser
+   supports it. Without this, the panel collapses to its content height. */
 .h-viewport {
   height: 100vh;
   height: 100dvh;
@@ -114,14 +114,14 @@ body {
   min-height: 100dvh;
 }
 
-/* ===== Selección de texto ===== */
+/* ===== Text selection ===== */
 ::selection {
   background: var(--accent);
   color: var(--accent-ink);
 }
 
-/* ===== Dot de estado de los paneles de telemetría ===== */
-/* Pulso lento del indicador accent: señal viva, no animación de marketing (manual §13). */
+/* ===== Telemetry panel status dot ===== */
+/* Slow pulse of the accent indicator: a live signal (manual §13). */
 @keyframes status-pulse {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.35; }
@@ -137,7 +137,7 @@ body {
   }
 }
 
-/* ===== Respetar reduced motion ===== */
+/* ===== Honor reduced motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -148,10 +148,10 @@ body {
 }
 
 
-/* ===== Sliders de la consola ===== */
+/* ===== Console sliders ===== */
 .joint-range {
   accent-color: var(--accent);
-  height: 28px; /* target táctil */
+  height: 28px; /* touch target */
   cursor: pointer;
 }
 .joint-range:disabled { cursor: not-allowed; opacity: 0.4; }

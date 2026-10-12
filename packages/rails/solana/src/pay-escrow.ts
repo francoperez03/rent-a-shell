@@ -1,10 +1,10 @@
-// Riel solana-pay con escrow: el QR es un *transaction request* de Solana Pay. La wallet le pide la tx al
-// gateway, que arma un `deposit` al programa shell_escrow. Al terminar la sesión, finalize() libera al Forger
-// (fee_bps a la tesorería) o reembolsa al pagador si el shell se cayó.
+// solana-pay rail with escrow: the QR is a Solana Pay *transaction request*. The wallet asks the gateway
+// for the tx, which builds a `deposit` into the shell_escrow program. When the session ends, finalize() releases
+// it to the Forger (fee_bps to the treasury) or refunds the payer if the shell went down.
 // Spec: https://docs.solanapay.com/spec#transaction-request
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import anchor, { type Idl } from "@coral-xyz/anchor";
-// el paquete es CJS: los valores salen del default export
+// the package is CJS: values come from the default export
 const { utils } = anchor;
 import { fromAtomic, toAtomic, type IntentOpts, type Money, type Outcome, type PaymentRail } from "@ras/rails-core";
 import type { Intent, Payment } from "@ras/shell-spec";
@@ -23,8 +23,8 @@ export function solanaPayEscrow(env: Env): PaymentRail {
   const operator = Keypair.fromSecretKey(utils.bytes.bs58.decode(env.SOLANA_OPERATOR_KEY!.trim()));
   const client = new EscrowClient(connection, operator);
   const publicUrl = (env.PUBLIC_URL ?? `http://localhost:${env.PORT ?? 8787}`).replace(/\/$/, "");
-  const holdSec = Number(env.ESCROW_HOLD_SECONDS ?? 6 * 3600); // plazo antes de que el pagador pueda reclamar (+1 h en el programa)
-  // ponytail: intents en memoria; si el gateway reinicia, los QR abiertos (15 min) dejan de servir la tx
+  const holdSec = Number(env.ESCROW_HOLD_SECONDS ?? 6 * 3600); // time before the payer can reclaim (+1 h in the program)
+  // ponytail: intents in memory; if the gateway restarts, open QRs (15 min) stop serving the tx
   const open = new Map<string, { atomic: bigint; reference: string; expiresAt: number }>();
   const forger = () => new PublicKey(payTo(env));
   const mint = new PublicKey(net.usdc);
@@ -34,7 +34,7 @@ export function solanaPayEscrow(env: Env): PaymentRail {
     manifest: () => ({
       id: "solana-pay",
       label: `Solana Pay · ${net.label}`,
-      description: "Escaneás el QR con Phantom o Solflare y pagás en USDC. El pago queda en escrow hasta que termina tu sesión: si el robot se cae, vuelve a tu wallet.",
+      description: "Scan the QR with Phantom or Solflare and pay in USDC. The payment stays in escrow until your session ends: if the robot goes down, it goes back to your wallet.",
       audience: ["human"],
       available: Boolean(env.SOLANA_PAY_TO),
       wallet: { chains: [{ id: net.caip2, name: net.label, rpc: rpcUrl(net, env), explorer: net.explorer, nativeSymbol: "SOL" }] },
@@ -53,7 +53,7 @@ export function solanaPayEscrow(env: Env): PaymentRail {
         amount,
         asset: USDC.symbol,
         expiresAt: Date.now() + TTL,
-        // transaction request: la wallet hace GET/POST a esta URL (sin query, no hace falta encodear)
+        // transaction request: the wallet GETs/POSTs this URL (no query, so no encoding needed)
         instructions: { kind: "solana-pay", url: `solana:${publicUrl}/api/rails/solana-pay/tx/${id}`, reference, to, amount, symbol: USDC.symbol },
         meta: { atomic: atomic.toString(), reference },
       };
@@ -86,7 +86,7 @@ export function solanaPayEscrow(env: Env): PaymentRail {
         expiresAt: Math.floor(Date.now() / 1000) + holdSec,
         reference: new PublicKey(it.reference),
       });
-      return new Response(JSON.stringify({ transaction, message: `Sesión en Rent a Shell · ${fromAtomic(it.atomic, USDC.decimals)} USDC en escrow` }), { headers: cors });
+      return new Response(JSON.stringify({ transaction, message: `Rent a Shell session · ${fromAtomic(it.atomic, USDC.decimals)} USDC in escrow` }), { headers: cors });
     },
 
     async check(intent: Intent): Promise<Payment | null> {
@@ -107,7 +107,7 @@ export function solanaPayEscrow(env: Env): PaymentRail {
 
     async finalize(payment: Payment, outcome: Outcome) {
       const e = await client.escrow(payment.intentId);
-      if (!e || !e.state.funded) return; // ya cerrado (settle/refund/reclaim previo): nada que hacer
+      if (!e || !e.state.funded) return; // already closed (earlier settle/refund/reclaim): nothing to do
       const tx = outcome === "completed" ? await client.settle(payment.intentId) : await client.refund(payment.intentId);
       return { tx };
     },

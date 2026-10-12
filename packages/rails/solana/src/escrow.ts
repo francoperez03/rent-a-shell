@@ -1,9 +1,9 @@
-// Cliente del programa shell_escrow (programs/programs/shell-escrow). El pago de una persona queda en un vault
-// por sesión; al terminar el gateway (operator) libera al Forger con la comisión de la plataforma, o reembolsa
-// si el shell se cayó. Si el gateway desaparece, el pagador recupera todo con `reclaim` pasado el plazo.
+// Client for the shell_escrow program (programs/programs/shell-escrow). A human's payment sits in a vault
+// per session; when it ends the gateway (operator) releases it to the Forger minus the platform fee, or refunds it
+// if the shell went down. If the gateway disappears, the payer gets everything back with `reclaim` after the deadline.
 import { createHash } from "node:crypto";
 import anchor, { type Idl, type BN as BNType, type Program as ProgramType } from "@coral-xyz/anchor";
-// el paquete es CJS: los valores salen del default export
+// the package is CJS: values come from the default export
 const { AnchorProvider, BN, Program, Wallet } = anchor;
 import { Connection, Keypair, PublicKey, Transaction, type TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
@@ -11,7 +11,7 @@ import idl from "./idl/shell_escrow.json" with { type: "json" };
 
 export const PROGRAM_ID = new PublicKey(idl.address);
 
-/** session_id del escrow: sha256 del id del intent, así el riel lo deriva sin guardar estado. */
+/** Escrow session_id: sha256 of the intent id, so the rail derives it without storing state. */
 export const sessionId = (intentId: string) => [...createHash("sha256").update(intentId).digest()];
 
 export const configPda = (program = PROGRAM_ID) => PublicKey.findProgramAddressSync([Buffer.from("config")], program)[0];
@@ -48,7 +48,7 @@ export class EscrowClient {
     return (await acc.escrow.fetchNullable(escrowPda(sessionId(intentId)))) as EscrowAccount | null;
   }
 
-  /** Instrucción deposit firmada por el pagador; la reference de Solana Pay va como cuenta extra de solo lectura. */
+  /** deposit instruction signed by the payer; the Solana Pay reference goes as an extra read-only account. */
   async depositIx(o: { intentId: string; payer: PublicKey; mint: PublicKey; amount: bigint; forger: PublicKey; expiresAt: number; reference?: PublicKey }): Promise<TransactionInstruction> {
     const ix = await this.program.methods
       .deposit(sessionId(o.intentId), new BN(o.amount.toString()), o.forger, this.operator.publicKey, new BN(o.expiresAt))
@@ -64,7 +64,7 @@ export class EscrowClient {
     return ix;
   }
 
-  /** Transacción lista para que la wallet la firme (transaction request de Solana Pay). */
+  /** Transaction ready for the wallet to sign (Solana Pay transaction request). */
   async depositTx(o: Parameters<EscrowClient["depositIx"]>[0]): Promise<string> {
     const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash("confirmed");
     const tx = new Transaction({ feePayer: o.payer, blockhash, lastValidBlockHeight }).add(await this.depositIx(o));

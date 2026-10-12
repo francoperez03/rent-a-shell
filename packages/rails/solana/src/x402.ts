@@ -1,7 +1,7 @@
-// Riel solana-x402: agentes pagan USDC por x402 `exact` en Solana (@x402/svm 2.27.0).
-// El facilitator (x402.org en devnet, PayAI en mainnet) paga el fee: el agente no necesita SOL.
-// Flujo manual con x402HTTPResourceServer para liquidar ANTES de emitir la sesión:
-// si el settle falla, el handler nunca corre y no queda un token regalado.
+// solana-x402 rail: agents pay USDC via x402 `exact` on Solana (@x402/svm 2.27.0).
+// The facilitator (x402.org on devnet, PayAI on mainnet) pays the fee: the agent needs no SOL.
+// Manual flow with x402HTTPResourceServer to settle BEFORE issuing the session:
+// if settle fails, the handler never runs and no free token is left behind.
 import type { MiddlewareHandler } from "hono";
 import { HonoAdapter } from "@x402/hono";
 import { HTTPFacilitatorClient, x402HTTPResourceServer, x402ResourceServer, type HTTPRequestContext } from "@x402/core/server";
@@ -16,7 +16,7 @@ export function solanaX402(env: Env): PaymentRail {
   const apiKey = env.X402_API_KEY ?? "";
   const facilitator = new HTTPFacilitatorClient({
     url: facilitatorUrl(net, env),
-    // ponytail: x402.org (devnet) no pide key; PayAI en mainnet puede pedir una
+    // ponytail: x402.org (devnet) needs no key; PayAI on mainnet may ask for one
     ...(apiKey && {
       createAuthHeaders: async () => {
         const h = { Authorization: `Bearer ${apiKey}` };
@@ -31,8 +31,8 @@ export function solanaX402(env: Env): PaymentRail {
     id: "solana-x402",
     manifest: () => ({
       id: "solana-x402",
-      label: `USDC por x402 · ${net.label}`,
-      description: "Para agentes: el endpoint responde 402, el agente firma la transferencia de USDC y el facilitator la envía y paga el fee. El agente no necesita SOL.",
+      label: `USDC via x402 · ${net.label}`,
+      description: "For agents: the endpoint answers 402, the agent signs the USDC transfer and the facilitator submits it and pays the fee. The agent needs no SOL.",
       audience: ["agent"],
       available: Boolean(env.SOLANA_PAY_TO),
       wallet: { chains: [{ id: net.caip2, name: net.label, rpc: rpcUrl(net, env), explorer: net.explorer, nativeSymbol: "SOL" }] },
@@ -44,7 +44,7 @@ import { x402Client, wrapFetchWithPayment } from "@x402/fetch";
 import { ExactSvmScheme } from "@x402/svm/exact/client";
 import { toClientSvmSigner } from "@x402/svm";
 import { createKeyPairSignerFromBytes, getBase58Encoder } from "@solana/kit";
-// wallet con USDC en ${net.label}; no necesita SOL para el fee
+// wallet with USDC on ${net.label}; no SOL needed for the fee
 const kp = await createKeyPairSignerFromBytes(getBase58Encoder().encode(process.env.SOLANA_KEY));
 const client = new x402Client();
 client.register("solana:*", new ExactSvmScheme(toClientSvmSigner(kp)));

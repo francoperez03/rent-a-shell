@@ -79,7 +79,7 @@ describe("shell-escrow", () => {
     await program.methods.initConfig(treasury, 1000, mint).accounts({ admin: admin.publicKey }).rpc();
   });
 
-  it("settle reparte 90/10 entre Forger y tesorería", async () => {
+  it("settle splits 90/10 between Forger and treasury", async () => {
     const s = await deposit(USDC(1), now() + 300);
     await settle(s);
     expect(await bal(forger)).to.equal(900_000);
@@ -87,7 +87,7 @@ describe("shell-escrow", () => {
     expect((await program.account.escrow.fetch(escrowPda(s))).state).to.deep.equal({ settled: {} });
   });
 
-  it("refund devuelve todo al payer", async () => {
+  it("refund returns everything to the payer", async () => {
     const before = await bal(payer.publicKey);
     const s = await deposit(USDC(2), now() + 300);
     expect(await bal(payer.publicKey)).to.equal(before - 2_000_000);
@@ -96,7 +96,7 @@ describe("shell-escrow", () => {
     expect((await program.account.escrow.fetch(escrowPda(s))).state).to.deep.equal({ refunded: {} });
   });
 
-  it("reclaim falla antes de expires_at + 1 h y funciona después", async () => {
+  it("reclaim fails before expires_at + 1 h and works after", async () => {
     const early = await deposit(USDC(1), now() + 300);
     await fails(reclaim(early), "NotReclaimableYet");
     const before = await bal(payer.publicKey);
@@ -105,28 +105,28 @@ describe("shell-escrow", () => {
     expect(await bal(payer.publicKey)).to.equal(before);
   });
 
-  it("un operator ajeno no puede liquidar", async () => {
+  it("a foreign operator cannot settle", async () => {
     const s = await deposit(USDC(1), now() + 300);
     await fails(settle(s, stranger), "WrongOperator");
   });
 
-  it("no se puede liquidar dos veces", async () => {
+  it("cannot settle twice", async () => {
     const s = await deposit(USDC(1), now() + 300);
     await settle(s);
     const f = await bal(forger);
-    // el vault ya está cerrado, así que Anchor corta antes de llegar al chequeo de estado (InvalidState)
+    // the vault is already closed, so Anchor fails before reaching the state check (InvalidState)
     await fails(settle(s), "AccountNotInitialized");
     expect(await bal(forger)).to.equal(f);
   });
 
-  it("rechaza un mint distinto del configurado", async () => {
+  it("rejects a mint other than the configured one", async () => {
     const other = await createMint(conn, admin, admin.publicKey, null, 6);
     const otherToken = (await getOrCreateAssociatedTokenAccount(conn, admin, other, payer.publicKey)).address;
     await mintTo(conn, admin, other, otherToken, admin, 5_000_000);
     await fails(deposit(USDC(1), now() + 300, other, otherToken), "WrongMint");
   });
 
-  it("rechaza monto cero", async () => {
+  it("rejects a zero amount", async () => {
     await fails(deposit(new BN(0), now() + 300), "ZeroAmount");
   });
 });

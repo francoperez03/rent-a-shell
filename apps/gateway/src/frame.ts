@@ -1,5 +1,5 @@
-// Último JPEG de la cámara para agentes sin HLS. Lee un frame del RTSP de MediaMTX con ffmpeg.
-// ponytail: un ffmpeg por pedido con cache de 1 s; si hace falta más fps, dejar un ffmpeg vivo con -update 1.
+// Latest camera JPEG for agents without HLS. Grabs one frame from the MediaMTX RTSP stream with ffmpeg.
+// ponytail: one ffmpeg per request with a 1 s cache; for more fps, keep a long-lived ffmpeg with -update 1.
 import { spawn } from "node:child_process";
 
 export class Frames {

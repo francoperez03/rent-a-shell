@@ -1,5 +1,5 @@
 /**
- * Easings y transitions reusables. Mismos valores que apps/landing.
+ * Reusable easings and transitions. Same values as apps/landing.
  */
 
 export const easeOut = [0.16, 1, 0.3, 1] as const;
@@ -16,7 +16,7 @@ export const dur = {
   slow: 0.9,
 } as const;
 
-/** Reveal estándar de bloque: opacity + translateY ligero. */
+/** Standard block reveal: opacity + light translateY. */
 export const revealUp = {
   initial: { opacity: 0, y: 16 },
   whileInView: { opacity: 1, y: 0 },
@@ -24,7 +24,7 @@ export const revealUp = {
   transition: { duration: dur.medium, ease: easeOut },
 };
 
-/** Variants para staggers de hijos. */
+/** Variants for child staggers. */
 export const staggerParent = (stagger = 0.1, delayChildren = 0) => ({
   hidden: {},
   visible: {

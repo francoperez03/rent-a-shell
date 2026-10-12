@@ -16,10 +16,10 @@ import { useReducedMotion } from '@/lib/useReducedMotion';
 import { useReveal } from '@/lib/useReveal';
 import { JOINTS, JOINT_LABEL } from '@/lib/joints';
 
-// Orb en la familia navy + acento de landing2 (en lugar del amarillo/rosa de offbrand).
+// Orb in the landing2 navy + accent family (instead of offbrand's yellow/pink).
 const ORB_COLORS: OrbColors = { a: '#007CEB', b: '#3D8FF5', c: '#9CC4F2', d: '#001B3D', e: '#0A3A78' };
 
-// Recorrido propio: arranca detrás del video del hero y se apaga antes de "Cómo funciona".
+// Custom path: starts behind the hero video and fades out before "How it works".
 const ORB_KEYS: OrbKey[] = [
   { p: 0, w: 0.92, cx: 0.74, cy: 0.52 },
   { p: 0.08, w: 0.7, cx: 0.82, cy: 0.35 },
@@ -28,9 +28,9 @@ const ORB_KEYS: OrbKey[] = [
 ];
 
 const STEPS = [
-  { n: '0.1', title: 'Elegí', body: 'Un shell y cuántos bloques de cinco minutos querés. Ves la cámara y la cola antes de pagar.' },
-  { n: '0.2', title: 'Pagá', body: 'USDC en Solana: un QR de Solana Pay, o x402 si sos un agente. El precio queda fijo al confirmar.' },
-  { n: '0.3', title: 'Controlá', body: 'Movés cada articulación, corrés rutinas y frenás cuando quieras. Al vencer, vuelve solo a HOME.' },
+  { n: '0.1', title: 'Pick', body: 'A shell and how many five-minute blocks you want. You see the camera and the queue before paying.' },
+  { n: '0.2', title: 'Pay', body: 'USDC on Solana: a Solana Pay QR, or x402 if you are an agent. The price is locked when you confirm.' },
+  { n: '0.3', title: 'Control', body: 'Move each joint, run routines and stop whenever you want. When time runs out, it returns to HOME on its own.' },
 ];
 
 export default function Landing() {
@@ -43,7 +43,7 @@ export default function Landing() {
   useOrbPath(orb, ORB_KEYS);
   useHeroChars(hero, { after: null });
 
-  // El orb va fijo detrás de todo (z −2): el body tiene que dejarlo ver mientras dure la landing.
+  // The orb sits fixed behind everything (z −2): the body has to let it show while the landing is mounted.
   useEffect(() => {
     const prev = document.body.style.background;
     document.body.style.background = 'transparent';
@@ -73,10 +73,10 @@ export default function Landing() {
 }
 
 function Hero({ refEl, shell }: { refEl: React.RefObject<HTMLElement>; shell: Shell | undefined }) {
-  const title = 'Mové un robot real desde el navegador.';
+  const title = 'Move a real robot from your browser.';
   const city = shell?.location.split(',')[0] ?? 'Salta';
   const status = shell?.status ?? 'offline';
-  const hud = `${shell?.name ?? 'El Tucu'} · ${status === 'busy' ? 'en uso' : status} · ${city}`;
+  const hud = `${shell?.name ?? 'El Tucu'} · ${status === 'busy' ? 'in use' : status} · ${city}`;
 
   return (
     <section ref={refEl} id="hero" className="relative min-h-viewport">
@@ -98,11 +98,11 @@ function Hero({ refEl, shell }: { refEl: React.RefObject<HTMLElement>; shell: Sh
             </span>
           </h1>
           <p className="mt-6 max-w-[46ch] text-[1.125rem] font-light leading-[1.55] text-white/80 md:text-[1.25rem]">
-            El Tucu es un brazo de cuatro ejes en Salta. Lo alquilás por bloques de cinco minutos, lo ves por cámara y lo controlás vos o tu agente.
+            El Tucu is a four-axis arm in Salta, Argentina. Rent it in five-minute blocks, watch it on camera, and control it yourself or through your agent.
           </p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Pill as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Probar El Tucu" />
-            <Pill as="link" to="/agents" variant="secondary" label="Para agentes" />
+            <Pill as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Try El Tucu" />
+            <Pill as="link" to="/agents" variant="secondary" label="For agents" />
           </div>
         </div>
 
@@ -121,12 +121,12 @@ function Hero({ refEl, shell }: { refEl: React.RefObject<HTMLElement>; shell: Sh
 function HowItWorks() {
   const reveal = useReveal();
   return (
-    <section id="como-funciona" className="relative bg-bg py-24 md:py-32">
+    <section id="how-it-works" className="relative bg-bg py-24 md:py-32">
       <div className="mx-auto w-full max-w-container px-5 md:px-8">
         <motion.div {...reveal()}>
-          <Eyebrow>Cómo funciona</Eyebrow>
+          <Eyebrow>How it works</Eyebrow>
         </motion.div>
-        <SectionHeading title="Tres pasos, como un manual." anim={reveal} />
+        <SectionHeading title="Three steps, like a manual." anim={reveal} />
         <ol className="mt-16 grid grid-cols-1 border-t border-hairline md:grid-cols-3">
           {STEPS.map((s, i) => (
             <motion.li key={s.n} {...reveal(0.1 * i)} className="border-b border-hairline py-8 md:border-b-0 md:border-l md:px-8 md:first:border-l-0 md:first:pl-0">
@@ -157,40 +157,40 @@ function Audiences() {
     '    "scheme": "exact",',
     '    "network": "solana:EtWT…",',
     '    "amount": "1000000",  // 1 USDC',
-    '    "description": "El Tucu · 1 bloque de 5 min"',
+    '    "description": "El Tucu · 1 block of 5 min"',
     '  }]',
     '}',
   ];
 
   return (
-    <section id="para-quien" className="relative bg-[var(--panel-dark-deep)] py-24 md:py-32">
+    <section id="who-its-for" className="relative bg-[var(--panel-dark-deep)] py-24 md:py-32">
       <div className="mx-auto grid w-full max-w-container grid-cols-1 gap-16 px-5 md:px-8 lg:grid-cols-2 lg:gap-20">
         <div>
           <motion.div {...reveal()}>
-            <Eyebrow dark>Para personas</Eyebrow>
+            <Eyebrow dark>For people</Eyebrow>
           </motion.div>
           <SectionHeading
             tone="dark"
-            title="Pagás como ya pagás."
+            title="Pay the way you already pay."
             body={[
-              'Escaneás un QR de Solana Pay con Phantom o Solflare y pagás en USDC. Elegís los bloques, se confirma en segundos y la consola se abre sola.',
-              'La consola tiene cuatro sliders, rutinas y un STOP grande. También anda con teclado.',
+              'Scan a Solana Pay QR with Phantom or Solflare and pay in USDC. Pick your blocks, it confirms in seconds and the console opens on its own.',
+              'The console has four sliders, routines and a big STOP. It also works with the keyboard.',
             ]}
             anim={reveal}
           />
           <motion.div {...reveal(0.3)} className="mt-10">
-            <Pill as="link" to="/shells/el-tucu" label="Elegir bloques" />
+            <Pill as="link" to="/shells/el-tucu" label="Pick blocks" />
           </motion.div>
         </div>
 
         <div>
           <motion.div {...reveal()}>
-            <Eyebrow dark>Para agentes</Eyebrow>
+            <Eyebrow dark>For agents</Eyebrow>
           </motion.div>
           <SectionHeading
             tone="dark"
-            title="Un POST, un 402, un token."
-            body="Tu agente lee llms.txt, paga en USDC por x402 y recibe un token para mandar comandos. Sin cuenta, sin formulario."
+            title="One POST, one 402, one token."
+            body="Your agent reads llms.txt, pays in USDC with x402 and gets a token to send commands. No account, no form."
             anim={reveal}
           />
           <motion.pre
@@ -210,7 +210,7 @@ function Audiences() {
           </motion.pre>
           <motion.div {...reveal(0.3)} className="mt-6">
             <Link to="/agents" className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/60 underline-offset-4 transition-colors hover:text-white hover:underline">
-              Ver la guía para agentes
+              Read the agent guide
             </Link>
           </motion.div>
         </div>
@@ -225,12 +225,12 @@ function Shells({ shells }: { shells: Shell[] | undefined }) {
     <section id="shells" className="relative scroll-mt-20 bg-bg py-24 md:py-32">
       <div className="mx-auto w-full max-w-container px-5 md:px-8">
         <motion.div {...reveal()}>
-          <Eyebrow>Shells disponibles</Eyebrow>
+          <Eyebrow>Available shells</Eyebrow>
         </motion.div>
-        <SectionHeading title={shells?.some((s) => s.status !== 'offline') ? 'Hoy hay uno. Está prendido.' : 'Hoy hay uno.'} anim={reveal} />
+        <SectionHeading title={shells?.some((s) => s.status !== 'offline') ? 'One today. It is on.' : 'One today.'} anim={reveal} />
         <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {shells === undefined && <p className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute">Cargando shells…</p>}
-          {shells?.length === 0 && <p className="text-ink-soft">No hay shells publicados en este momento.</p>}
+          {shells === undefined && <p className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute">Loading shells…</p>}
+          {shells?.length === 0 && <p className="text-ink-soft">No shells are published right now.</p>}
           {shells?.map((s, i) => (
             <motion.div key={s.id} {...reveal(0.1 * i)}>
               <ShellCard shell={s} />
@@ -265,7 +265,7 @@ function ShellCard({ shell }: { shell: Shell }) {
           USD {shell.pricing.usd} · {shell.pricing.block_minutes} min
         </p>
         <span className="roll-parent font-sans text-[13px] font-medium uppercase tracking-[0.08em] text-accent">
-          Ver ficha <span className="arrow">→</span>
+          View shell <span className="arrow">→</span>
         </span>
       </div>
     </Link>
@@ -285,44 +285,44 @@ function LiveNumbers({ shell }: { shell: Shell | undefined }) {
 
   const active = queue?.active;
   const rows = [
-    { label: 'Estado', value: <StatusDot status={shell?.status} /> },
-    { label: 'Sesión en curso', value: active ? `${active.rail} · quedan ${fmtClock(toMs(active.expires_at) - now)}` : 'Libre' },
-    { label: 'En cola', value: queue ? String(queue.waiting) : '·' },
-    { label: 'Sesiones desde que llegaste', value: String(sessions) },
+    { label: 'Status', value: <StatusDot status={shell?.status} /> },
+    { label: 'Current session', value: active ? `${active.rail} · ${fmtClock(toMs(active.expires_at) - now)} left` : 'Free' },
+    { label: 'In queue', value: queue ? String(queue.waiting) : '·' },
+    { label: 'Sessions since you arrived', value: String(sessions) },
     {
-      label: 'Último pago',
+      label: 'Last payment',
       value: lastPay ? (
         lastPay.explorerUrl ? (
           <a href={lastPay.explorerUrl} target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-white">
-            {lastPay.rail} · {lastPay.tx ? `${lastPay.tx.slice(0, 10)}…` : 'ver'} ↗
+            {lastPay.rail} · {lastPay.tx ? `${lastPay.tx.slice(0, 10)}…` : 'view'} ↗
           </a>
         ) : (
           lastPay.rail
         )
       ) : (
-        'Esperando el próximo'
+        'Waiting for the next one'
       ),
     },
   ];
 
   return (
-    <section id="en-vivo" className="relative bg-[var(--panel-dark-deep)] py-24 md:py-32">
+    <section id="live" className="relative bg-[var(--panel-dark-deep)] py-24 md:py-32">
       <div className="mx-auto grid w-full max-w-container grid-cols-1 items-start gap-12 px-5 md:px-8 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
         <div>
           <motion.div {...reveal()}>
-            <Eyebrow dark>En vivo</Eyebrow>
+            <Eyebrow dark>Live</Eyebrow>
           </motion.div>
           <SectionHeading
             tone="dark"
-            title="Lo que pasa ahora en el gateway."
-            body="Cada sesión y cada pago llegan por eventos del gateway. Si alguien está moviendo a El Tucu, lo ves acá."
+            title="What is happening on the gateway right now."
+            body="Every session and every payment arrives as a gateway event. If someone is moving El Tucu, you see it here."
             anim={reveal}
           />
         </div>
         <motion.div {...reveal(0.15)}>
           <TelemetryPanel
-            label="GATEWAY · EVENTOS"
-            aside={<span className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/50">{connected ? 'conectado' : 'reconectando'}</span>}
+            label="GATEWAY · EVENTS"
+            aside={<span className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/50">{connected ? 'connected' : 'reconnecting'}</span>}
             live={connected}
             rows={rows}
           />
@@ -335,18 +335,18 @@ function LiveNumbers({ shell }: { shell: Shell | undefined }) {
 function Closing({ shell }: { shell: Shell | undefined }) {
   const reveal = useReveal();
   return (
-    <section id="cierre" className="relative bg-[var(--panel-dark-deep)] pt-24 md:pt-32">
+    <section id="closing" className="relative bg-[var(--panel-dark-deep)] pt-24 md:pt-32">
       <div className="mx-auto w-full max-w-container px-5 pb-24 md:px-8 md:pb-32">
         <SectionHeading
           size="display"
           tone="dark"
-          title="Cinco minutos alcanzan para saber si tu código mueve algo real."
-          body={`Un bloque cuesta USD ${shell?.pricing.usd ?? '1.00'}. Al vencer, El Tucu vuelve a HOME solo.`}
+          title="Five minutes is enough to know if your code moves something real."
+          body={`A block costs USD ${shell?.pricing.usd ?? '1.00'}. When time runs out, El Tucu returns to HOME on its own.`}
           anim={reveal}
         />
         <motion.div {...reveal(0.28)} className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Pill as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Alquilar un bloque" />
-          <Pill as="a" href="/llms.txt" variant="secondary" label="Leer llms.txt" />
+          <Pill as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Rent a block" />
+          <Pill as="a" href="/llms.txt" variant="secondary" label="Read llms.txt" />
         </motion.div>
       </div>
       <Footer />

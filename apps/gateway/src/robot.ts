@@ -1,4 +1,4 @@
-// Cliente al ESP32 de El Tucu (API de robot-a/SPEC.md §4.4, sin cambios). Solo red local.
+// Client for the El Tucu ESP32 (robot-a/SPEC.md §4.4 API, unchanged). Local network only.
 import type { Angles, Command, ShellState } from "@ras/shell-spec";
 
 export class Robot {
@@ -35,7 +35,7 @@ export class Robot {
     return this.cache.state;
   }
 
-  /** Allowlist cerrada: joint, dance, stop. Nada más llega al ESP32. */
+  /** Closed allowlist: joint, dance, stop. Nothing else reaches the ESP32. */
   async send(c: Command) {
     this.cache = null;
     switch (c.cmd) {

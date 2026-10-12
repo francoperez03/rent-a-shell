@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 
-// Split manual (equivalente a SplitText): palabras en .word, chars en .char. Sin dependencia.
+// Manual split (SplitText equivalent): words in .word, chars in .char. No dependency.
 export function Words({ text, className = '' }: { text: string; className?: string }) {
   return (
     <>
@@ -13,11 +13,11 @@ export function Words({ text, className = '' }: { text: string; className?: stri
   );
 }
 
-// M-HOV-01: texto duplicado por char para el roll en hover (CSS en motion-kit.css: .roll)
+// M-HOV-01: text duplicated per char for the hover roll (CSS in motion-kit.css: .roll)
 export function Roll({ text, className = '' }: { text: string; className?: string }) {
   return (
     <span className={`roll ${className}`}>
-      {/* rent-a-shell: texto real para lectores de pantalla (aria-label en un span no da nombre al link) */}
+      {/* rent-a-shell: real text for screen readers (aria-label on a span does not name the link) */}
       <span className="sr-only">{text}</span>
       {[...text].map((c, i) => (
         <span key={i} className={`ch${c === ' ' ? ' sp' : ''}`} style={{ ['--i' as string]: i }} aria-hidden>
@@ -29,7 +29,7 @@ export function Roll({ text, className = '' }: { text: string; className?: strin
   );
 }
 
-// Chars: el espacio va como nbsp; un ' ' dentro de un inline-block colapsa y pega las palabras.
+// Chars: the space goes as nbsp; a ' ' inside an inline-block collapses and glues the words.
 export function Chars({ text, className = '' }: { text: string; className?: string }): ReactNode {
   return (
     <>
@@ -40,8 +40,8 @@ export function Chars({ text, className = '' }: { text: string; className?: stri
   );
 }
 
-// maneva M-REV-02: cada palabra en su máscara (.words-clip) para el yPercent 100 → 0 de useReveals('.words-in').
-// Deja una copia sr-only del texto (como SplitText en la ref) para lectores de pantalla y para que el compare matchee.
+// maneva M-REV-02: each word in its mask (.words-clip) for the yPercent 100 → 0 of useReveals('.words-in').
+// Leaves an sr-only copy of the text (like SplitText in the ref) for screen readers and so the compare matches.
 export function WordsIn({ text, className = '' }: { text: string; className?: string }) {
   return (
     <span className={`words-in ${className}`}>
@@ -55,7 +55,7 @@ export function WordsIn({ text, className = '' }: { text: string; className?: st
   );
 }
 
-// uplink M-HOV-01: label duplicado; en hover (propio o de un ancestro .swap-parent) sube una línea. CSS: .swap-label (motion-kit.css)
+// uplink M-HOV-01: duplicated label; on hover (its own or of a .swap-parent ancestor) it rises one line. CSS: .swap-label (motion-kit.css)
 export function SwapLabel({ text, className = '' }: { text: string; className?: string }) {
   return (
     <span className={`swap-label ${className}`}>

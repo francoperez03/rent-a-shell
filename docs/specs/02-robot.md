@@ -1,45 +1,47 @@
-# 02 · Robot: El Tucu como shell #1
+# 02 · Robot: El Tucu as shell #1
 
-Se usa el brazo de las BNB Builder Sessions **tal cual está programado**. Fuente de verdad: `~/repos/job/eventos/bnb-builder-session/agentes/robot-a/SPEC.md` §4.4 y `apps/firmware/README.md`. Si algo de acá contradice esos archivos, mandan ellos.
+We use the arm from the BNB Builder Sessions **exactly as programmed**. Source of truth: `robot-a/SPEC.md` §4.4 and `apps/firmware/README.md`. If anything here contradicts those files, they win.
 
 ## Hardware
 
-- ESP32 + 4 servos SG90: base, hombro (`shoulder`), codo (`elbow`), pinza (`grip`).
-- Firmware ESP-IDF 5.5.3, WiFi STA en el router propio con IP fija.
-- Fuente de 5 V con tierra común y capacitor en la línea de 5 V.
-- Webcam USB en la Legion apuntando al brazo.
+- ESP32 + 4 SG90 servos: base, `shoulder`, `elbow`, `grip`.
+- ESP-IDF 5.5.3 firmware, WiFi STA on the own router with a fixed IP.
+- 5 V power supply with common ground and a capacitor on the 5 V line.
+- Optional INA219 current sensor on the servo bus (SDA 21, SCL 22, address 0x40).
+- USB webcam on the gateway computer pointing at the arm.
 
-## API del firmware (sin cambios)
+## Firmware API
 
-| Método | Ruta | Cuerpo | Respuesta |
+| Method | Path | Body | Response |
 |---|---|---|---|
-| GET | `/state` | | `{ok, moving, rutina, angles:{base,shoulder,elbow,grip}, uptime_ms}` |
-| POST | `/dance` | `{rutina: "robot" \| "lento" \| "saludo" \| "recta"}` | `{ok, duration_ms}` o `409` si ya se mueve |
-| POST | `/joint` | `{joint, angle}` | `{ok, joint, angle, clamped, limits}`, `409` si baila, `400` si inválido |
-| POST | `/stop` | | `{ok, angles}`, siempre aceptado |
+| GET | `/state` | | `{ok, moving, rutina, angles:{base,shoulder,elbow,grip}, current_ma, uptime_ms}` |
+| POST | `/dance` | `{rutina: "robot" \| "lento" \| "saludo" \| "recta"}` | `{ok, duration_ms}` or `409` if already moving |
+| POST | `/joint` | `{joint, angle}` | `{ok, joint, angle, clamped, limits}`, `409` while dancing, `400` if invalid |
+| POST | `/stop` | | `{ok, angles}`, always accepted |
 
+- `current_ma`: total servo bus current from the INA219, `null` if the chip isn't detected.
 - HOME `{base:90, shoulder:90, elbow:90, grip:70}`.
-- Velocidad máxima 2° cada 20 ms.
-- Rangos hasta calibrar: base 20 a 160, hombro 50 a 130, codo 50 a 130, pinza 40 a 110. `[a verificar]` contra la calibración final en `robot-a/apps/firmware`.
-- El firmware recorta al rango seguro: el gateway no necesita repetir los límites, pero los publica en la ficha.
-- Las rutinas viven en `apps/firmware/main/dance.c` y `apps/mock/dance.mjs` (`robot`, `lento`, `saludo`, `recta`).
+- Max speed 2° every 20 ms.
+- Ranges until calibrated: base 20 to 160, shoulder 50 to 130, elbow 50 to 130, grip 40 to 110. `[to verify]` against the final calibration in `robot-a/apps/firmware`.
+- The firmware clamps to the safe range: the gateway doesn't need to repeat the limits, but publishes them in the spec.
+- Routines live in `apps/firmware/main/dance.c` and `apps/mock/dance.mjs` (`robot`, `lento`, `saludo`, `recta`).
 
-## Comandos expuestos en una sesión
+## Commands exposed in a session
 
-El gateway traduce comandos de sesión a la API del firmware. Allowlist cerrada:
+The gateway translates session commands into the firmware API. Closed allowlist:
 
-| Comando de sesión | Llamada al ESP32 | Regla |
+| Session command | ESP32 call | Rule |
 |---|---|---|
-| `joint {joint, angle}` | `POST /joint` | requiere sesión vigente |
-| `dance {rutina}` | `POST /dance` | requiere sesión vigente, rutina de la lista |
-| `stop` | `POST /stop` | requiere sesión vigente; el gateway también lo llama solo al vencer |
-| `state` | `GET /state` | público, sin sesión (alimenta el HUD del sitio) |
+| `joint {joint, angle}` | `POST /joint` | requires a valid session |
+| `dance {rutina}` | `POST /dance` | requires a valid session, routine from the list |
+| `stop` | `POST /stop` | requires a valid session; the gateway also calls it on its own at expiry |
+| `state` | `GET /state` | public, no session (feeds the website HUD) |
 
-Al vencer o cerrar la sesión el gateway hace `POST /stop` y después `POST /joint` a cada articulación para volver a HOME.
+When the session expires or closes, the gateway calls `POST /stop` and then `POST /joint` on each joint to return to HOME.
 
-## Ficha legible por máquinas
+## Machine-readable spec
 
-La sirve el gateway en `GET /api/shells` y la usan el sitio, `llms.txt` y el MCP. Tipos en `packages/shell-spec`.
+Served by the gateway at `GET /api/shells` and used by the website, `llms.txt` and the MCP. Types in `packages/shell-spec`.
 
 ```json
 {
@@ -48,33 +50,35 @@ La sirve el gateway en `GET /api/shells` y la usan el sitio, `llms.txt` y el MCP
   "kind": "arm-4dof",
   "location": "Salta, AR",
   "status": "online",
-  "camera": { "hls": "https://<url-legion>/live/tucu/index.m3u8", "frame": "https://<url-legion>/api/shells/el-tucu/frame" },
+  "gateway": "https://<gateway-url>",
+  "camera": { "hls": "https://<gateway-url>/live/el-tucu/index.m3u8", "frame": "https://<gateway-url>/api/shells/el-tucu/frame" },
   "joints": {
     "base": [20, 160], "shoulder": [50, 130], "elbow": [50, 130], "grip": [40, 110]
   },
   "home": { "base": 90, "shoulder": 90, "elbow": 90, "grip": 70 },
   "routines": ["robot", "lento", "saludo", "recta"],
+  "sensors": ["angles", "current_ma"],
   "pricing": { "block_minutes": 5, "usd": "1.00" }
 }
 ```
 
-`status`: `online`, `busy` (sesión activa), `offline` (no responde `/state` o no hay video). Precio de ejemplo en USD, `[INPUT]` precio final. La ficha no dice cómo se paga: los medios de pago salen de `GET /api/rails` (`08-rieles-adaptador.md`), así cambiar de infra no toca la ficha.
+`status`: `online`, `busy` (active session), `offline` (doesn't answer `/state` or there's no video). Example price in USD, `[INPUT]` final price. The spec doesn't say how to pay: payment methods come from `GET /api/rails` (`08-rail-adapter.md`), so changing infra doesn't touch the spec.
 
-## Desarrollo sin brazo
+## Development without the arm
 
-`robot-a/apps/mock` tiene la misma API y las mismas rutinas que el firmware (`check-tables.mjs` falla si difieren).
+`robot-a/apps/mock` has the same API and routines as the firmware (`check-tables.mjs` fails if they differ), and simulates `current_ma`.
 
 ```bash
-cd ~/repos/job/eventos/bnb-builder-session/agentes/robot-a
-pnpm --filter mock start          # escucha en http://localhost:8080
-ESP32_URL=http://localhost:8080   # en el gateway
+cd robot-a
+pnpm --filter mock start          # listens on http://localhost:8080
+ESP32_URL=http://localhost:8080   # in the gateway
 ```
 
-## Riesgos del robot
+## Robot risks
 
-| Riesgo | Mitigación |
+| Risk | Mitigation |
 |---|---|
-| Un SG90 se recalienta con sesiones seguidas | pausa de 1 minuto en HOME entre sesiones; `[a verificar]` cuántas sesiones aguanta en un ensayo |
-| WiFi del evento | router propio, IP reservada |
-| La fuente no da corriente con 4 servos | medir antes, `[INPUT]` amperes de la fuente |
-| Se cae en plena demo | video de respaldo grabado en F7 |
+| An SG90 overheats with back-to-back sessions | 1-minute rest at HOME between sessions; `[to verify]` how many sessions it holds in a rehearsal |
+| Event WiFi | own router, reserved IP |
+| The power supply can't deliver current for 4 servos | measure first (the INA219 helps), `[INPUT]` supply amperes |
+| It fails mid-demo | backup video recorded in F7 |

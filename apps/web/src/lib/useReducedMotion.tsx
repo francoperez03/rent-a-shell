@@ -3,14 +3,14 @@ import type { ReactNode } from 'react';
 import { useReducedMotion as useReducedMotionFM } from 'framer-motion';
 
 /**
- * Movimiento reducido = preferencia del sistema OR override manual del usuario.
- * Patek expone un toggle "Reduce motion" en el footer; replicamos ese control
- * además de respetar `prefers-reduced-motion`.
+ * Reduced motion = system preference OR the user's manual override.
+ * Patek exposes a "Reduce motion" toggle in the footer; we replicate that control
+ * on top of honoring `prefers-reduced-motion`.
  */
 interface MotionPrefContextValue {
-  /** Estado efectivo: sistema OR override. Consumir esto para decidir si animar. */
+  /** Effective state: system OR override. Read this to decide whether to animate. */
   reduced: boolean;
-  /** Solo el override manual del usuario (para reflejar el estado del toggle). */
+  /** Only the user's manual override (to reflect the toggle state). */
   manualReduced: boolean;
   setManualReduced: (v: boolean) => void;
 }
@@ -33,15 +33,15 @@ export function MotionPrefProvider({ children }: { children: ReactNode }) {
   return <MotionPrefContext.Provider value={value}>{children}</MotionPrefContext.Provider>;
 }
 
-/** Estado efectivo de movimiento reducido. */
+/** Effective reduced-motion state. */
 export function useReducedMotion(): boolean {
   const ctx = useContext(MotionPrefContext);
-  // Fallback si se usa fuera del provider (ej. tests).
+  // Fallback when used outside the provider (e.g. tests).
   const systemReduced = useReducedMotionFM() ?? false;
   return ctx ? ctx.reduced : systemReduced;
 }
 
-/** Control del toggle manual (footer). */
+/** Manual toggle control (footer). */
 export function useMotionToggle(): { manualReduced: boolean; toggle: () => void } {
   const ctx = useContext(MotionPrefContext);
   if (!ctx) throw new Error('useMotionToggle must be used within <MotionPrefProvider>');

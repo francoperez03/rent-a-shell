@@ -1,72 +1,71 @@
-# Forgers · cómo publicar tu hardware
+# Forgers · how to publish your hardware
 
+## With Claude Code (recommended)
 
-## Con Claude Code (recomendado)
-
-La skill `rent-a-shell-forger` guía a Claude Code por todo el armado: requisitos, ESP32, cámara (MediaMTX + ffmpeg), configuración, escrow, túnel y registro en el hub, y cierra con `pnpm forger:doctor`.
+The `rent-a-shell-forger` skill walks Claude Code through the whole setup: requirements, ESP32, camera (MediaMTX + ffmpeg), configuration, escrow, tunnel and hub registration, and finishes with `pnpm forger:doctor`.
 
 ```bash
 mkdir -p ~/.claude/skills/rent-a-shell-forger
 curl -fsSL <HUB_URL>/skills/forger/SKILL.md -o ~/.claude/skills/rent-a-shell-forger/SKILL.md
 ```
 
-Después, en Claude Code: "quiero publicar mi robot en Rent a Shell". La skill también está en el repo, en `skills/rent-a-shell-forger/`.
+`<HUB_URL>`: public hub URL, TBD. Then, in Claude Code: "I want to publish my robot on Rent a Shell". The skill is also in the repo, at `skills/rent-a-shell-forger/`.
 
-La compu del Forger probablemente sea una **Mac**: la skill está escrita primero para macOS (Homebrew, permisos de cámara y red local de la Terminal, `caffeinate`, arranque por Ítems de inicio) y trae una sección con las diferencias para Windows y Linux.
+The Forger's computer will most likely be a **Mac**: the skill is written for macOS first (Homebrew, Terminal camera and local network permissions, `caffeinate`, start via Login Items) and includes a section with the differences for Windows and Linux.
 
-**Un solo comando para correr todo:** `pnpm forger` (`scripts/forger/run.mjs`) levanta MediaMTX, la cámara (dshow en Windows, avfoundation en macOS, v4l2 en Linux), el túnel de Cloudflare, el gateway con la URL del túnel y el registro en el hub. Además reinicia lo que se cae y se re-registra si el túnel cambia de URL. `pnpm forger:cameras` lista las cámaras y `CAMERA=test` usa una señal de prueba.
+**One command to run everything:** `pnpm forger` (`scripts/forger/run.mjs`) starts MediaMTX, the camera (dshow on Windows, avfoundation on macOS, v4l2 on Linux), the Cloudflare tunnel, the gateway with the tunnel URL and the hub registration. It also restarts whatever crashes and re-registers if the tunnel URL changes. `pnpm forger:cameras` lists cameras and `CAMERA=test` uses a test signal.
 
-Herramientas de apoyo: `pnpm forger:find-esp32` (busca el ESP32 en la red local), `pnpm forger:doctor` (chequeo de punta a punta), `pnpm --filter @ras/rails-solana operator-key` (wallet del operador sin mostrar la clave) y `scripts/forger/mediamtx.yml` (config de cámara).
+Support tools: `pnpm forger:find-esp32` (finds the ESP32 on the local network), `pnpm forger:doctor` (end-to-end check), `pnpm --filter @ras/rails-solana operator-key` (operator wallet without showing the key) and `scripts/forger/mediamtx.yml` (camera config).
 
-Un Forger arma un shell, lo mantiene online y cobra por minuto de uso. Corre un gateway propio al lado de su robot y lo registra en el hub.
+A Forger builds a shell, keeps it online and gets paid per minute of use. They run their own gateway next to their robot and register it in the hub.
 
 ## 1. Gateway
 
 ```bash
-git clone <repo> && cd rent-a-shell && pnpm install
+git clone https://github.com/francoperez03/rent-a-shell.git && cd rent-a-shell && pnpm install
 cp apps/gateway/.env.example apps/gateway/.env.local
 ```
 
-En `apps/gateway/.env.local`:
+In `apps/gateway/.env.local`:
 
-| Variable | Qué poner |
+| Variable | What to set |
 |---|---|
-| `ESP32_URL` | IP del robot en tu red local |
-| `PUBLIC_URL` | URL HTTPS pública del gateway (túnel). La usan el hub, el sitio y las wallets (transaction request) |
+| `ESP32_URL` | robot IP on your local network |
+| `PUBLIC_URL` | public HTTPS URL of the gateway (tunnel). Used by the hub, the website and wallets (transaction request) |
 | `SESSION_SECRET` | `openssl rand -hex 32` |
-| `SHELL_ID`, `SHELL_NAME` | id único en el catálogo y nombre visible |
-| `SHELL_SENSORS` | `angles,current_ma` si tenés INA219; si no, `angles` |
-| `BLOCK_MINUTES`, `BLOCK_USD` | duración y precio del bloque |
-| `FORGER_NAME`, `FORGER_CONTACT` | cómo te ven los clientes |
-| `FORGER_TOKEN` | `openssl rand -hex 24`, para leer los pedidos |
+| `SHELL_ID`, `SHELL_NAME` | unique id in the catalog and display name |
+| `SHELL_SENSORS` | `angles,current_ma` if you have an INA219; otherwise `angles` |
+| `BLOCK_MINUTES`, `BLOCK_USD` | block length and price |
+| `FORGER_NAME`, `FORGER_CONTACT` | how customers see you |
+| `FORGER_TOKEN` | `openssl rand -hex 24`, to read requests |
 | `RAILS` | `solana-x402,solana-pay` |
-| `SOLANA_NETWORK` | `devnet` o `mainnet` |
-| `SOLANA_PAY_TO` | la address de tu wallet (Phantom). Solo recibe: la clave no va al gateway |
-| `SOLANA_OPERATOR_KEY` | secret base58 de una wallet aparte, con un poco de SOL para fees. Solo puede liquidar o reembolsar escrows, nunca mandar fondos a otro lado. Sin ella, Solana Pay cobra directo y sin escrow |
+| `SOLANA_NETWORK` | `devnet` or `mainnet` |
+| `SOLANA_PAY_TO` | your wallet address (Phantom). It only receives: the key never goes to the gateway |
+| `SOLANA_OPERATOR_KEY` | base58 secret of a separate wallet with a little SOL for fees. It can only settle or refund escrows, never send funds anywhere else. Without it, Solana Pay charges directly with no escrow |
 
 ```bash
 pnpm gateway
-curl $PUBLIC_URL/api/shells     # tu ficha
+curl $PUBLIC_URL/api/shells     # your spec sheet
 ```
 
-## 2. Registrarte en el hub
+## 2. Register in the hub
 
 ```bash
 curl -X POST https://<hub>/api/forgers \
   -H 'content-type: application/json' \
-  -d '{"gateway":"https://<tu-gateway>"}'
+  -d '{"gateway":"https://<your-gateway>"}'
 ```
 
-El hub pide tu `/api/shells`. Si responde, quedás en el catálogo (201); si no, 422. Cada 30 s chequea que sigas online.
+The hub fetches your `/api/shells`. If it responds, you're in the catalog (201); if not, 422. Every 30 s it checks that you're still online.
 
-## 3. Cobrar
+## 3. Getting paid
 
-- Personas (Solana Pay con escrow): al terminar la sesión te llega el 90 % y la plataforma se queda con el 10 %. Si tu robot se cae más de `OFFLINE_REFUND_SECONDS`, la sesión se corta y el pago vuelve al cliente.
-- Agentes (x402): te llega el 100 % directo a `SOLANA_PAY_TO`.
+- People (Solana Pay with escrow): when the session ends you get 90 % and the platform keeps 10 %. If your robot is down for longer than `OFFLINE_REFUND_SECONDS`, the session is cut and the payment goes back to the customer.
+- Agents (x402): you get 100 % straight to `SOLANA_PAY_TO`.
 
-## 4. Pedidos de personalización
+## 4. Customization requests
 
-Los clientes te dejan pedidos desde la ficha del shell (un sensor extra, otro efector, otro montaje):
+Customers leave requests from the shell's spec page (an extra sensor, a different end effector, a different mount):
 
 ```bash
 curl -H "authorization: Bearer $FORGER_TOKEN" $PUBLIC_URL/api/forger/requests

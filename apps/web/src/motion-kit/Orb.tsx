@@ -1,8 +1,8 @@
 import { forwardRef, useRef, type MutableRefObject } from 'react';
 import LiquidOrb, { type OrbColors } from './LiquidOrb';
 
-// Orb fijo detrás de todo (z -2): host redondo de 80vh con el canvas líquido + dos anillos.
-// La ref apunta al host para que useOrbPath lo mueva/escale con el scroll.
+// Fixed orb behind everything (z -2): round 80vh host with the liquid canvas + two rings.
+// The ref points to the host so useOrbPath moves/scales it with the scroll.
 const Orb = forwardRef<HTMLDivElement, { colors?: OrbColors; size?: string; rings?: boolean }>(function Orb({ colors, size = 'calc(var(--vh, 1vh) * 80)', rings = true }, ref) {
   const host = useRef<HTMLDivElement | null>(null);
   return (

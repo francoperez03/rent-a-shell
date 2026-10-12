@@ -5,10 +5,10 @@ import { cn } from '@/lib/cn';
 interface SectionHeadingProps {
   title: string;
   body?: string | string[];
-  /** 'display': hero y cierre. 'section': el resto. */
+  /** 'display': hero and closing. 'section': everything else. */
   size?: 'display' | 'section';
   tone?: 'light' | 'dark';
-  /** Props de entrada por bloque según su delay (cada sección orquesta su reveal). */
+  /** Entry props per block by delay (each section orchestrates its reveal). */
   anim?: (delay: number) => MotionProps;
 }
 
@@ -17,7 +17,7 @@ const TITLE_SIZE = {
   section: 'clamp(2.25rem, 4vw, 3.5rem)',
 };
 
-/** Encabezado de landing2: título en Fraunces light y párrafos de cuerpo en Plex. */
+/** landing2 heading: Fraunces light title and Plex body paragraphs. */
 export function SectionHeading({ title, body, size = 'section', tone = 'light', anim = () => ({}) }: SectionHeadingProps) {
   const dark = tone === 'dark';
   const paragraphs = body === undefined ? [] : Array.isArray(body) ? body : [body];

@@ -1,4 +1,4 @@
-// llms.txt y agent card. Todo sale de la ficha y de los manifiestos: sin datos de chain fijos acá.
+// llms.txt and agent card. Everything comes from the spec sheet and the rail manifests: no hardcoded chain data here.
 import type { PaymentRail } from "@ras/rails-core";
 import type { Shell } from "@ras/shell-spec";
 import type { Config } from "./config.ts";
@@ -11,53 +11,53 @@ export function llmsTxt(cfg: Config, shell: Shell, rails: PaymentRail[]): string
   const payUrl = `${u}/api/sessions/x402?shell=${shell.id}&blocks=1`;
   const examples = rails
     .filter((r) => r.clientExample && r.manifest().available)
-    .map((r) => `Ejemplo (${r.id}):\n\n${r.clientExample!(payUrl)}`)
+    .map((r) => `Example (${r.id}):\n\n${r.clientExample!(payUrl)}`)
     .join("\n\n");
   return `# Rent a Shell
 
-> Alquilá un cuerpo robótico real por bloques de ${shell.pricing.block_minutes} minutos. Pagás, recibís un token de sesión, movés el robot y lo ves por cámara. Al vencer vuelve solo a HOME.
+> Rent a real robot body in ${shell.pricing.block_minutes}-minute blocks. Pay, get a session token, move the robot and watch it on camera. When time runs out it returns to HOME on its own.
 
-## Shell disponible
+## Available shell
 
-- id: ${shell.id} (${shell.name}), ${shell.kind}, ${shell.location}, estado: ${shell.status}
-- Articulaciones y rango seguro en grados: base ${j.base[0]} a ${j.base[1]}, shoulder ${j.shoulder[0]} a ${j.shoulder[1]}, elbow ${j.elbow[0]} a ${j.elbow[1]}, grip ${j.grip[0]} a ${j.grip[1]}. Fuera de rango se recorta.
+- id: ${shell.id} (${shell.name}), ${shell.kind}, ${shell.location}, status: ${shell.status}
+- Joints and safe range in degrees: base ${j.base[0]} to ${j.base[1]}, shoulder ${j.shoulder[0]} to ${j.shoulder[1]}, elbow ${j.elbow[0]} to ${j.elbow[1]}, grip ${j.grip[0]} to ${j.grip[1]}. Out-of-range values are clamped.
 - HOME: ${JSON.stringify(shell.home)}
-- Rutinas: ${shell.routines.join(", ")}
-- Sensores en /state: ${shell.sensors.join(", ")}${shell.sensors.includes("current_ma") ? " (current_ma = mA totales del bus de servos; sirve para medir cuánto consume tu movimiento)" : ""}
-- Precio: USD ${shell.pricing.usd} por bloque de ${shell.pricing.block_minutes} min, máximo ${cfg.maxBlocks} bloques
-- Cámara: HLS ${shell.camera.hls ?? "(no publicada)"} · último frame JPEG ${shell.camera.frame}
-- Forger (quien lo arma y mantiene): ${shell.forger.name}${shell.forger.contact ? `, contacto ${shell.forger.contact}` : ""}${shell.forger.customizations ? ". Acepta pedidos de personalización." : ""}
-- Tenerlo propio: unos USD ${shell.build.parts_usd} en partes, ${shell.build.lead_days} días de espera y ${shell.build.build_hours} h de armado. Acá: USD ${shell.pricing.usd} por ${shell.pricing.block_minutes} min, desde ahora.
+- Routines: ${shell.routines.join(", ")}
+- Sensors in /state: ${shell.sensors.join(", ")}${shell.sensors.includes("current_ma") ? " (current_ma = total mA on the servo bus; use it to measure how much your motion draws)" : ""}
+- Price: USD ${shell.pricing.usd} per ${shell.pricing.block_minutes}-minute block, up to ${cfg.maxBlocks} blocks
+- Camera: HLS ${shell.camera.hls ?? "(not published)"} · latest JPEG frame ${shell.camera.frame}
+- Forger (who builds and maintains it): ${shell.forger.name}${shell.forger.contact ? `, contact ${shell.forger.contact}` : ""}${shell.forger.customizations ? ". Takes customization requests." : ""}
+- Owning one: about USD ${shell.build.parts_usd} in parts, ${shell.build.lead_days} days of waiting and ${shell.build.build_hours} h of assembly. Here: USD ${shell.pricing.usd} per ${shell.pricing.block_minutes} min, starting now.
 
-## Medios de pago para agentes
+## Payment rails for agents
 
-${agentRails.length ? agentRails.map((r) => `- ${r.id}: ${r.label}. ${r.description}`).join("\n") : "- Ninguno activo ahora."}
+${agentRails.length ? agentRails.map((r) => `- ${r.id}: ${r.label}. ${r.description}`).join("\n") : "- None active right now."}
 
-## Cómo alquilar (x402)
+## How to rent (x402)
 
-1. POST ${u}/api/sessions/x402?shell=${shell.id}&blocks=1 responde 402 con el requerimiento de pago (header PAYMENT-REQUIRED).
-2. Firmá el pago con un cliente x402 y reintentá con el header PAYMENT-SIGNATURE.
+1. POST ${u}/api/sessions/x402?shell=${shell.id}&blocks=1 answers 402 with the payment requirement (PAYMENT-REQUIRED header).
+2. Sign the payment with an x402 client and retry with the PAYMENT-SIGNATURE header.
 
 ${examples}
 
-3. La respuesta es { token, sid, starts_at, expires_at, payment }. Si el robot está ocupado, starts_at es futuro: esperá hasta esa hora.
+3. The response is { token, sid, starts_at, expires_at, payment }. If the robot is busy, starts_at is in the future: wait until then.
 
-## Controlar
+## Control
 
-- POST ${u}/api/cmd con Authorization: Bearer <token> y JSON:
+- POST ${u}/api/cmd with Authorization: Bearer <token> and JSON:
   - {"cmd":"joint","args":{"joint":"base","angle":120}}
   - {"cmd":"dance","args":{"rutina":"saludo"}}
   - {"cmd":"stop"}
-- GET ${u}/api/shells/${shell.id}/state: ángulos reales y si se mueve.
-- GET ${u}/api/shells/${shell.id}/frame: foto actual.
-- POST ${u}/api/sessions/end con el token: cierra antes y vuelve a HOME.
-- Límite: 10 comandos por segundo. 409 si el robot está ejecutando una rutina.
+- GET ${u}/api/shells/${shell.id}/state: real angles and whether it is moving.
+- GET ${u}/api/shells/${shell.id}/frame: current photo.
+- POST ${u}/api/sessions/end with the token: ends early and returns to HOME.
+- Limit: 10 commands per second. 409 while the robot runs a routine.
 
-## Otras entradas
+## Other entry points
 
 - MCP (Streamable HTTP): ${u}/mcp, tools list_shells, get_state, get_frame, rent_shell, send_command, end_session
 - Agent card: ${u}/.well-known/agent.json
-- Personas: ${cfg.allowedOrigin !== "*" ? cfg.allowedOrigin : u}
+- Humans: ${cfg.allowedOrigin !== "*" ? cfg.allowedOrigin : u}
 `;
 }
 
@@ -65,7 +65,7 @@ export function agentCard(cfg: Config, rails: PaymentRail[]) {
   const u = cfg.publicUrl;
   return {
     name: "Rent a Shell",
-    description: `Alquiler por tiempo de cuerpos robóticos reales para agentes y personas. Shell #1: ${cfg.shell.name}, brazo de 4 ejes con cámara en vivo. USD ${cfg.shell.pricing.usd} por ${cfg.shell.pricing.block_minutes} min.`,
+    description: `Time-based rental of real robot bodies for agents and humans. Shell #1: ${cfg.shell.name}, a 4-axis arm with a live camera. USD ${cfg.shell.pricing.usd} per ${cfg.shell.pricing.block_minutes} min.`,
     image: `${cfg.allowedOrigin !== "*" ? cfg.allowedOrigin : u}/og.png`,
     services: [
       { name: "web", endpoint: cfg.allowedOrigin !== "*" ? cfg.allowedOrigin : u },
