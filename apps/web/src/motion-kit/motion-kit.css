@@ -1,0 +1,66 @@
+/* @crisol/motion-kit · CSS de las primitivas. Importar después de tailwind base. No define tokens ni fuente. */
+:root { --ease-roll: cubic-bezier(0.165, 0.84, 0.44, 1); /* M-HOV-01, medido */ }
+
+/* Lenis */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* anillos (Orb, useCrossMask) */
+.ring { position: absolute; border-radius: 9999px; border: 1px solid rgba(255, 255, 255, 0.22); pointer-events: none; }
+
+/* grilla de fondo: hairlines verticales cada 12.5 % */
+.page-grid { background-image: repeating-linear-gradient(to right, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 12.5%); }
+
+/* M-HOV-01/02: roll por char. Texto duplicado; cada char sube 1em con delay por índice. */
+.roll { display: inline-block; overflow: hidden; line-height: 1; vertical-align: top; }
+.roll .ch { display: inline-block; position: relative; transition: transform 1.2s var(--ease-roll); transition-delay: calc(var(--i) * 20ms); }
+.roll .ch > span { display: block; }
+.roll .ch > span + span { position: absolute; top: 100%; left: 0; }
+.roll:hover .ch, .roll-parent:hover .roll .ch { transform: translateY(-100%); }
+.roll .ch.sp { width: 0.28em; }
+
+/* subrayado: scaleX 0 → 1, 0.6s ease */
+.underline-track { position: relative; }
+.underline-track::after { content: ''; position: absolute; left: 0; right: 0; bottom: -4px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 0.6s ease; }
+.underline-track:hover::after { transform: scaleX(1); }
+/* flecha +16px */
+.arrow { display: inline-block; transition: transform 1.2s var(--ease-roll); }
+.roll-parent:hover .arrow { transform: translateX(16px); }
+
+/* texto teñido por el objeto de color de fondo: texto claro + difference */
+.tint { mix-blend-mode: difference; }
+
+/* placeholder de media: gradiente lento en loop (M-LOOP-01) */
+.media { background: linear-gradient(135deg, #2a2a2a, #3a3a3a 40%, #202020 60%, #2e2e2e); background-size: 300% 300%; animation: mediaLoop 9s ease-in-out infinite; }
+@keyframes mediaLoop { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .roll .ch, .underline-track::after, .arrow, .btn-mid, .btn-sq, .btn-sq svg, .swap-label > span { transition: none; }
+  .media { animation: none; }
+}
+
+/* maneva M-REV-02: cada palabra en su máscara (WordsIn) */
+.words-clip { display: inline-block; overflow: clip; vertical-align: top; padding-bottom: 0.145em; }
+.words-clip .word { display: inline-block; will-change: transform; }
+
+/* maneva M-HOV-02: ChipButton. Tokens: --chip-bg, --chip-fg, --chip-h (2.75em), --chip-radius (.25em), --chip-gap (1em), --chip-ease */
+.btn-w { --chip-ease: cubic-bezier(0.19, 1, 0.22, 1); position: relative; display: inline-flex; align-items: center; height: var(--chip-h, 2.75em); color: var(--chip-fg, #fff); text-decoration: none; }
+.btn-mid { position: relative; z-index: 2; display: flex; align-items: center; height: var(--chip-h, 2.75em); padding: 0 var(--chip-gap, 1em); margin-right: 0.35em; border-radius: var(--chip-radius, 0.25em); background: var(--chip-bg, currentColor); text-transform: uppercase; white-space: nowrap; transition: transform 0.6s var(--chip-ease); }
+.btn-sq { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: var(--chip-h, 2.75em); height: var(--chip-h, 2.75em); border-radius: var(--chip-radius, 0.25em); background: var(--chip-bg, currentColor); transition: transform 0.6s var(--chip-ease); }
+.btn-sq svg { transition: transform 0.6s var(--chip-ease); }
+.btn-line { position: absolute; z-index: 0; left: 5%; top: 50%; width: 90%; height: 0.3em; margin-top: -0.15em; background: var(--chip-bg, currentColor); }
+.btn-w:hover .btn-mid { transform: translateX(calc(var(--chip-h, 2.75em) + 0.35em)); }
+.btn-w:hover .btn-sq { transform: translateX(calc(-1 * var(--mid-w, 138px))); }
+.btn-w:hover .btn-sq svg { transform: translateX(13.65px); }
+
+/* uplink M-HOV-01: SwapLabel. Tokens: --swap-h (alto de línea, 17.5px), --swap-ease */
+.swap-label { position: relative; display: block; height: var(--swap-h, 17.5px); overflow: hidden; }
+.swap-label > span { display: block; height: var(--swap-h, 17.5px); line-height: var(--swap-h, 17.5px); transition: transform 0.6s var(--swap-ease, cubic-bezier(0.38, 0.005, 0.215, 1)); }
+.swap-label:hover > span, .swap-parent:hover .swap-label > span { transform: translateY(calc(-1 * var(--swap-h, 17.5px))); }
+
+/* maneva M-NAR-01: Preloader. Tokens: --pre-bg, --pre-fg */
+.pre-w { position: fixed; inset: 0; z-index: 3000; background: var(--pre-bg, #e7e6eb); color: var(--pre-fg, #111); }
+.pre-inner { position: absolute; inset: 0; background: var(--pre-bg, #e7e6eb); }
+.pre-num { position: absolute; left: 2em; bottom: 1.6em; font-size: 42px; letter-spacing: -0.05em; }
+.pre-logo { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; transform: translate(-50%, -50%); }

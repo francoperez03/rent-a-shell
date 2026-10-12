@@ -1,0 +1,2 @@
+{ "name": "@ras/rails-twin", "private": true, "type": "module", "main": "src/index.ts", "types": "src/index.ts",
+  "dependencies": { "@ras/rails-core": "workspace:*", "@ras/shell-spec": "workspace:*" } }

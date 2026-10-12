@@ -1,0 +1,2 @@
+{ "name": "@ras/shell-spec", "private": true, "type": "module", "main": "src/index.ts", "types": "src/index.ts",
+  "scripts": { "test": "tsc -p ." } }

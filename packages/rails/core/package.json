@@ -1,0 +1,3 @@
+{ "name": "@ras/rails-core", "private": true, "type": "module", "main": "src/index.ts", "types": "src/index.ts",
+  "dependencies": { "@ras/shell-spec": "workspace:*", "hono": "^4.13.0" },
+  "scripts": { "test": "tsx --test src/*.test.ts" } }

@@ -1,0 +1,22 @@
+{
+  "name": "@ras/rails-celo",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "check": "tsx --env-file-if-exists=../../../apps/gateway/.env.local src/check.ts",
+    "register-8004": "tsx --env-file-if-exists=../../../apps/gateway/.env.local src/register-8004.ts",
+    "test": "tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@celo/attribution-tags": "^0.5.0",
+    "@ras/rails-core": "workspace:*",
+    "@ras/shell-spec": "workspace:*",
+    "@x402/core": "2.27.0",
+    "@x402/evm": "2.27.0",
+    "@x402/hono": "2.27.0",
+    "hono": "^4.13.0",
+    "viem": "^2.51.0"
+  }
+}

@@ -1,0 +1,23 @@
+import { x402Client, wrapFetchWithPayment } from "@x402/fetch";
+import { ExactEvmScheme } from "@x402/evm/exact/client";
+import { privateKeyToAccount } from "viem/accounts";
+
+const GW = "{{ORIGIN}}";
+const account = privateKeyToAccount(process.env.AGENT_PRIVATE_KEY);
+
+// 1. Pagar un bloque: el 402 trae el requerimiento, el cliente firma y reintenta.
+const client = new x402Client();
+client.register("eip155:*", new ExactEvmScheme(account));
+const pay = wrapFetchWithPayment(fetch, client);
+const res = await pay(`${GW}/api/sessions/x402?shell=el-tucu&blocks=1`, { method: "POST" });
+const { token, starts_at, expires_at } = await res.json();
+
+// 2. Mandar comandos con el token mientras dure la sesión.
+await fetch(`${GW}/api/cmd`, {
+  method: "POST",
+  headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+  body: JSON.stringify({ cmd: "joint", args: { joint: "base", angle: 130 } }),
+});
+
+// 3. Cerrar antes de tiempo (opcional). Al vencer, vuelve solo a HOME.
+await fetch(`${GW}/api/sessions/end`, { method: "POST", headers: { authorization: `Bearer ${token}` } });
