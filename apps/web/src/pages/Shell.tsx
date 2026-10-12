@@ -116,7 +116,7 @@ export default function ShellPage() {
             <Label>Tenerlo propio</Label>
             <p className="text-[15px] leading-[1.55] text-ink-soft">
               Unos USD {shell.build.parts_usd} en partes, {shell.build.lead_days} días de espera y {shell.build.build_hours} h de armado antes de la primera prueba.
-              Acá probás hoy: {Math.round(shell.build.parts_usd / Number(shell.pricing.usd)) * shell.pricing.block_minutes / 60} h de uso cuestan lo mismo que las partes.
+              Acá probás hoy: {((shell.build.parts_usd / Number(shell.pricing.usd)) * shell.pricing.block_minutes / 60).toLocaleString('es-AR', { maximumFractionDigits: 2 })} h de uso cuestan lo mismo que las partes.
             </p>
 
             <Label>Forger</Label>
