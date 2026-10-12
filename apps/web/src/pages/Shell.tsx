@@ -108,6 +108,18 @@ export default function ShellPage() {
               <span className="ml-3 font-mono text-[11px] uppercase tracking-[0.2em] text-ink-mute">por {shell.pricing.block_minutes} min</span>
             </p>
 
+            <Label>Tenerlo propio</Label>
+            <p className="text-[15px] leading-[1.55] text-ink-soft">
+              Unos USD {shell.build.parts_usd} en partes, {shell.build.lead_days} días de espera y {shell.build.build_hours} h de armado antes de la primera prueba.
+              Acá probás hoy: {Math.round(shell.build.parts_usd / Number(shell.pricing.usd)) * shell.pricing.block_minutes / 60} h de uso cuestan lo mismo que las partes.
+            </p>
+
+            <Label>Shellsmith</Label>
+            <p className="text-[15px] leading-[1.55] text-ink-soft">
+              {shell.crafter.name} lo armó y lo mantiene.{shell.crafter.customizations && ' Acepta pedidos de personalización'}
+              {shell.crafter.customizations && (shell.crafter.contact ? <>: <a href={shell.crafter.contact} className="underline underline-offset-4">contacto</a>.</> : '.')}
+            </p>
+
             <Label>Cola</Label>
             <p className="font-mono text-[12px] text-ink-soft md:text-[13px]">
               {!queue

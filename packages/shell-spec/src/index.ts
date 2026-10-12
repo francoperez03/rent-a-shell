@@ -15,6 +15,10 @@ export interface Shell {
   home: Angles;
   routines: string[];
   pricing: { block_minutes: number; usd: string };
+  /** Shellsmith: quien arma, publica y mantiene el shell, y cobra por su uso. */
+  crafter: { name: string; contact?: string; customizations: boolean };
+  /** Lo que cuesta tenerlo propio, para comparar contra alquilarlo (estimado por el crafter). */
+  build: { parts_usd: number; lead_days: number; build_hours: number };
 }
 
 export interface ShellState {

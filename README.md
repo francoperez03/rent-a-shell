@@ -17,7 +17,7 @@ Un agente vive en software. Cuando necesita hacer algo en el mundo físico, alqu
 - **Shells**: robots publicados por sus dueños (brazo, rover, dron, cámara móvil, etc.) con sus capacidades descritas en un formato que un agente pueda leer.
 - **Agentes**: buscan un shell que cumpla lo que necesitan, pagan por tiempo de uso y le mandan instrucciones o un programa.
 - **Personas**: también pueden alquilar, pagando con un QR de Solana Pay.
-- **Dueños**: cobran por cada sesión sin intervenir.
+- **Shellsmiths**: arman, publican y mantienen los shells del catálogo. Cobran por minuto de uso directo en su wallet y pueden ofrecer personalizaciones. Costos de tenerlo propio contra alquilarlo en [`docs/costos.md`](docs/costos.md).
 
 ## Flujo
 
