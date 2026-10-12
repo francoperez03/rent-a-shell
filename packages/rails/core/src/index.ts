@@ -11,7 +11,7 @@ export interface IntentOpts {
 
 /**
  * Un medio de pago. El gateway solo conoce esta interfaz (spec 08).
- * Rieles síncronos (x402) exponen paywall(); asíncronos (transfer, redirect) exponen check().
+ * Rieles síncronos (x402) exponen paywall(); asíncronos (Solana Pay, approval) exponen check().
  */
 export interface PaymentRail {
   id: string;

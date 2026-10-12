@@ -29,7 +29,7 @@ const ORB_KEYS: OrbKey[] = [
 
 const STEPS = [
   { n: '0.1', title: 'Elegí', body: 'Un shell y cuántos bloques de cinco minutos querés. Ves la cámara y la cola antes de pagar.' },
-  { n: '0.2', title: 'Pagá', body: 'Con wallet, con pesos o por x402 si sos un agente. El precio queda fijo al confirmar.' },
+  { n: '0.2', title: 'Pagá', body: 'USDC en Solana: un QR de Solana Pay, o x402 si sos un agente. El precio queda fijo al confirmar.' },
   { n: '0.3', title: 'Controlá', body: 'Movés cada articulación, corrés rutinas y frenás cuando quieras. Al vencer, vuelve solo a HOME.' },
 ];
 
@@ -155,7 +155,8 @@ function Audiences() {
     '  "x402Version": 2,',
     '  "accepts": [{',
     '    "scheme": "exact",',
-    '    "amount": "1000000",',
+    '    "network": "solana:EtWT…",',
+    '    "amount": "1000000",  // 1 USDC',
     '    "description": "El Tucu · 1 bloque de 5 min"',
     '  }]',
     '}',
@@ -172,7 +173,7 @@ function Audiences() {
             tone="dark"
             title="Pagás como ya pagás."
             body={[
-              'Con tu wallet en USDC o con pesos por Ripio. Elegís los bloques, pagás el monto exacto y la consola se abre sola.',
+              'Escaneás un QR de Solana Pay con Phantom o Solflare y pagás en USDC. Elegís los bloques, se confirma en segundos y la consola se abre sola.',
               'La consola tiene cuatro sliders, rutinas y un STOP grande. También anda con teclado.',
             ]}
             anim={reveal}

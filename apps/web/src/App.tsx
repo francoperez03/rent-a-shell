@@ -5,7 +5,7 @@ import ShellPage from '@/pages/Shell';
 import SessionPage from '@/pages/Session';
 import AgentsPage from '@/pages/Agents';
 
-// Landing trae three (orb) y Checkout wagmi + viem: cada uno se carga solo en su ruta.
+// Landing trae three (orb) y Checkout el generador de QR: cada uno se carga solo en su ruta.
 const Landing = lazy(() => import('@/pages/Landing'));
 const CheckoutPage = lazy(() => import('@/pages/Checkout'));
 

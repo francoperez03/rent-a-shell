@@ -5,7 +5,7 @@ Un solo proceso Node 22 con Hono en `localhost:8787`, más MediaMTX y ffmpeg par
 ## Responsabilidades
 
 1. Publicar el catálogo y el estado de cada shell.
-2. Cobrar a través de la interfaz `PaymentRail` (`08-rieles-adaptador.md`) y emitir un token de sesión. El gateway no importa nada de Celo ni de ninguna chain.
+2. Cobrar a través de la interfaz `PaymentRail` (`08-rieles-adaptador.md`) y emitir un token de sesión. El gateway no importa nada de Solana ni de ninguna red.
 3. Hacer de candado: solo el token vigente puede mover el robot.
 4. Pasar comandos al ESP32 por una allowlist.
 5. Cortar la sesión al vencer y dejar el robot en HOME.
@@ -21,7 +21,7 @@ Un solo proceso Node 22 con Hono en `localhost:8787`, más MediaMTX y ffmpeg par
 | GET | `/api/shells/:id/queue` | | sesión activa (vence a las…) y cola |
 | GET | `/api/rails` | | manifiestos de los rieles activos (`08-rieles-adaptador.md`) |
 | POST | `/api/sessions/x402` | x402 | agente paga y recibe token en la misma respuesta; usa el primer riel con `settle()` o `?rail=` |
-| POST | `/api/sessions/intent` | | `{shell, blocks, rail, asset?}`: el riel devuelve un `Intent` con sus instrucciones (transfer, redirect, approval) |
+| POST | `/api/sessions/intent` | | `{shell, blocks, rail, asset?}`: el riel devuelve un `Intent` con sus instrucciones (solana-pay, approval) |
 | GET | `/api/sessions/intent/:id` | | llama `check()` del riel; estado `pending`, `paid` o `expired`; con `paid` trae el token |
 | POST | `/api/cmd` | Bearer token | `{cmd, args}` de la allowlist, proxy al ESP32 |
 | POST | `/api/sessions/end` | Bearer token | cierra antes de tiempo (sin reembolso parcial en v1) |
@@ -79,5 +79,5 @@ Mismo esquema que El Tucu (`robot-a/SPEC.md` §4.3):
 ## Código que se reutiliza
 
 - Proxy y manejo de 409: `robot-a/apps/agent/app/agent/src/tucu.ts` (`dance`, consulta a `/state`).
-- Watcher de pagos y x402: `~/repos/robotics/pagos-placa/spike.mjs`, dentro de `packages/rails/celo`.
+- Pagos x402 y Solana Pay: `packages/rails/solana` (`x402.ts`, `pay.ts`).
 - Middleware 402 de referencia (sin su esquema propio): `paybot/packages/x402/src/middleware.ts`. El 402 lo arma el gateway con el `requirement` que devuelve el riel.

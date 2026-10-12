@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { WagmiProvider, createConfig, http, useAccount, useConnect, useSwitchChain, useWriteContract } from 'wagmi';
-import { injected } from 'wagmi/connectors';
-import { defineChain, parseAbi, parseUnits, type Chain } from 'viem';
-import type { ChainInfo, Instructions, IntentView, RailManifest } from '@ras/shell-spec';
+import QRCode from 'qrcode';
+import type { Instructions, IntentView, RailManifest } from '@ras/shell-spec';
 import { Pill } from '@/components/Pill';
 import { Footer } from '@/components/Footer';
 import { createIntent, fmtClock, getIntent, saveGrant, useEvents, useNow, useRails, useShell } from '@/lib/api';
 import { cn } from '@/lib/cn';
-
-const ERC20 = parseAbi(['function transfer(address to, uint256 amount) returns (bool)']);
 
 /** País del navegador (es-AR → AR). Sirve solo para sugerir un riel; se pueden elegir todos. */
 const browserCountry = () => navigator.language.split('-')[1]?.toUpperCase();
@@ -153,23 +149,15 @@ function PayStep({ view: first, rail, onRestart }: { view: IntentView; rail: Rai
           </p>
         </div>
 
-        <p className="mb-3 mt-6 border-t border-hairline pt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">Monto exacto</p>
+        <p className="mb-3 mt-6 border-t border-hairline pt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">Monto</p>
         <p className="break-all font-display text-[clamp(2rem,4vw,3rem)] font-light leading-none text-ink">
           {intent.amount} <span className="font-mono text-[14px] uppercase tracking-[0.12em] text-ink-mute">{intent.asset}</span>
         </p>
-        {intent.instructions.kind === 'transfer' && (
-          <>
-            <p className="mt-3 text-[15px] leading-[1.55] text-ink-soft">
-              Pagá este monto con todos sus decimales. Los últimos dígitos identifican tu pago.
-            </p>
-            <CopyButton text={intent.amount} label="Copiar monto" />
-          </>
-        )}
 
         <div className="mt-6 border-t border-hairline pt-6">
           {expired ? (
             <div>
-              <p className="text-ink-soft">El tiempo para pagar venció. Generá otro intento: el monto cambia.</p>
+              <p className="text-ink-soft">El tiempo para pagar venció. Generá otro intento.</p>
               <Pill label="Elegir de nuevo" surface="light" className="mt-4" onClick={onRestart} />
             </div>
           ) : (
@@ -207,15 +195,8 @@ function Status({ status, seen, expired }: { status: IntentView['status']; seen:
 
 function Instruct({ ins, rail }: { ins: Instructions; rail: RailManifest | null }) {
   switch (ins.kind) {
-    case 'transfer':
-      return <TransferPay ins={ins} chains={rail?.wallet?.chains ?? []} />;
-    case 'redirect':
-      return (
-        <div>
-          <Pill as="a" href={ins.url} target="_blank" rel="noopener" surface="light" label="Pagar en otra pestaña" />
-          <p className="mt-4 text-[15px] text-ink-soft">{ins.note ?? 'Completá el pago en la pestaña nueva. Esta página se actualiza sola cuando se acredite.'}</p>
-        </div>
-      );
+    case 'solana-pay':
+      return <SolanaPay ins={ins} network={rail?.wallet?.chains[0]?.name} />;
     case 'approval':
       return (
         <div>
@@ -228,95 +209,34 @@ function Instruct({ ins, rail }: { ins: Instructions; rail: RailManifest | null 
   }
 }
 
-// ---------- transfer: wagmi armado en runtime con las chains del manifiesto ----------
+// ---------- Solana Pay: QR para escanear con la wallet del celular ----------
 
-const toChain = (c: ChainInfo): Chain =>
-  defineChain({
-    id: c.id,
-    name: c.name,
-    nativeCurrency: { name: c.nativeSymbol, symbol: c.nativeSymbol, decimals: 18 },
-    rpcUrls: { default: { http: [c.rpc] } },
-    blockExplorers: { default: { name: c.name, url: c.explorer } },
-  });
+type SolanaPayIns = Extract<Instructions, { kind: 'solana-pay' }>;
 
-type TransferIns = Extract<Instructions, { kind: 'transfer' }>;
-
-function TransferPay({ ins, chains }: { ins: TransferIns; chains: ChainInfo[] }) {
-  const config = useMemo(() => {
-    const list = chains.map(toChain);
-    if (!list.length) return null;
-    const [head, ...rest] = list;
-    return createConfig({
-      chains: [head, ...rest],
-      connectors: [injected()],
-      transports: Object.fromEntries(list.map((c) => [c.id, http(c.rpcUrls.default.http[0])])),
-    });
-  }, [chains]);
-
-  if (!config || !chains.some((c) => c.id === ins.chainId))
-    return <p role="alert" className="text-alert">Este medio de pago no publicó la red del pago. Elegí otro.</p>;
-
-  return (
-    <WagmiProvider config={config} reconnectOnMount={false}>
-      <TransferInner ins={ins} chainName={chains.find((c) => c.id === ins.chainId)?.name ?? `chain ${ins.chainId}`} />
-    </WagmiProvider>
-  );
-}
-
-function TransferInner({ ins, chainName }: { ins: TransferIns; chainName: string }) {
-  const { address, chainId, isConnected } = useAccount();
-  const { connect, connectors, isPending: connecting, error: connectError } = useConnect();
-  const { switchChainAsync, isPending: switching } = useSwitchChain();
-  const { writeContractAsync, data: hash, isPending: signing, error: writeError, reset } = useWriteContract();
-  const hasWallet = typeof window !== 'undefined' && 'ethereum' in window;
-
-  const pay = async () => {
-    reset();
-    try {
-      if (chainId !== ins.chainId) await switchChainAsync({ chainId: ins.chainId });
-      await writeContractAsync({
-        address: ins.token,
-        abi: ERC20,
-        functionName: 'transfer',
-        args: [ins.to, parseUnits(ins.amount, ins.decimals)],
-        chainId: ins.chainId,
-        dataSuffix: ins.dataSuffix,
-      });
-    } catch {
-      /* el error queda en writeError o en el estado de switch; se muestra abajo */
-    }
-  };
-
-  const err = (writeError ?? connectError) as (Error & { shortMessage?: string }) | null;
+function SolanaPay({ ins, network }: { ins: SolanaPayIns; network?: string }) {
+  const [qr, setQr] = useState<string | null>(null);
+  useEffect(() => {
+    QRCode.toDataURL(ins.url, { margin: 1, width: 560, errorCorrectionLevel: 'M' }).then(setQr, () => setQr(null));
+  }, [ins.url]);
 
   return (
     <div>
-      <dl className="mb-6 grid grid-cols-[6rem_1fr] gap-x-3 gap-y-2 font-mono text-[12px]">
-        <dt className="text-ink-mute">Red</dt>
-        <dd className="text-ink-soft">{chainName}</dd>
-        <dt className="text-ink-mute">Token</dt>
-        <dd className="break-all text-ink-soft">{ins.symbol} · {ins.token}</dd>
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        {qr && <img src={qr} alt="QR de Solana Pay" width={220} height={220} className="h-[220px] w-[220px] shrink-0 rounded-sm bg-white p-2" />}
+        <div>
+          <p className="text-[15px] leading-[1.55] text-ink-soft">
+            Escaneá el QR con Phantom o Solflare{network ? ` en ${network}` : ''}. La wallet arma la transferencia de {ins.amount} {ins.symbol} y esta página se actualiza sola.
+          </p>
+          <Pill as="a" href={ins.url} surface="light" label="Abrir en la wallet" className="mt-5" />
+          <div className="mt-4"><CopyButton text={ins.url} label="Copiar link de pago" /></div>
+        </div>
+      </div>
+      <dl className="mt-6 grid grid-cols-[6rem_1fr] gap-x-3 gap-y-2 font-mono text-[12px]">
         <dt className="text-ink-mute">Destino</dt>
         <dd className="break-all text-ink-soft">{ins.to}</dd>
+        <dt className="text-ink-mute">Referencia</dt>
+        <dd className="break-all text-ink-soft">{ins.reference}</dd>
       </dl>
-
-      {!hasWallet ? (
-        <p className="text-ink-soft">No encontramos una wallet en este navegador. Instalá una (MetaMask, Rabby, Valora) o elegí otro medio de pago.</p>
-      ) : !isConnected ? (
-        <Pill surface="light" label={connecting ? 'Conectando…' : 'Conectar wallet'} disabled={connecting} onClick={() => connect({ connector: connectors[0] })} />
-      ) : (
-        <div>
-          <p className="mb-4 font-mono text-[12px] text-ink-mute">Conectada {address?.slice(0, 6)}…{address?.slice(-4)}</p>
-          <Pill
-            surface="light"
-            disabled={signing || switching || !!hash}
-            onClick={pay}
-            label={switching ? `Cambiando a ${chainName}…` : signing ? 'Firmá en tu wallet…' : hash ? 'Enviado' : chainId !== ins.chainId ? `Cambiar a ${chainName} y pagar` : `Pagar ${ins.amount} ${ins.symbol}`}
-          />
-        </div>
-      )}
-      {hash && <p className="mt-4 break-all font-mono text-[12px] text-ink-soft">Transacción enviada: {hash}. Esperando confirmación.</p>}
-      {err && !hash && <p role="alert" className="mt-4 text-[15px] text-alert">{err.shortMessage ?? err.message}</p>}
     </div>
   );
 }

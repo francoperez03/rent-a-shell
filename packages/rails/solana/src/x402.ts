@@ -1,48 +1,53 @@
-// Riel celo-x402: agentes pagan USDC por x402 `exact` con el facilitator de Celo.
-// Base: celo-org/x402-celo-example (seller.ts, facilitator.ts), @x402/* 2.27.0.
+// Riel solana-x402: agentes pagan USDC por x402 `exact` en Solana (@x402/svm 2.27.0).
+// El facilitator (x402.org en devnet, PayAI en mainnet) paga el fee: el agente no necesita SOL.
 // Flujo manual con x402HTTPResourceServer para liquidar ANTES de emitir la sesión:
 // si el settle falla, el handler nunca corre y no queda un token regalado.
 import type { MiddlewareHandler } from "hono";
 import { HonoAdapter } from "@x402/hono";
 import { HTTPFacilitatorClient, x402HTTPResourceServer, x402ResourceServer, type HTTPRequestContext } from "@x402/core/server";
-import { ExactEvmScheme } from "@x402/evm/exact/server";
+import { ExactSvmScheme } from "@x402/svm/exact/server";
 import { toAtomic, type Money, type PaymentRail } from "@ras/rails-core";
-import { USDC, celoNet, payTo, rpcUrl } from "./config.ts";
+import { USDC, facilitatorUrl, payTo, rpcUrl, solNet } from "./config.ts";
 
 type Env = Record<string, string | undefined>;
 
-export function celoX402(env: Env): PaymentRail {
-  const net = celoNet(env);
+export function solanaX402(env: Env): PaymentRail {
+  const net = solNet(env);
   const apiKey = env.X402_API_KEY ?? "";
   const facilitator = new HTTPFacilitatorClient({
-    url: env.CELO_X402_FACILITATOR_URL || net.facilitator,
-    createAuthHeaders: async () => {
-      const h: Record<string, string> = { "X-API-Key": apiKey };
-      return { verify: h, settle: h, supported: h };
-    },
+    url: facilitatorUrl(net, env),
+    // ponytail: x402.org (devnet) no pide key; PayAI en mainnet puede pedir una
+    ...(apiKey && {
+      createAuthHeaders: async () => {
+        const h = { Authorization: `Bearer ${apiKey}` };
+        return { verify: h, settle: h, supported: h };
+      },
+    }),
   });
   const resource = new x402ResourceServer(facilitator);
-  resource.register("eip155:*", new ExactEvmScheme());
+  resource.register(net.caip2, new ExactSvmScheme({ rpcUrl: rpcUrl(net, env) }));
 
   return {
-    id: "celo-x402",
+    id: "solana-x402",
     manifest: () => ({
-      id: "celo-x402",
+      id: "solana-x402",
       label: `USDC por x402 · ${net.label}`,
-      description: "Para agentes: el endpoint responde 402, el agente firma EIP-3009 y el facilitator de Celo liquida. Sin gas para el agente.",
+      description: "Para agentes: el endpoint responde 402, el agente firma la transferencia de USDC y el facilitator la envía y paga el fee. El agente no necesita SOL.",
       audience: ["agent"],
-      available: Boolean(apiKey && env.CELO_PAY_TO),
-      wallet: { chains: [{ id: net.chain.id, name: net.label, rpc: rpcUrl(net, env), explorer: net.explorer, nativeSymbol: "CELO" }] },
+      available: Boolean(env.SOLANA_PAY_TO),
+      wallet: { chains: [{ id: net.caip2, name: net.label, rpc: rpcUrl(net, env), explorer: net.explorer, nativeSymbol: "SOL" }] },
       assets: [{ symbol: USDC.symbol, decimals: USDC.decimals }],
     }),
 
     clientExample: (url) => `\`\`\`ts
 import { x402Client, wrapFetchWithPayment } from "@x402/fetch";
-import { ExactEvmScheme } from "@x402/evm/exact/client";
-import { privateKeyToAccount } from "viem/accounts";
-// wallet con USDC en ${net.label}; no necesita CELO para gas
+import { ExactSvmScheme } from "@x402/svm/exact/client";
+import { toClientSvmSigner } from "@x402/svm";
+import { createKeyPairSignerFromBytes, getBase58Encoder } from "@solana/kit";
+// wallet con USDC en ${net.label}; no necesita SOL para el fee
+const kp = await createKeyPairSignerFromBytes(getBase58Encoder().encode(process.env.SOLANA_KEY));
 const client = new x402Client();
-client.register("eip155:*", new ExactEvmScheme(privateKeyToAccount(process.env.PK)));
+client.register("solana:*", new ExactSvmScheme(toClientSvmSigner(kp)));
 const pay = wrapFetchWithPayment(fetch, client);
 const grant = await (await pay("${url}", { method: "POST" })).json();
 \`\`\``,
@@ -62,7 +67,6 @@ const grant = await (await pay("${url}", { method: "POST" })).json();
               return {
                 amount: toAtomic(priceFor(q).usd, USDC.decimals).toString(),
                 asset: net.usdc,
-                extra: { ...USDC.eip712 },
               };
             },
           },
@@ -110,10 +114,10 @@ const grant = await (await pay("${url}", { method: "POST" })).json();
         }
         c.set("payment" as never, {
           intentId: crypto.randomUUID(),
-          rail: "celo-x402",
+          rail: "solana-x402",
           payer: s.payer ?? "unknown",
           tx: s.transaction,
-          explorerUrl: net.explorerTx + s.transaction,
+          explorerUrl: net.explorerTx(s.transaction),
           paidAt: Date.now(),
         } as never);
         await next();

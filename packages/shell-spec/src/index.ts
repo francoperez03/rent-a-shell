@@ -34,18 +34,17 @@ export interface Money { usd: string }
 
 export type Instructions =
   | { kind: "x402"; url: string }
-  | { kind: "transfer"; chainId: number; token: `0x${string}`; to: `0x${string}`; amount: string; decimals: number; symbol: string; dataSuffix?: `0x${string}` }
-  | { kind: "redirect"; url: string; note?: string }
+  | { kind: "solana-pay"; url: string; reference: string; to: string; amount: string; symbol: string }
   | { kind: "approval"; ref: string; note: string };
 
 export interface Intent {
   id: string;
   rail: string;
-  amount: string;        // en unidades humanas del asset, ej "1.000137"
+  amount: string;        // en unidades humanas del asset, ej "1.00"
   asset: string;         // símbolo, ej "USDC"
   expiresAt: number;     // epoch ms
   instructions: Instructions;
-  meta?: Record<string, unknown>; // datos privados del riel (bloque inicial, monto atómico)
+  meta?: Record<string, unknown>; // datos privados del riel (reference, monto atómico)
 }
 
 export interface Payment {
@@ -57,7 +56,7 @@ export interface Payment {
   paidAt: number;
 }
 
-export interface ChainInfo { id: number; name: string; rpc: string; explorer: string; nativeSymbol: string }
+export interface ChainInfo { id: string; name: string; rpc: string; explorer: string; nativeSymbol: string }
 
 export interface RailManifest {
   id: string;

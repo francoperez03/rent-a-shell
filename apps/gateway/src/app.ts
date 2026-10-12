@@ -4,7 +4,7 @@ import { streamSSE } from "hono/streaming";
 import { mulUsd, type PaymentRail } from "@ras/rails-core";
 import type { Command, GatewayEvent, Joint, Payment, Shell, ShellStatus } from "@ras/shell-spec";
 import type { Config, Env } from "./config.ts";
-import { loadRails, identities } from "./rails.ts";
+import { loadRails } from "./rails.ts";
 import { Robot } from "./robot.ts";
 import { Sessions } from "./sessions.ts";
 import { bus } from "./events.ts";
@@ -226,10 +226,9 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     }),
   );
 
-  const card = () => agentCard(cfg, rails, identities(cfg.rails, env));
+  const card = () => agentCard(cfg, rails);
   app.get("/llms.txt", (c) => c.text(llmsTxt(cfg, shell(), rails)));
   app.get("/.well-known/agent.json", (c) => c.json(card()));
-  app.get("/.well-known/agent-registration.json", (c) => c.json(card()));
   app.all("/mcp", (c) => mcpHandler(c.req.raw, { cfg, shell, rails, robot, sessions, frames, price, publicUrl: cfg.publicUrl }));
 
   return { app, tick, robot, sessions, rails };

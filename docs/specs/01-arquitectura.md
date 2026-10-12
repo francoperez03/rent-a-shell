@@ -23,12 +23,10 @@
           GET /state  POST /dance /joint /stop
 
  Gateway ──► interfaz PaymentRail (packages/rails/core)
-               ├─ celo:  Celo 42220, facilitator x402, Ripio on-ramp
-               ├─ twin:  ARGt y demás en Arbitrum, Base, Polygon, Ethereum
-               └─ belo:  banca para agentes (stub hasta que haya API)
+               └─ solana: x402 (USDC, facilitator) y Solana Pay (QR con reference)
 ```
 
-Toda la conexión con chains, tokens y proveedores de pago vive detrás del adaptador de `08-rieles-adaptador.md`. El resto del sistema no sabe que existe Celo.
+Toda la conexión con chains, tokens y proveedores de pago vive detrás del adaptador de `08-rieles-adaptador.md`. El resto del sistema no conoce redes, mints ni facilitators.
 
 ## Quién habla con quién
 
@@ -69,15 +67,15 @@ Igual que El Tucu (`robot-a/SPEC.md` §4.5):
 | `VITE_LIVE_URL` | sitio (Vercel) | `https://<url-legion>/live/tucu/index.m3u8` `[a verificar]` ruta de MediaMTX |
 | `ESP32_URL` | gateway | `http://<ip-esp32>` o `http://localhost:8080` (mock) |
 | `SESSION_SECRET` | gateway | secreto para firmar tokens de sesión, solo en la Legion |
-| `RAILS` | gateway | rieles activos, ej. `celo-x402,celo-wallet,ripio` |
-| `CELO_PAY_TO`, `CELO_RPC_URL`, `CELO_X402_FACILITATOR_URL` | riel `celo` | wallet del dueño `[INPUT]`, RPC `[INPUT]`, `https://api.x402.celo.org` |
-| `TWIN_PAY_TO`, `TWIN_RPC_*` | riel `twin` | solo si se activa |
+| `RAILS` | gateway | rieles activos, ej. `solana-x402,solana-pay` |
+| `SOLANA_NETWORK` | riel `solana` | `devnet` o `mainnet` |
+| `SOLANA_PAY_TO`, `SOLANA_RPC_URL`, `X402_FACILITATOR_URL` | riel `solana` | wallet del dueño `[INPUT]`, RPC opcional, facilitator opcional (default x402.org en devnet, PayAI en mainnet) |
 | `ALLOWED_ORIGIN` | gateway | dominio del sitio en Vercel |
 | `PUBLIC_URL` | gateway | URL del túnel (para `llms.txt` y respuestas 402) |
 
 ## Qué es secreto
 
-`SESSION_SECRET` y cualquier clave de wallet viven solo en la Legion. El gateway **no necesita clave privada** para cobrar: recibe pagos en `PAY_TO` y el facilitator paga el gas del x402. Nada de esto va a git, Vercel ni chats.
+`SESSION_SECRET` y cualquier clave de wallet viven solo en la Legion. El gateway **no necesita clave privada** para cobrar: recibe pagos en `SOLANA_PAY_TO` y el facilitator paga el fee del x402. Nada de esto va a git, Vercel ni chats.
 
 ## Monorepo propuesto
 
@@ -89,10 +87,10 @@ rent-a-shell/
     buyer/      agente comprador de ejemplo para la demo (@x402/fetch)
   packages/
     shell-spec/ tipos compartidos: ficha del shell, comandos, sesión
-    rails/      core (interfaz), celo, twin, belo (08-rieles-adaptador.md)
+    rails/      core (interfaz), solana (08-rieles-adaptador.md)
   docs/
 ```
 
-El sitio no lleva chain IDs ni addresses: arma el checkout y wagmi con `GET /api/rails`.
+El sitio no lleva redes ni mints: arma el checkout con `GET /api/rails` y dibuja el QR que devuelve el intent.
 
 El mock y el firmware **no se copian**: se usan desde `robot-a/apps/mock` y `robot-a/apps/firmware`.

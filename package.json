@@ -8,7 +8,7 @@
     "gateway": "pnpm --filter gateway dev",
     "web": "pnpm --filter web dev",
     "buyer": "pnpm --filter buyer start",
-    "check-celo": "pnpm --filter @ras/rails-celo check",
+    "check-solana": "pnpm --filter @ras/rails-solana check",
     "mock": "cd ~/repos/job/eventos/bnb-builder-session/agentes/robot-a && pnpm --filter mock start"
   },
   "devDependencies": {

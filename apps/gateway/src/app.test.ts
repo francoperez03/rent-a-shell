@@ -65,7 +65,7 @@ test("ficha, rieles y descubrimiento", async () => {
   assert.equal(rails[0].id, "fake");
   assert.match(await (await req("/llms.txt")).text(), /api\/sessions\/x402/);
   const card = await (await req("/.well-known/agent.json")).json();
-  assert.equal(card.type, "https://eips.ethereum.org/EIPS/eip-8004#registration-v1");
+  assert.equal(card.name, "Rent a Shell");
 });
 
 test("sin token no se mueve", async () => {

@@ -1,20 +1,20 @@
 // Agente comprador de ejemplo (caso de demo, docs/specs/05-agentes.md): alquila El Tucu por x402,
 // prueba una secuencia de movimientos en hardware real y devuelve un reporte con ángulos y tx.
-//   BUYER_PRIVATE_KEY=0x... GATEWAY_URL=http://localhost:8787 pnpm buyer
-// Wallet descartable con un poco de USDC en la red del gateway. No necesita CELO: el facilitator paga el gas.
-// Patrón de pagos-placa/spike.mjs (pagar) y celo-org/x402-celo-example/src/buyer.ts.
+//   BUYER_SOLANA_KEY=<secret key base58> GATEWAY_URL=http://localhost:8787 pnpm buyer
+// Wallet descartable con un poco de USDC en la red del gateway. No necesita SOL: el facilitator paga el fee.
 import { x402Client, wrapFetchWithPayment } from "@x402/fetch";
-import { ExactEvmScheme } from "@x402/evm/exact/client";
-import { privateKeyToAccount } from "viem/accounts";
+import { ExactSvmScheme } from "@x402/svm/exact/client";
+import { toClientSvmSigner } from "@x402/svm";
+import { createKeyPairSignerFromBytes, getBase58Encoder } from "@solana/kit";
 
 const GW = (process.env.GATEWAY_URL ?? "http://localhost:8787").replace(/\/$/, "");
 const SHELL = process.env.SHELL_ID ?? "el-tucu";
-const raw = process.env.BUYER_PRIVATE_KEY;
+const raw = process.env.BUYER_SOLANA_KEY;
 if (!raw) {
-  console.error("Falta BUYER_PRIVATE_KEY (wallet descartable con USDC).");
+  console.error("Falta BUYER_SOLANA_KEY (secret key base58 de 64 bytes, wallet descartable con USDC).");
   process.exit(1);
 }
-const account = privateKeyToAccount((raw.startsWith("0x") ? raw : `0x${raw}`) as `0x${string}`);
+const account = await createKeyPairSignerFromBytes(getBase58Encoder().encode(raw.trim()));
 
 // La rutina a probar: lo que un agente de robótica querría validar en hardware real.
 const SECUENCIA: { joint: "base" | "shoulder" | "elbow" | "grip"; angle: number }[] = [
@@ -34,7 +34,7 @@ const shell = shells.find((s: { id: string }) => s.id === SHELL);
 console.log(`Shell ${shell.name} (${shell.status}) · USD ${shell.pricing.usd} por ${shell.pricing.block_minutes} min`);
 
 const client = new x402Client();
-client.register("eip155:*", new ExactEvmScheme(account));
+client.register("solana:*", new ExactSvmScheme(toClientSvmSigner(account)));
 const pay = wrapFetchWithPayment(fetch, client);
 
 console.log(`Pagando 1 bloque como ${account.address}…`);

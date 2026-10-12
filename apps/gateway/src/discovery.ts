@@ -1,4 +1,4 @@
-// llms.txt y agent card ERC-8004. Todo sale de la ficha y de los manifiestos: sin datos de chain fijos acá.
+// llms.txt y agent card. Todo sale de la ficha y de los manifiestos: sin datos de chain fijos acá.
 import type { PaymentRail } from "@ras/rails-core";
 import type { Shell } from "@ras/shell-spec";
 import type { Config } from "./config.ts";
@@ -53,15 +53,14 @@ ${examples}
 ## Otras entradas
 
 - MCP (Streamable HTTP): ${u}/mcp, tools list_shells, get_state, get_frame, rent_shell, send_command, end_session
-- Agent card ERC-8004: ${u}/.well-known/agent.json
+- Agent card: ${u}/.well-known/agent.json
 - Personas: ${cfg.allowedOrigin !== "*" ? cfg.allowedOrigin : u}
 `;
 }
 
-export function agentCard(cfg: Config, rails: PaymentRail[], registrations: { agentId: number; agentRegistry: string }[]) {
+export function agentCard(cfg: Config, rails: PaymentRail[]) {
   const u = cfg.publicUrl;
   return {
-    type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
     name: "Rent a Shell",
     description: `Alquiler por tiempo de cuerpos robóticos reales para agentes y personas. Shell #1: ${cfg.shell.name}, brazo de 4 ejes con cámara en vivo. USD ${cfg.shell.pricing.usd} por ${cfg.shell.pricing.block_minutes} min.`,
     image: `${cfg.allowedOrigin !== "*" ? cfg.allowedOrigin : u}/og.png`,
@@ -73,7 +72,6 @@ export function agentCard(cfg: Config, rails: PaymentRail[], registrations: { ag
     ],
     x402Support: rails.some((r) => r.paywall && r.manifest().available),
     active: true,
-    supportedTrust: ["reputation"],
-    ...(registrations.length ? { registrations } : {}),
+    payments: rails.map((r) => r.manifest()).filter((m) => m.available).map((m) => ({ id: m.id, network: m.wallet?.chains[0]?.id, assets: m.assets.map((a) => a.symbol) })),
   };
 }

@@ -16,7 +16,7 @@ Igual a las réplicas de landing-research, para reusar el motion-kit sin fricci�
 | lenis | ^1.3.23 |
 | three + @react-three/fiber | ^0.186.0 + ^8.18.0 (v9 exige React 19 y deja la página en blanco) |
 | hls.js | 1.7.3 (igual que El Tucu) |
-| wagmi + viem | wagmi 2, viem ^2.51; chains desde `GET /api/rails`, ninguna fija en el código |
+| qrcode | ^1.5; dibuja el QR de Solana Pay que devuelve el intent, sin redes ni mints en el código |
 | clsx | |
 
 Motion-kit: copiar `~/repos/job/Crisol/packages/motion-kit/src` a `apps/web/src/motion/` (no se publica como paquete). Catálogo de recetas en `Crisol/packages/motion-kit/CATALOG.md`.
@@ -30,7 +30,7 @@ Motion-kit: copiar `~/repos/job/Crisol/packages/motion-kit/src` a `apps/web/src/
 | `/` | todos | hero con el robot en vivo, cómo funciona, para personas, para agentes, shells disponibles, cierre |
 | `/shells` | personas | catálogo (hoy un shell, diseñado para varios) |
 | `/shells/:id` | personas | ficha, video, cola, elegir bloques y riel |
-| `/checkout/:intent` | personas | pago por wallet o Ripio, estado en vivo hasta `paid` |
+| `/checkout/:intent` | personas | pago con QR de Solana Pay, estado en vivo hasta `paid` |
 | `/session` | quien pagó | consola de control |
 | `/agents` | agentes y devs | endpoints, MCP, ejemplo con `@x402/fetch`, link a `llms.txt` |
 
@@ -97,9 +97,9 @@ Acá manda el registro de Linear: un producto vivo, sin scroll narrativo. **Sin 
 
 ## Checkout
 
-- Selector de riel armado con `GET /api/rails` (`08-rieles-adaptador.md`): una opción por manifiesto, sin rieles ni chains en el código del sitio. Sugiere por `navigator.language` contra `manifest.countries` (Ripio en AR, wallet en el resto). Siempre se pueden elegir todas.
-- El paso de pago se dibuja según `instructions.kind` (`transfer`, `redirect`, `approval`). wagmi se configura con las chains de los manifiestos.
-- Estado del pago en vivo (SSE `payment_seen`), con link a la tx en Celoscan.
+- Selector de riel armado con `GET /api/rails` (`08-rieles-adaptador.md`): una opción por manifiesto, sin rieles ni chains en el código del sitio. Sugiere por `navigator.language` contra `manifest.countries` si un riel los declara. Siempre se pueden elegir todos.
+- El paso de pago se dibuja según `instructions.kind` (`solana-pay`: QR, botón "Abrir en la wallet" y link copiable; `approval`: texto).
+- Estado del pago en vivo (SSE `payment_seen`), con link a la tx en Solscan.
 - Componentes de partida: `paybot/apps/web` (`BotAccessGate`, `PaymentModal`, `PaymentStatusCard`, `CountdownTimer`), adaptados al taste.
 
 ## Accesibilidad y rendimiento
