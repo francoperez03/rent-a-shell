@@ -40,11 +40,15 @@ export class ApiError extends Error {
   }
 }
 
+/** Gateways behind a free ngrok domain answer browser requests with an interstitial unless this header is present. */
+export const GW_HEADERS = { 'ngrok-skip-browser-warning': '1' } as const;
+
 export async function api<T>(path: string, init: RequestInit & { token?: string; base?: string } = {}): Promise<T> {
   const { token, headers, base, ...rest } = init;
   const res = await fetch(apiUrl(path, base), {
     ...rest,
     headers: {
+      ...GW_HEADERS,
       ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
@@ -126,22 +130,48 @@ export const clearGrant = () => sessionStorage.removeItem(GRANT_KEY);
 
 /**
  * Subscription to /api/events (SSE). Calls `onEvent` for each GatewayEvent.
- * EventSource reconnects on its own; here we only parse.
+ * fetch instead of EventSource so GW_HEADERS can be sent; reconnects after 3 s on any error.
  */
 export function useEvents(onEvent: (e: GatewayEvent) => void) {
   const [connected, setConnected] = useState(false);
   useEffect(() => {
-    const es = new EventSource(apiUrl('/api/events'));
-    es.onopen = () => setConnected(true);
-    es.onerror = () => setConnected(false);
-    es.onmessage = (m) => {
+    const ctrl = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const connect = async () => {
       try {
-        onEvent(JSON.parse(m.data) as GatewayEvent);
+        const res = await fetch(apiUrl('/api/events'), { headers: GW_HEADERS, signal: ctrl.signal });
+        if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+        setConnected(true);
+        const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+        let buf = '';
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += value;
+          let i: number;
+          while ((i = buf.indexOf('\n\n')) >= 0) {
+            const data = buf.slice(0, i).split('\n').filter((l) => l.startsWith('data:')).map((l) => l.slice(5).trim()).join('\n');
+            buf = buf.slice(i + 2);
+            if (!data) continue;
+            try {
+              onEvent(JSON.parse(data) as GatewayEvent);
+            } catch {
+              /* non-JSON message (keepalive): ignored */
+            }
+          }
+        }
       } catch {
-        /* non-JSON message (keepalive): ignored */
+        /* dropped or refused: reconnect below */
       }
+      if (ctrl.signal.aborted) return;
+      setConnected(false);
+      timer = setTimeout(connect, 3000);
     };
-    return () => es.close();
+    void connect();
+    return () => {
+      ctrl.abort();
+      clearTimeout(timer);
+    };
     // onEvent is read on each message via the first render's closure: callers use functional setState.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
