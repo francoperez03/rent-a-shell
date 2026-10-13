@@ -8,11 +8,11 @@ Before recording: `pnpm forger` running with the tunnel and that URL deployed to
 
 ## 1. Open (0:00 to 0:20) · camera, arm next to you
 
-What if your agent could rent a robot? Pay five cents, move the arm, watch the camera, measure the servo, and ask you what to do next.
+What if your agent could rent a robot? Pay five cents, move the arm, watch the camera, check the servo, and then ask you what to do next.
 
 [Point at the arm.]
 
-I'm Franco from Tucumán, and this is El Tucu. That's exactly what it does. Real hardware by the minute, in USDC on Solana. For small teams building with AI, and for the agents they build.
+I'm Franco from Tucumán, and this is El Tucu. That is exactly what it does. A real robot, paid by the minute, in USDC on Solana. For small teams that build with AI, and for the agents they build.
 
 Two ways to use it. Let me show you both.
 
@@ -22,19 +22,19 @@ What does five cents buy you?
 
 [Open rent-a-shell.vercel.app, click El Tucu. Live camera, real angles underneath.]
 
-This. A live camera, the real angle of every joint, the safe ranges. Owning one is forty-five dollars in parts and two weeks of waiting. Here it's five cents, right now.
+This. A live camera, the real angle of every joint, and the safe limits. If you want to own one, you pay forty-five dollars in parts and wait two weeks. Here it is five cents, right now.
 
 [Pick 5 minutes, "Go to payment", confirm in Phantom.]
 
-Who holds the money? An escrow on Solana. If the robot drops, it comes back to me. When the session ends, ninety percent goes to whoever owns the robot.
+Who keeps the money? A smart contract on Solana. If the robot fails, the money comes back to me. When my time ends, ninety percent goes to the owner of the robot.
 
 [Tick, tx hash, "Go to the lab". Move the base, then the gripper. Glance at the real arm.]
 
-Paid. That's the transaction. And that's the real robot moving. The numbers are what the servo actually reached.
+Paid. This is the transaction. And this is the real robot moving. The numbers show where the servo really is.
 
 ## 3. Through an agent (1:05 to 1:45) · screen, Claude Code
 
-Now, can an agent do all of that on its own?
+Now, can an agent do all of this by itself?
 
 [Paste the sentence from the landing page.]
 
@@ -42,21 +42,21 @@ Now, can an agent do all of that on its own?
 
 [While it runs.]
 
-It reads the site's llms.txt, finds the robot, and before spending a cent it shows me the price and asks.
+It reads the site, finds the robot, and before it spends any money, it shows me the price and asks.
 
 [Type "yes".]
 
-Then it pays with x402: the gateway answers 402, the agent signs the USDC transfer, a facilitator submits it. No account, no SOL, no form.
+Then it pays with x402: the server asks for payment, the agent signs the USDC transfer, and a facilitator sends it. No account, no SOL, no form.
 
 [Gripper command and result on screen.]
 
-Gripper open. It measured the angle, tells me the time left, and asks what's next. An agent operating real hardware, paying its own way, with a human in charge.
+The gripper is open. It tells me the real angle, the time left, and asks what I want next. An agent using real hardware, paying for itself, with a human in control.
 
 ## 4. Close (1:45 to 2:00) · camera
 
 So, what if your agent could rent a robot? Now it can.
 
-Have a robot sitting idle? Publish it. Have code that never touched a servo? Test it.
+Do you have a robot that nobody uses? Publish it. Do you have code that never ran on a real servo? Test it.
 
 Five minutes, five cents. Rent a Shell.
 
