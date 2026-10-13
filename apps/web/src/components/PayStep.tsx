@@ -9,7 +9,8 @@ import { fmtClock, getIntent, saveGrant, useEvents, useNow } from '@/lib/api';
 import { cn } from '@/lib/cn';
 
 /** Payment step shared by the checkout page and the in-page modal: ticket, instructions (QR), status, redirect to the console when paid. */
-export function PayStep({ view: first, rail, onRestart }: { view: IntentView; rail: RailManifest | null; onRestart: () => void }) {
+/** Intent lifecycle shared by the checkout and the modal: polls until paid or expired, listens to SSE, opens the console when paid. */
+export function usePayment(first: IntentView) {
   const navigate = useNavigate();
   const now = useNow();
   const id = first.intent.id;
@@ -41,6 +42,20 @@ export function PayStep({ view: first, rail, onRestart }: { view: IntentView; ra
   const expired = status === 'expired' || (status === 'pending' && left <= 0);
   const explorer = session?.payment?.explorerUrl ?? seen?.explorerUrl;
   const paid = status === 'paid';
+  return { intent, status, left, expired, paid, seen: !!seen, explorer };
+}
+
+/** QR data URL for a payment link (null until rendered or on failure). */
+export function useQr(url: string) {
+  const [qr, setQr] = useState<string | null>(null);
+  useEffect(() => {
+    QRCode.toDataURL(url, { margin: 1, width: 560, errorCorrectionLevel: 'M', color: { dark: '#15110D', light: '#FFFFFF' } }).then(setQr, () => setQr(null));
+  }, [url]);
+  return qr;
+}
+
+export function PayStep({ view: first, rail, onRestart }: { view: IntentView; rail: RailManifest | null; onRestart: () => void }) {
+  const { intent, status, left, expired, paid, seen, explorer } = usePayment(first);
 
   return (
     <section aria-live="polite" className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_20rem]">
@@ -68,7 +83,7 @@ export function PayStep({ view: first, rail, onRestart }: { view: IntentView; ra
       </div>
 
       <aside className="flex flex-col gap-4 border-t border-rule pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
-        <Status status={status} seen={!!seen} expired={expired} />
+        <Status status={status} seen={seen} expired={expired} />
         {explorer && (
           <a href={explorer} target="_blank" rel="noopener" className="font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">
             View transaction ↗
@@ -119,10 +134,7 @@ function Instruct({ ins, rail }: { ins: Instructions; rail: RailManifest | null 
 type SolanaPayIns = Extract<Instructions, { kind: 'solana-pay' }>;
 
 function SolanaPay({ ins, network }: { ins: SolanaPayIns; network?: string }) {
-  const [qr, setQr] = useState<string | null>(null);
-  useEffect(() => {
-    QRCode.toDataURL(ins.url, { margin: 1, width: 560, errorCorrectionLevel: 'M', color: { dark: '#15110D', light: '#FFFFFF' } }).then(setQr, () => setQr(null));
-  }, [ins.url]);
+  const qr = useQr(ins.url);
 
   return (
     <div>
@@ -150,7 +162,7 @@ function SolanaPay({ ins, network }: { ins: SolanaPayIns; network?: string }) {
   );
 }
 
-function CopyButton({ text, label }: { text: string; label: string }) {
+export function CopyButton({ text, label }: { text: string; label: string }) {
   const [done, setDone] = useState(false);
   return (
     <button
