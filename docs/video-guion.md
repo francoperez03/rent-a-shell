@@ -8,7 +8,7 @@ Before recording: `pnpm forger` running with the tunnel and that URL deployed to
 
 ## 1. Open (0:00 to 0:20) · camera, arm next to you
 
-What if your agent could rent a robot? Pay five cents, move the arm, watch the camera, check the servo, and then ask you what to do next.
+Your AI agent writes robot code all day. But it has never touched a real robot. What if it could rent one? Five minutes. Five cents. Move the arm, watch the camera, and then ask you what to do next.
 
 [Point at the arm.]
 
@@ -54,7 +54,7 @@ The gripper is open. It tells me the real angle, the time left, and asks what I 
 
 ## 4. Close (1:45 to 2:00) · camera
 
-So, what if your agent could rent a robot? Now it can.
+So, can your agent rent a robot? Now it can.
 
 Do you have a robot that nobody uses? Become a Forger and publish it. Do you have code that never ran on a real servo? Test it.
 
