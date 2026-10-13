@@ -121,20 +121,25 @@ export default function ShellPage() {
 
           <section aria-labelledby="own" className="mt-10 border-t border-rule pt-6">
             <h2 id="own" className="font-mono text-mono uppercase text-ink-3">Own one vs rent it</h2>
-            <Compare
-              className="mt-5"
-              label="Time to first test"
-              own={{ value: `${shell.build.lead_days} days + ${shell.build.build_hours} h`, note: 'parts in the mail, then assembly' }}
-              rent={{ value: 'Now', note: 'pay and the console opens' }}
-              ratio={(shell.pricing.block_minutes / 60) / (shell.build.lead_days * 24 + shell.build.build_hours)}
-            />
-            <Compare
-              className="mt-6"
-              label="Cost"
-              own={{ value: `$${shell.build.parts_usd}`, note: 'parts only, before your hours' }}
-              rent={{ value: `$${shell.pricing.usd}`, note: `per ${shell.pricing.block_minutes} min · the parts alone buy ${breakEvenHours.toLocaleString('en-US', { maximumFractionDigits: 0 })} h here` }}
-              ratio={Number(shell.pricing.usd) / shell.build.parts_usd}
-            />
+            <div className="mt-4 grid grid-cols-2 gap-6">
+              <div>
+                <p className="font-mono text-mono-xs uppercase text-ink-3">Own one</p>
+                <p className="tabular mt-2 font-mono text-data text-ink">
+                  ${shell.build.parts_usd} <span className="text-mono text-ink-3">USD</span>
+                </p>
+                <p className="mt-1 text-small text-ink-2">in parts, ready in {shell.build.lead_days} days plus {shell.build.build_hours} h of assembly</p>
+              </div>
+              <div className="border-l border-rule pl-6">
+                <p className="font-mono text-mono-xs uppercase text-signal-deep">Rent it</p>
+                <p className="tabular mt-2 font-mono text-data text-ink">
+                  ${shell.pricing.usd} <span className="text-mono text-ink-3">/ {shell.pricing.block_minutes} min</span>
+                </p>
+                <p className="mt-1 text-small text-ink-2">ready now, pay and the console opens</p>
+              </div>
+            </div>
+            <p className="mt-4 max-w-prose text-body text-ink-2">
+              The parts alone buy {breakEvenHours.toLocaleString('en-US', { maximumFractionDigits: 0 })} hours here.
+            </p>
           </section>
 
           <section aria-labelledby="forger" className="mt-10 border-t border-rule pt-6">
@@ -235,39 +240,5 @@ function CustomRequest({ shellId, forger }: { shellId: string; forger: string })
       </div>
       {send.isError && <p role="alert" className="text-small text-danger">Could not send: {(send.error as Error).message}. Check the fields and try again.</p>}
     </form>
-  );
-}
-
-/** Two scales, same axis: owning fills the track, renting is a sliver. `ratio` = rent / own (clamped so the sliver stays visible). */
-function Compare({ label, own, rent, ratio, className }: { label: string; own: Measure; rent: Measure; ratio: number; className?: string }) {
-  const rentPct = Math.max(1.2, Math.min(100, ratio * 100));
-  return (
-    <div className={className}>
-      <p className="font-mono text-mono-xs uppercase text-ink-2">{label}</p>
-      <div className="mt-2 flex flex-col gap-3">
-        <Bar who="Own" v={own} fill="bg-ink" pct={100} delay="0ms" />
-        <Bar who="Rent" v={rent} fill="bg-signal" pct={rentPct} delay="120ms" />
-      </div>
-    </div>
-  );
-}
-
-type Measure = { value: string; note: string };
-
-// top-level on purpose: defined inside Compare it would remount (and replay the animation) on every clock tick
-function Bar({ who, v, fill, pct, delay }: { who: string; v: Measure; fill: string; pct: number; delay: string }) {
-  return (
-    <div className="grid grid-cols-[3.5rem_1fr] items-center gap-3 md:grid-cols-[4rem_1fr]">
-      <span className="font-mono text-mono-xs uppercase text-ink-3">{who}</span>
-      <div>
-        <div className="relative h-3 w-full bg-paper-2" role="img" aria-label={`${who}: ${v.value}`}>
-          <div className={cn('animate-bar-in absolute inset-y-0 left-0', fill)} style={{ width: `${pct}%`, animationDelay: delay }} />
-        </div>
-        <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
-          <span className="tabular font-mono text-mono text-ink">{v.value}</span>
-          <span className="text-small text-ink-3">{v.note}</span>
-        </p>
-      </div>
-    </div>
   );
 }

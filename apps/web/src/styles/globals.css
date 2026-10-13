@@ -117,10 +117,6 @@ p { margin: 0; text-wrap: pretty; }
 .animate-modal-in { animation: modal-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 @media (prefers-reduced-motion: reduce) { .animate-modal-in { animation: none; } }
 
-/* Comparison bars (own vs rent): the fill grows from the left once, ease-out-quint. */
-@keyframes bar-in { from { transform: scaleX(0); } }
-.animate-bar-in { transform-origin: left; animation: bar-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-@media (prefers-reduced-motion: reduce) { .animate-bar-in { animation: none; } }
 
 /* Skeleton shimmer for loading rows. */
 @keyframes skeleton {
