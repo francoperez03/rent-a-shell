@@ -45,7 +45,7 @@ export function PayModal({ shell, blocks, open, onClose }: { shell: Shell; block
       ref={ref}
       onClose={onClose}
       aria-labelledby="pay-title"
-      className="w-[min(100vw-2rem,56rem)] border border-ink bg-paper p-0 text-ink backdrop:bg-ink/60"
+      className="w-[min(100vw-2rem,56rem)] border border-ink bg-paper p-0 text-ink backdrop:bg-[#15110D]/75 backdrop:backdrop-blur-sm"
     >
       <div className="flex items-center justify-between gap-4 border-b border-rule px-5 py-3">
         <h2 id="pay-title" className="font-mono text-mono uppercase">
