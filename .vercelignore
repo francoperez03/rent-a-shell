@@ -1,0 +1,6 @@
+programs
+evidence
+node_modules
+**/dist
+*.key
+*.crt
