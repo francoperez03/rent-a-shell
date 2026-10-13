@@ -5,7 +5,7 @@
 //   node scripts/forger/run.mjs --list-cameras  → camera names for CAMERA
 // Reads apps/gateway/.env.local. Its own variables (all optional):
 //   CAMERA        macOS: index (avfoundation, default 0) · Windows: exact name (dshow) · Linux: /dev/videoN · "test"
-//   CAMERA_SIZE   e.g. 1280x720 · CAMERA_FPS e.g. 30 (on Windows they are skipped unless set: native mode)
+//   CAMERA_SIZE   e.g. 1280x720 · CAMERA_FPS e.g. 30 (on Windows they are skipped unless set: native mode) · CAMERA_OUT_FPS 15 · CAMERA_KBPS 700 (stream out)
 //   TUNNEL        cloudflared (default when PUBLIC_URL is missing or localhost) | ngrok (fixed domain: set PUBLIC_URL to it) | none
 //   HUB_URL       if set, registers there (and re-registers when the tunnel URL changes)
 //   MEDIAMTX_PATH, FFMPEG_PATH, CLOUDFLARED_PATH, NGROK_PATH  paths if they are not on the PATH
