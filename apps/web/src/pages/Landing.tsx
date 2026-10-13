@@ -10,7 +10,7 @@ import { StatusDot } from '@/components/StatusDot';
 import { Panel } from '@/components/Panel';
 import { Footer } from '@/components/Footer';
 import { fmtClock, shellHref, toMs, useEvents, useNow, useQueue, useShells, useShellState } from '@/lib/api';
-import { useReveal, useRows } from '@/lib/useReveal';
+import { useReveal } from '@/lib/useReveal';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { CountUp } from '@/components/CountUp';
 import { JOINTS, JOINT_LABEL } from '@/lib/joints';
@@ -142,51 +142,50 @@ function HowItWorks() {
 
 function Audiences({ shell }: { shell: Shell | undefined }) {
   const reveal = useReveal();
-  const row = useRows();
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const response = [
-    'HTTP/1.1 402 Payment Required',
-    'payment-required: eyJ4NDAyVmVyc2lvbiI6Miwi…',
-    '',
-    '# decoded',
-    '{ "accepts": [{ "scheme": "exact",',
-    '    "network": "solana:EtWT…",',
-    '    "amount": "50000",   // 0.05 USDC',
-    '    "description": "El Tucu · 5 min" }] }',
+  const sentence = `Go to ${origin}, pick the shell, pay for 5 minutes, open the gripper and then ask me what to do next.`;
+  const human = [
+    'Open the shell page and pick how long: five minutes cost five cents.',
+    'Pay with Phantom or Solflare. The money sits in escrow until your session ends.',
+    'Drive the arm from the console while the camera shows you every move.',
+  ];
+  const agent = [
+    'Install the skill once (one command, below).',
+    'Tell your agent the sentence. It reads llms.txt, shows you the price and asks before paying.',
+    'It pays with x402, runs your commands and asks you what to do next.',
   ];
 
   return (
     <section id="who-its-for" className="border-t border-rule bg-paper-2 py-section">
       <div className="mx-auto w-full max-w-container px-4 md:px-6">
-        <SectionIndex index="02" title="Who it is for" anim={reveal()} />
+        <SectionIndex index="02" title="Two ways to use it" body="By hand, with a wallet. Or through your agent, with one sentence." anim={reveal()} />
         <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-12 lg:grid-cols-12">
-          <motion.article {...reveal()} className="flex flex-col border-t-2 border-ink pt-5 lg:col-span-5">
-            <p className="font-mono text-mono-xs uppercase text-ink-3">Small hardware teams</p>
-            <h3 className="wide-106 mt-3 text-h2">You wrote the firmware with AI. Now run it on something real.</h3>
-            <p className="mt-4 max-w-prose text-body text-ink-2">
-              A simulator never shows the servo that lands two degrees short or the current spike when a joint stalls. Rent the arm, run your sequence, read the measurements, fix the code. Five minutes, a few cents, no equipment to buy.
-            </p>
-            {/* mt-auto: the key sits on the same baseline as "Agent guide" next to it */}
+          <motion.article {...reveal()} className="flex flex-col border-t-2 border-ink pt-5 lg:col-span-6">
+            <p className="font-mono text-mono-xs uppercase text-ink-3">1 · You</p>
+            <h3 className="wide-106 mt-3 text-h2">Rent it from this page and drive it yourself.</h3>
+            <Steps items={human} />
             <div className="mt-6 lg:mt-auto lg:pt-6">
               <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
             </div>
           </motion.article>
 
-          <motion.article {...reveal(0.08)} className="min-w-0 border-t border-rule pt-5 lg:col-span-7">
-            <p className="font-mono text-mono-xs uppercase text-ink-3">AI agents</p>
-            <h3 className="wide-106 mt-3 text-h2">One POST, one 402, one token.</h3>
-            <p className="mt-4 max-w-prose text-body text-ink-2">Your agent reads llms.txt, pays with x402 and sends commands. No account, no form.</p>
-            {/* pre-wrap: no line is longer than ~60 chars, and on a phone it wraps instead of scrolling */}
-            <pre className="on-bench mt-5 whitespace-pre-wrap break-words border border-bench-rule bg-bench p-5 font-mono text-mono leading-[1.7] text-bench-ink">
+          <motion.article {...reveal(0.08)} className="flex min-w-0 flex-col border-t-2 border-signal pt-5 lg:col-span-6">
+            <p className="font-mono text-mono-xs uppercase text-signal-deep">2 · Your agent</p>
+            <h3 className="wide-106 mt-3 text-h2">Tell your agent one sentence. It pays and drives it for you.</h3>
+            <Steps items={agent} />
+            <figure className="mt-6">
+              <figcaption className="font-mono text-mono-xs uppercase text-ink-3">Say this to Claude Code</figcaption>
+              <blockquote className="mt-2 border border-ink bg-paper p-4 text-body text-ink">“{sentence}”</blockquote>
+            </figure>
+            <pre className="on-bench mt-4 whitespace-pre-wrap break-words border border-bench-rule bg-bench p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
               <code>
-                <span className="text-bench-ink-2">$ </span>curl -X POST \{'\n'}
-                {'    '}{origin}/api/sessions/x402?shell=el-tucu&blocks=1{'\n'}
-                {response.map((l, i) => (
-                  <motion.span key={i} {...row(i, 0.3)} className={cn('block', i === 0 && 'text-signal')}>{l || ' '}</motion.span>
-                ))}
+                <span className="text-bench-ink-2"># install the skill once{'\n'}</span>
+                mkdir -p ~/.claude/skills/rent-a-shell && curl -fsSL {origin}/skills/rent/SKILL.md -o ~/.claude/skills/rent-a-shell/SKILL.md
               </code>
             </pre>
-            <Link to="/agents" className="mt-4 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">Agent guide</Link>
+            <div className="mt-6 lg:mt-auto lg:pt-6">
+              <Button as="link" to="/agents" variant="secondary" label="Agent guide" />
+            </div>
           </motion.article>
 
           {/* Forgers as a full-width band, same grammar as SectionIndex: eyebrow, text, numbers to the right */}
@@ -351,5 +350,18 @@ function Closing({ shell }: { shell: Shell | undefined }) {
       </div>
       <Footer />
     </section>
+  );
+}
+
+function Steps({ items }: { items: string[] }) {
+  return (
+    <ol className="mt-5 flex flex-col gap-3">
+      {items.map((t, i) => (
+        <li key={i} className="grid grid-cols-[1.75rem_1fr] gap-3 text-body text-ink-2">
+          <span className="tabular font-mono text-mono text-ink">{i + 1}.</span>
+          <span className="max-w-[44ch]">{t}</span>
+        </li>
+      ))}
+    </ol>
   );
 }
