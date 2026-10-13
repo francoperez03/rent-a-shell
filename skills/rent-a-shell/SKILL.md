@@ -21,16 +21,16 @@ What each shell measures today: the real angle of each joint (and whether the re
 macOS / Linux:
 ```bash
 mkdir -p ~/.rent-a-shell && cd ~/.rent-a-shell
-curl -fsSL <HUB_URL>/skills/rent/rent.mjs -o rent.mjs
-npm init -y >/dev/null && npm i @x402/fetch@2.27.0 @x402/core@2.27.0 @x402/svm@2.27.0 @solana/kit@^6
+curl -fsSL https://rent-a-shell.vercel.app/skills/rent/rent.mjs -o rent.mjs
+echo '{"private":true}' > package.json && npm i @x402/fetch@2.27.0 @x402/core@2.27.0 @x402/svm@2.27.0 @solana/kit@^6
 ```
 Windows (PowerShell, with `curl.exe`):
 ```powershell
 mkdir $HOME\.rent-a-shell -Force; cd $HOME\.rent-a-shell
-curl.exe -fsSL <HUB_URL>/skills/rent/rent.mjs -o rent.mjs
-npm init -y | Out-Null; npm i @x402/fetch@2.27.0 @x402/core@2.27.0 @x402/svm@2.27.0 @solana/kit@^6
+curl.exe -fsSL https://rent-a-shell.vercel.app/skills/rent/rent.mjs -o rent.mjs
+Set-Content package.json '{"private":true}'; npm i @x402/fetch@2.27.0 @x402/core@2.27.0 @x402/svm@2.27.0 @solana/kit@^6
 ```
-Requires Node 22+. `<HUB_URL>`: public hub URL, TBD. The client is also in the repo: `https://github.com/francoperez03/rent-a-shell/blob/main/skills/rent-a-shell/rent.mjs`. Run every following command inside `~/.rent-a-shell`.
+Requires Node 22+. The client is also in the repo: `https://github.com/francoperez03/rent-a-shell/blob/main/skills/rent-a-shell/rent.mjs`. Run every following command inside `~/.rent-a-shell`.
 
 ## 2. Agent wallet
 
@@ -44,14 +44,25 @@ Creates the wallet the first time and prints the address. To pay it only needs *
 ## 3. Pick the shell
 
 ```bash
-node rent.mjs catalog --hub <HUB_URL>
-node rent.mjs info --gateway <shell gateway>
+node rent.mjs info --gateway https://rent-a-shell.vercel.app
 ```
-`info` returns the spec (joints and safe range, HOME, routines, sensors, price, Forger), the queue and the current state. If it's `busy`, the rental is queued and starts when the shell frees up (the client waits on its own).
+`--gateway` takes the website URL or a gateway URL (the site's `/llms.txt` names the live gateway). `info` returns the spec (joints and safe range, HOME, routines, sensors, price, Forger), the queue and the current state. If it's `busy`, the rental is queued and starts when the shell frees up (the client waits on its own). With a hub: `node rent.mjs catalog --hub <HUB_URL>` lists every shell and its gateway.
 
-Without the client: the hub and each gateway expose `llms.txt` and MCP (`claude mcp add --transport http rent-a-shell <HUB_URL>/mcp`) to explore the catalog. Payment still goes through this client.
+Without the client: the site and each gateway expose `llms.txt` and MCP (`claude mcp add --transport http rent-a-shell <gateway>/mcp`) to explore the catalog. Payment still goes through this client.
 
-## 4. Write the plan
+## 3b. Interactive session (the person steers, one command at a time)
+
+For requests like "rent El Tucu for 5 minutes, open the gripper, then ask me what else": pay once, keep the session, send commands as the person asks.
+
+1. `node rent.mjs info --gateway https://rent-a-shell.vercel.app` → show shell, blocks and total price, wait for the yes.
+2. `node rent.mjs rent --gateway https://rent-a-shell.vercel.app --blocks 1 --max-usd 0.05` → pays, saves the session in `~/.rent-a-shell/session.json`, prints the seconds left, HOME and the ranges.
+3. For each request: `node rent.mjs cmd --joint grip --angle 175` (or `--joint base --angle 120`, `--dance saludo`, `--stop`). It prints the real angle, whether it was clamped, the peak mA and the seconds left.
+4. After every command, report what happened in one or two lines and **ask what to do next**, mentioning the time left. `node rent.mjs frame --out after.jpg` takes a photo if the person wants to see it; `node rent.mjs state` reads the angles.
+5. `node rent.mjs end` when the person is done (the shell returns to HOME). If the session expires first, `cmd` says so: ask before renting again.
+
+Gripper on El Tucu: range 130 to 175, HOME 150. "Open" means towards 175, "close" towards 130; take a frame if in doubt. Other joints: see the ranges that `rent` prints and plan inside them.
+
+## 4. Write the plan (batch mode: a whole test in one run)
 
 Translate what the person wants to test into a `plan.json` (list of steps):
 
