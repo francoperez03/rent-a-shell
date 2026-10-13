@@ -33,14 +33,17 @@ export function cameraInput(platform, e) {
 
 export function cameraArgs(platform, e) {
   const fps = Number(e.CAMERA_FPS || 30);
+  const out = Number(e.CAMERA_OUT_FPS || 15);
+  const kbps = Number(e.CAMERA_KBPS || 700); // ponytail: ~0.7 Mbps fits a home upload through the quick tunnel; raise if the link allows
   return [
     "-loglevel", "error",
     ...cameraInput(platform, e),
     // yuv420p: webcams often output yuyv422 and browsers do not play H.264 4:2:2
     // -fps_mode cfr: avfoundation timestamps barely advance, so MediaMTX never closes an HLS segment ("reached maximum segment size")
-    // 720p tall side: enough for the bench and light enough for the tunnel
-    "-vf", "scale='if(gt(iw,ih),-2,720)':'if(gt(iw,ih),720,-2)'", "-fps_mode", "cfr", "-r", String(fps),
-    "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-g", String(fps),
+    // 540 short side, 15 fps out, capped bitrate: the camera leaves through the tunnel and a home upload is the ceiling
+    "-vf", "scale='if(gt(iw,ih),-2,540)':'if(gt(iw,ih),540,-2)'", "-fps_mode", "cfr", "-r", String(out),
+    "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-g", String(out),
+    "-b:v", `${kbps}k`, "-maxrate", `${kbps}k`, "-bufsize", `${kbps * 2}k`,
     "-f", "rtsp", "-rtsp_transport", "tcp", `rtsp://localhost:8554/${e.SHELL_ID || "el-tucu"}`,
   ];
 }
