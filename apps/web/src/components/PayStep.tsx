@@ -8,9 +8,8 @@ import { Readout } from '@/components/Readout';
 import { fmtClock, getIntent, saveGrant, useEvents, useNow } from '@/lib/api';
 import { cn } from '@/lib/cn';
 
-/** Payment step shared by the checkout page and the in-page modal: ticket, instructions (QR), status, redirect to the console when paid. */
-/** Intent lifecycle shared by the checkout and the modal: polls until paid or expired, listens to SSE, opens the console when paid. */
-export function usePayment(first: IntentView) {
+/** Intent lifecycle shared by the checkout and the modal: polls until paid or expired, listens to SSE, saves the grant when paid (and opens the console with `autoOpen`). */
+export function usePayment(first: IntentView, { autoOpen = true }: { autoOpen?: boolean } = {}) {
   const navigate = useNavigate();
   const now = useNow();
   const id = first.intent.id;
@@ -34,15 +33,16 @@ export function usePayment(first: IntentView) {
   useEffect(() => {
     if (status === 'paid' && session) {
       saveGrant(session);
-      navigate('/session');
+      if (autoOpen) navigate('/session');
     }
-  }, [status, session, navigate]);
+  }, [status, session, navigate, autoOpen]);
 
   const left = intent.expiresAt - now;
   const expired = status === 'expired' || (status === 'pending' && left <= 0);
   const explorer = session?.payment?.explorerUrl ?? seen?.explorerUrl;
   const paid = status === 'paid';
-  return { intent, status, left, expired, paid, seen: !!seen, explorer };
+  const tx = session?.payment?.tx ?? seen?.tx;
+  return { intent, status, left, expired, paid, seen: !!seen, explorer, tx, session };
 }
 
 /** QR data URL for a payment link (null until rendered or on failure). */
