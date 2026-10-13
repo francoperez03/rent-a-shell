@@ -7,7 +7,7 @@ import { Panel } from '@/components/Panel';
 import { Button } from '@/components/Button';
 import { Readout } from '@/components/Readout';
 import { ApiError, api, clearGrant, fmtClock, loadGrant, toMs, useEvents, useNow, useShell, useShellState, type SessionInfo } from '@/lib/api';
-import { JOINTS, JOINT_LABEL } from '@/lib/joints';
+import { JOINTS, JOINT_LABEL, routineLabel } from '@/lib/joints';
 import { cn } from '@/lib/cn';
 
 const STEP = 5;
@@ -36,7 +36,7 @@ export default function SessionPage() {
         <div className="max-w-prose">
           <Readout label="Session" value="— —" surface="bench" className="items-center" />
           <h1 className="wide-106 mt-6 text-h1 text-bench-ink">There is no active session in this tab.</h1>
-          <p className="mt-4 text-body text-bench-ink-2">Rent a block from a shell page and the console opens here.</p>
+          <p className="mt-4 text-body text-bench-ink-2">Rent some time from a shell page and the console opens here.</p>
           <Button as="link" to="/#shells" label="Pick a shell" className="mt-8" />
         </div>
       </main>
@@ -107,7 +107,7 @@ function Console({ grant }: { grant: SessionGrant }) {
       } catch (err) {
         const status = err instanceof ApiError ? err.status : 0;
         const code = err instanceof ApiError ? err.code : '';
-        if (code === 'session_not_started') setNote('Your block has not started yet.');
+        if (code === 'session_not_started') setNote('Your time has not started yet.');
         else if (code === 'session_expired') setEnded('expired');
         else if (code.startsWith('session_')) setEnded((code.slice(8) as Ended) || 'ended');
         else if (status === 401 || status === 403) setEnded('revoked');
@@ -200,10 +200,10 @@ function Console({ grant }: { grant: SessionGrant }) {
 
   const urgent = !waiting && left < 60_000;
   const activity = waiting
-    ? 'Robot busy. Your block starts on its own when the previous one ends.'
+    ? 'Robot busy. Your time starts on its own when the previous session ends.'
     : state
       ? state.rutina
-        ? `Routine ${state.rutina}`
+        ? `Routine: ${routineLabel(state.rutina)}`
         : state.moving
           ? 'Moving'
           : 'Idle'
@@ -298,7 +298,7 @@ function Console({ grant }: { grant: SessionGrant }) {
                       state?.rutina === r ? 'border-signal bg-signal text-ink' : 'border-bench-rule text-bench-ink hover:border-bench-ink'
                     )}
                   >
-                    {r}
+                    {routineLabel(r)}
                   </button>
                 ))}
               </div>
@@ -378,7 +378,7 @@ function EndedOverlay({ shell, reason }: { shell: Shell | undefined; reason: End
   const name = shell?.name ?? 'The shell';
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => ref.current?.focus(), []);
-  const kicker = reason === 'offline' ? 'Robot disconnected' : reason === 'revoked' ? 'Token expired' : 'Block over';
+  const kicker = reason === 'offline' ? 'Robot disconnected' : reason === 'revoked' ? 'Token expired' : 'Time is up';
   return (
     <div
       ref={ref}
@@ -393,9 +393,9 @@ function EndedOverlay({ shell, reason }: { shell: Shell | undefined; reason: End
         <h1 id="ended-title" className="wide-106 mt-4 text-h1 text-bench-ink">
           Session ended. {name} returns to HOME.
         </h1>
-        {reason === 'offline' && <p className="mt-4 text-body text-bench-ink-2">Paid with escrow? The gateway refunds this block on its own.</p>}
+        {reason === 'offline' && <p className="mt-4 text-body text-bench-ink-2">Paid with escrow? The gateway refunds this session on its own.</p>}
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Rent another block" />
+          <Button as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Rent more time" />
           <Button as="link" to="/" variant="secondary" surface="bench" label="Back to home" />
         </div>
         <Link to="/agents" className="mt-6 inline-block font-mono text-mono-xs uppercase text-bench-ink-2 hover:text-bench-ink hover:underline">

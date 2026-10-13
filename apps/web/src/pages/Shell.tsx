@@ -7,7 +7,7 @@ import { Readout } from '@/components/Readout';
 import { StatusDot } from '@/components/StatusDot';
 import { Footer } from '@/components/Footer';
 import { HUB, api, fmtClock, setGateway, toMs, useNow, useQueue, useShell, useShellState } from '@/lib/api';
-import { JOINTS, JOINT_LABEL } from '@/lib/joints';
+import { JOINTS, JOINT_LABEL, routineLabel } from '@/lib/joints';
 import { cn } from '@/lib/cn';
 
 const BLOCKS = [1, 2, 3, 4, 5, 6];
@@ -114,7 +114,7 @@ export default function ShellPage() {
                 ))}
               </tbody>
             </table>
-            <p className="mt-3 text-small text-ink-3">Out-of-range commands are clamped to these limits. Routines: {shell.routines.join(', ')}. Sensors: {shell.sensors.join(', ')}.</p>
+            <p className="mt-3 text-small text-ink-3">Out-of-range commands are clamped to these limits. Routines: {shell.routines.map(routineLabel).join(', ')}. Sensors: {shell.sensors.join(', ')}.</p>
           </section>
 
           <section aria-labelledby="own" className="mt-10 border-t border-rule pt-6">
@@ -147,8 +147,8 @@ export default function ShellPage() {
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <fieldset className="border border-ink bg-paper-2 p-5 md:p-6">
             <legend className="px-2 font-mono text-mono uppercase text-ink">Rent</legend>
-            <p className="font-mono text-mono-xs uppercase text-ink-3">Blocks of {shell.pricing.block_minutes} min</p>
-            <div className="mt-2 grid grid-cols-6 gap-1" role="radiogroup" aria-label="Number of blocks">
+            <p className="font-mono text-mono-xs uppercase text-ink-3">How long</p>
+            <div className="mt-2 grid grid-cols-6 gap-1" role="radiogroup" aria-label="Session length">
               {BLOCKS.map((b) => (
                 <button
                   key={b}
@@ -161,7 +161,7 @@ export default function ShellPage() {
                     blocks === b ? 'border-signal bg-signal text-ink' : 'border-rule-2 bg-paper text-ink hover:border-ink'
                   )}
                 >
-                  {b}
+                  {b * shell.pricing.block_minutes}′
                 </button>
               ))}
             </div>
@@ -178,6 +178,7 @@ export default function ShellPage() {
               aria-disabled={offline}
             />
             <p className="mt-3 font-mono text-mono-xs uppercase text-ink-3">Queue · {queueText}</p>
+            <p className="mt-3 border-t border-rule pt-3 font-mono text-mono-xs uppercase text-ink-3">Powered by Solana · USDC</p>
             {offline && <p className="mt-3 text-small text-danger">{shell.name} is offline. Come back in a while.</p>}
           </fieldset>
         </aside>

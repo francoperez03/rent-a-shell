@@ -50,10 +50,10 @@ export default function CheckoutPage() {
           <div>
             <p className="font-mono text-mono uppercase text-ink-3">Checkout</p>
             <h1 className="wide-106 mt-3 text-h1">
-              {shell?.name ?? shellId} · {blocks} {blocks === 1 ? 'block' : 'blocks'}
+              {shell?.name ?? shellId} · {minutes ?? blocks * 5} minutes
             </h1>
             <Link to={`/shells/${shellId}`} className="mt-3 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">
-              Change blocks
+              Change the time
             </Link>
           </div>
           <dl className="flex gap-8">
