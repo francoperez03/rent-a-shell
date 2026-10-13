@@ -51,7 +51,7 @@ export function loadConfig(env: Env): Config {
       home: { base: 90, shoulder: 90, elbow: 90, grip: 70 },
       routines: ["robot", "lento", "saludo", "recta"],
       sensors: (env.SHELL_SENSORS ?? "angles,current_ma").split(",").map((s) => s.trim()).filter(Boolean),
-      pricing: { block_minutes: Number(env.BLOCK_MINUTES ?? 5), usd: env.BLOCK_USD ?? "1.00" },
+      pricing: { block_minutes: Number(env.BLOCK_MINUTES ?? 5), usd: env.BLOCK_USD ?? "0.05" },
       forger: { name: env.FORGER_NAME ?? "Franco Pérez", contact: env.FORGER_CONTACT || undefined, customizations: true },
       // ponytail: estimate (docs/costs.md): 4 SG90 + ESP32 + PLA + PSU, imported to AR, printing + assembly + calibration
       build: { parts_usd: 45, lead_days: 14, build_hours: 10 },

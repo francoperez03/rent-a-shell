@@ -52,7 +52,7 @@ With the `reference` there's no need for magic decimals or a contract: each inte
 | Parameter | Value | Status |
 |---|---|---|
 | Block | 5 minutes (`BLOCK_MINUTES`) | `[INPUT]` |
-| Price per block | USD 1 (`BLOCK_USD`) | `[INPUT]` |
+| Price per block | USD 0.05, one cent per minute (`BLOCK_USD`) | `[INPUT]` |
 | Max per purchase | 6 blocks (30 min) | `[INPUT]` |
 
 The price is charged in USDC, 1:1 with USD.

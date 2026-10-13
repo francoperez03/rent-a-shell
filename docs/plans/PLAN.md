@@ -42,7 +42,7 @@ Critical path: F2 (real devnet payment) → F5 → F7.
 
 `solana-pay` in `packages/rails/solana`: intent with `reference`, `check()` via `getSignaturesForAddress` (or the escrow account).
 
-**Verification:** scan the QR with Phantom on devnet, pay 1 USDC, intent `paid` in under 30 s and the console opens on its own. Evidence in `evidence/f3/`.
+**Verification:** scan the QR with Phantom on devnet, pay 0.05 USDC, intent `paid` in under 30 s and the console opens on its own. Evidence in `evidence/f3/`.
 
 ## F5 · Real El Tucu
 

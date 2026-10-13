@@ -20,8 +20,8 @@ Besides the money:
 
 ## Renting it
 
-- USD 1 per 5-minute block, available today.
-- **Break-even:** the parts are worth ≈ 45 blocks, that is ≈ 3.75 h of use. A typical iteration (upload a routine, run it, measure) fits in one block.
+- USD 0.05 per 5-minute block (one cent per minute), available today.
+- **Break-even:** the parts are worth about 900 blocks, that is about 75 h of use. A typical iteration (upload a routine, run it, measure) fits in one block.
 
 ## Takeaways
 

@@ -6,7 +6,7 @@
 //   node rent.mjs wallet                          creates/reads the agent wallet and shows the address
 //   node rent.mjs catalog [--hub URL]             lists the shells in the catalog
 //   node rent.mjs info --gateway URL              shell spec, sensors, price and queue
-//   node rent.mjs run --gateway URL --plan plan.json [--shell ID] [--blocks 1] --max-usd 1 [--out report.json] [--frames folder]
+//   node rent.mjs run --gateway URL --plan plan.json [--shell ID] [--blocks 1] --max-usd 0.25 [--out report.json] [--frames folder]
 //
 // Plan: JSON with a list of steps:
 //   {"joint":"base","angle":120}   moves a joint and measures until it arrives (real angle and peak mA)
