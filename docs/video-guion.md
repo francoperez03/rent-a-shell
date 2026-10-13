@@ -26,7 +26,7 @@ This. A live camera, the real angle of every joint, and the safe limits. If you 
 
 [Pick 5 minutes, "Go to payment", confirm in Phantom.]
 
-Who keeps the money? A program on Solana. If the robot fails, the money comes back to me. When my time ends, ninety percent goes to the owner of the robot.
+Who keeps the money? A program on Solana. If the robot fails, the money comes back to me. When my time ends, ninety percent goes to the owner of the robot. We call them Forgers: makers and labs that publish hardware nobody is using, and get paid for every minute. One command runs the gateway next to the robot. Anyone can be one.
 
 [Tick, tx hash, "Go to the lab". Move the base, then the gripper. Glance at the real arm.]
 
@@ -56,7 +56,7 @@ The gripper is open. It tells me the real angle, the time left, and asks what I 
 
 So, what if your agent could rent a robot? Now it can.
 
-Do you have a robot that nobody uses? Publish it. Do you have code that never ran on a real servo? Test it.
+Do you have a robot that nobody uses? Become a Forger and publish it. Do you have code that never ran on a real servo? Test it.
 
 Five minutes, five cents. Rent a Shell.
 
