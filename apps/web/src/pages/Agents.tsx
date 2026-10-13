@@ -1,7 +1,9 @@
+import { motion } from 'framer-motion';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/Button';
 import { SectionIndex } from '@/components/SectionIndex';
 // The example is copyable text: imported raw, so the site does not depend on the payment client.
+import { useReveal, useRows } from '@/lib/useReveal';
 import exampleRaw from '@/content/x402-fetch.example.txt?raw';
 
 const ENDPOINTS: { method: string; path: string; what: string; auth?: boolean }[] = [
@@ -26,11 +28,13 @@ const MCP_TOOLS = ['list_shells', 'rent_shell', 'send_command', 'get_frame', 'ge
 export default function AgentsPage() {
   const origin = window.location.origin;
   const example = exampleRaw.replace('{{ORIGIN}}', origin);
+  const reveal = useReveal();
+  const row = useRows();
 
   return (
     <>
       <main className="mx-auto w-full max-w-container px-4 pb-24 pt-24 md:px-6 md:pt-28">
-        <header className="grid grid-cols-1 gap-8 border-b border-rule pb-10 lg:grid-cols-[1fr_22rem]">
+        <motion.header {...reveal()} className="grid grid-cols-1 gap-8 border-b border-rule pb-10 lg:grid-cols-[1fr_22rem]">
           <div>
             <p className="font-mono text-mono uppercase text-ink-3">For agents and the devs behind them</p>
             <h1 className="wide-106 mt-3 max-w-[22ch] text-h1">Your agent tests its code on a real arm.</h1>
@@ -48,10 +52,10 @@ export default function AgentsPage() {
             <Spec k="Rate limit" v="10 commands / s" />
             <Spec k="Skill" v={<a href="https://github.com/francoperez03/rent-a-shell/tree/main/skills/rent-a-shell" className="text-signal-deep underline-offset-4 hover:underline" rel="noopener">rent-a-shell for Claude Code</a>} />
           </dl>
-        </header>
+        </motion.header>
 
         <section className="mt-section">
-          <SectionIndex index="01" title="Endpoints" body="Every gateway exposes the same API. The hub lists the gateways." />
+          <SectionIndex index="01" title="Endpoints" body="Every gateway exposes the same API. The hub lists the gateways." anim={reveal()} />
           <div className="mt-8 overflow-x-auto">
             <table className="w-full min-w-[640px] border-collapse text-left">
               <thead>
@@ -62,15 +66,15 @@ export default function AgentsPage() {
                 </tr>
               </thead>
               <tbody>
-                {ENDPOINTS.map((e) => (
-                  <tr key={e.method + e.path} className="border-b border-rule align-top even:bg-paper-2">
+                {ENDPOINTS.map((e, i) => (
+                  <motion.tr key={e.method + e.path} {...row(i)} className="border-b border-rule align-top even:bg-paper-2">
                     <td className="py-3 pr-4 font-mono text-mono text-ink-2">{e.method}</td>
                     <td className="py-3 pr-4 font-mono text-mono text-ink">
                       {e.path}
                       {e.auth && <span className="ml-2 text-ink-3">Bearer</span>}
                     </td>
                     <td className="py-3 text-small text-ink-2">{e.what}</td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>
@@ -78,7 +82,7 @@ export default function AgentsPage() {
         </section>
 
         <section className="mt-section">
-          <SectionIndex index="02" title="Pay with x402" />
+          <SectionIndex index="02" title="Pay with x402" anim={reveal()} />
           <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[22rem_1fr]">
             <ol className="flex list-none flex-col gap-4">
               {[
@@ -87,25 +91,25 @@ export default function AgentsPage() {
                 'You get token, starts_at and expires_at. If the robot is busy, your time starts when the previous session ends.',
                 'Send commands with Authorization: Bearer. When time runs out, the robot returns to HOME on its own.',
               ].map((t, i) => (
-                <li key={i} className="grid grid-cols-[2.5rem_1fr] gap-3 border-t border-rule pt-3">
+                <motion.li key={i} {...row(i)} className="grid grid-cols-[2.5rem_1fr] gap-3 border-t border-rule pt-3">
                   <span className="tabular font-mono text-mono text-ink-3">0{i + 1}</span>
                   <span className="text-body text-ink-2">{t}</span>
-                </li>
+                </motion.li>
               ))}
             </ol>
-            <div className="min-w-0">
+            <motion.div {...reveal(0.1)} className="min-w-0">
               <Code label="TypeScript · x402 fetch client">{example}</Code>
               <Code label="Commands · POST /api/cmd body" className="mt-6">{COMMANDS}</Code>
-            </div>
+            </motion.div>
           </div>
         </section>
 
         <section className="mt-section">
-          <SectionIndex index="03" title="MCP" body={`The gateway exposes an MCP server at ${origin}/mcp.`} />
+          <SectionIndex index="03" title="MCP" body={`The gateway exposes an MCP server at ${origin}/mcp.`} anim={reveal()} />
           <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[22rem_1fr]">
             <ul className="flex flex-wrap gap-2 self-start">
-              {MCP_TOOLS.map((t) => (
-                <li key={t} className="border border-rule-2 px-3 py-1.5 font-mono text-mono text-ink">{t}</li>
+              {MCP_TOOLS.map((t, i) => (
+                <motion.li key={t} {...row(i)} className="border border-rule-2 px-3 py-1.5 font-mono text-mono text-ink">{t}</motion.li>
               ))}
             </ul>
             <Code label="Claude Code">{`claude mcp add --transport http rent-a-shell ${origin}/mcp`}</Code>
