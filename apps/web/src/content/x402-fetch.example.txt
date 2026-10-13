@@ -7,7 +7,7 @@ const GW = "{{ORIGIN}}";
 // Solana wallet with USDC; the facilitator pays the fee, no SOL needed
 const signer = await createKeyPairSignerFromBytes(getBase58Encoder().encode(process.env.AGENT_SOLANA_KEY));
 
-// 1. Pay for a block: the 402 carries the requirement, the client signs and retries.
+// 1. Pay for five minutes (blocks=1): the 402 carries the requirement, the client signs and retries.
 const client = new x402Client();
 client.register("solana:*", new ExactSvmScheme(toClientSvmSigner(signer)));
 const pay = wrapFetchWithPayment(fetch, client);

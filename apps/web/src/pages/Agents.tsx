@@ -35,7 +35,7 @@ export default function AgentsPage() {
             <p className="font-mono text-mono uppercase text-ink-3">For agents and the devs behind them</p>
             <h1 className="wide-106 mt-3 max-w-[22ch] text-h1">Your agent tests its code on a real arm.</h1>
             <p className="mt-5 max-w-prose text-lead text-ink-2">
-              It discovers the shell, pays for a block in USDC with x402, gets a token and sends commands. All over HTTP or MCP, no account.
+              It discovers the shell, pays for a few minutes in USDC with x402, gets a token and sends commands. All over HTTP or MCP, no account.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button as="a" href="/llms.txt" label="llms.txt" />
@@ -82,9 +82,9 @@ export default function AgentsPage() {
           <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[22rem_1fr]">
             <ol className="flex list-none flex-col gap-4">
               {[
-                'POST to /api/sessions/x402 with shell and blocks. The response is a 402 with the payment requirement.',
+                'POST to /api/sessions/x402 with the shell and the time you want (blocks of five minutes). The response is a 402 with the payment requirement.',
                 'Your client signs the USDC payment and retries with the header. No gas: the facilitator pays it.',
-                'You get token, starts_at and expires_at. If the robot is busy, your block starts when the previous one ends.',
+                'You get token, starts_at and expires_at. If the robot is busy, your time starts when the previous session ends.',
                 'Send commands with Authorization: Bearer. When time runs out, the robot returns to HOME on its own.',
               ].map((t, i) => (
                 <li key={i} className="grid grid-cols-[2.5rem_1fr] gap-3 border-t border-rule pt-3">

@@ -15,9 +15,10 @@ import { JOINTS, JOINT_LABEL } from '@/lib/joints';
 import { cn } from '@/lib/cn';
 
 const STEPS = [
-  { n: '01', title: 'Rent', body: 'Pick a shell and how many five-minute blocks you need. You see the camera, the ranges and the queue before paying.' },
-  { n: '02', title: 'Run', body: 'Move each joint from the console, run a routine, or let your agent send the commands over HTTP or MCP.' },
-  { n: '03', title: 'Measure', body: 'Read the real angles, the current each move draws and the frames. Then fix the code and run it again.' },
+  { n: '01', title: 'Rent', body: 'Pick a shell and how much time you need, from five minutes up. You see the camera, the ranges and the queue before paying.' },
+  { n: '02', title: 'Pay', body: 'Powered by Solana: a Solana Pay QR for people, x402 for agents. USDC, settled in seconds, no account. With escrow, a dropped robot refunds you on its own.' },
+  { n: '03', title: 'Run', body: 'Move each joint from the console, run a routine, or let your agent send the commands over HTTP or MCP.' },
+  { n: '04', title: 'Measure', body: 'Read the real angles, the current each move draws and the frames. Then fix the code and run it again.' },
 ];
 
 /** Landing: brand register. Paper, one signal band, measurements as the hero image. */
@@ -55,7 +56,7 @@ function Hero({ shell }: { shell: Shell | undefined }) {
             Test your code on real hardware. Today.
           </motion.h1>
           <motion.p {...reveal(0.1)} className="mt-6 max-w-[44ch] text-lead text-ink-2">
-            {shell?.name ?? 'El Tucu'} is a four-axis arm in {city}, Argentina. Rent it in five-minute blocks, run your code against it, read the real angles and current, and watch it on camera.
+            {shell?.name ?? 'El Tucu'} is a four-axis arm in {city}, Argentina. Rent it by the minute, run your code against it, read the real angles and current, and watch it on camera.
           </motion.p>
           <motion.div {...reveal(0.15)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label={`Rent ${shell?.name ?? 'El Tucu'}`} />
@@ -94,7 +95,7 @@ function Numbers({ shell }: { shell: Shell | undefined }) {
   return (
     <section aria-label="Key numbers" className="bg-signal text-ink">
       <dl className="mx-auto grid w-full max-w-container grid-cols-1 divide-y divide-ink/20 px-4 md:grid-cols-3 md:divide-x md:divide-y-0 md:px-6">
-        <Band k="A block" v={`$${price}`} u={`/ ${minutes} min`} note="Pay per use, in USDC on Solana." />
+        <Band k="Five minutes" v={`$${price}`} u={`/ ${minutes} min`} note="Pay per use in USDC. Powered by Solana." />
         <Band k="Owning this arm" v={`$${parts}`} u="in parts" note={`Plus ${days} days of shipping and a day of assembly.`} />
         <Band k="Waiting" v="0" u="days" note="The robot is online now. First test in the next five minutes." />
       </dl>
@@ -120,8 +121,8 @@ function HowItWorks() {
   return (
     <section id="how-it-works" className="py-section">
       <div className="mx-auto w-full max-w-container px-4 md:px-6">
-        <SectionIndex index="01" title="Three steps, like a bench test." anim={reveal()} />
-        <ol className="mt-12 grid grid-cols-1 gap-px bg-rule md:grid-cols-3">
+        <SectionIndex index="01" title="How it works" body="Four steps, like a bench test." anim={reveal()} />
+        <ol className="mt-12 grid grid-cols-1 gap-px bg-rule md:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s, i) => (
             <motion.li key={s.n} {...reveal(0.08 * i)} className="bg-paper py-6 md:px-8 md:first:pl-0 md:last:pr-0">
               <p className="tabular font-mono text-mono text-signal-deep">{s.n}</p>
@@ -146,7 +147,7 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
     '{ "accepts": [{ "scheme": "exact",',
     '    "network": "solana:EtWT…",',
     '    "amount": "1000000",   // 1 USDC',
-    '    "description": "El Tucu · 1 block of 5 min" }] }',
+    '    "description": "El Tucu · 5 min" }] }',
   ];
 
   return (
@@ -160,7 +161,7 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
             <p className="mt-4 max-w-prose text-body text-ink-2">
               A simulator never shows the servo that lands two degrees short or the current spike when a joint stalls. Rent the arm, run your sequence, read the measurements, fix the code. Five minutes, one dollar, no equipment to buy.
             </p>
-            <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent a block" className="mt-6" />
+            <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" className="mt-6" />
           </motion.article>
 
           <motion.article {...reveal(0.08)} className="min-w-0 border-t border-rule pt-5">
@@ -326,10 +327,10 @@ function Closing({ shell }: { shell: Shell | undefined }) {
           Five minutes is enough to know if your code moves something real.
         </motion.h2>
         <motion.p {...reveal(0.08)} className="mt-6 max-w-prose text-lead text-ink-2">
-          A block costs ${shell?.pricing.usd ?? '1.00'}. When time runs out, {shell?.name ?? 'El Tucu'} returns to HOME on its own.
+          Five minutes cost ${shell?.pricing.usd ?? '1.00'}, paid in USDC on Solana. When time runs out, {shell?.name ?? 'El Tucu'} returns to HOME on its own.
         </motion.p>
         <motion.div {...reveal(0.16)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent a block" />
+          <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
           <Button as="a" href="/llms.txt" variant="secondary" label="Read llms.txt" />
         </motion.div>
       </div>
