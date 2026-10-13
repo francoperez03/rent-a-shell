@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import type { IntentView, RailManifest, Shell } from '@ras/shell-spec';
 import { Button } from '@/components/Button';
 import { CopyButton, usePayment, useQr } from '@/components/PayStep';
-import { createIntent, fmtClock, useRails } from '@/lib/api';
+import { GW_HEADERS, createIntent, fmtClock, useRails } from '@/lib/api';
 import { suggest } from '@/pages/Checkout';
 import { cn } from '@/lib/cn';
 
@@ -20,7 +19,6 @@ const pickRail = (rails: RailManifest[]): RailManifest | undefined => {
  */
 export function PayModal({ shell, blocks, open, onClose }: { shell: Shell; blocks: number; open: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const navigate = useNavigate();
   const { data: rails, isError } = useRails();
   const rail = useMemo(() => (rails ? pickRail(rails) : undefined), [rails]);
   const intent = useMutation({ mutationFn: createIntent });
@@ -41,7 +39,6 @@ export function PayModal({ shell, blocks, open, onClose }: { shell: Shell; block
   }, [open, rail]);
 
   const minutes = shell.pricing.block_minutes * blocks;
-  const toCheckout = () => navigate(`/checkout?shell=${shell.id}&blocks=${blocks}`, { state: { shell: shell.id, blocks } });
 
   return (
     <dialog
@@ -60,7 +57,7 @@ export function PayModal({ shell, blocks, open, onClose }: { shell: Shell; block
       </div>
       <div className="px-5 pb-5 pt-6">
         {intent.data ? (
-          <Ticket view={intent.data} rail={rail ?? null} onRetry={() => { intent.reset(); start(); }} onOther={toCheckout} />
+          <Ticket view={intent.data} rail={rail ?? null} onRetry={() => { intent.reset(); start(); }} />
         ) : isError || (rails && !rail) ? (
           <p role="alert" className="text-body text-danger">No payment method is available right now. Try again in a few seconds.</p>
         ) : intent.isError ? (
@@ -80,7 +77,7 @@ export function PayModal({ shell, blocks, open, onClose }: { shell: Shell; block
   );
 }
 
-function Ticket({ view, rail, onRetry, onOther }: { view: IntentView; rail: RailManifest | null; onRetry: () => void; onOther: () => void }) {
+function Ticket({ view, rail, onRetry }: { view: IntentView; rail: RailManifest | null; onRetry: () => void }) {
   const { intent, left, expired, paid, seen, explorer } = usePayment(view);
   const ins = intent.instructions;
   const url = ins.kind === 'solana-pay' ? ins.url : null;
@@ -107,11 +104,7 @@ function Ticket({ view, rail, onRetry, onOther }: { view: IntentView; rail: Rail
       {expired ? (
         <Button label="New payment" className="mt-6 w-full" onClick={onRetry} />
       ) : url ? (
-        <>
-          <Button as="a" href={url} label="Open in wallet" className="mt-6 w-full" />
-          <p className="mt-3 text-small text-ink-2">Or scan with Phantom or Solflare{network ? ` on ${network}` : ''}.</p>
-          <div className="mt-1"><CopyButton text={url} label="Copy payment link" /></div>
-        </>
+        <WalletButtons url={url} network={network} />
       ) : null}
 
       <div className="mt-6 flex w-full items-center justify-between gap-4 border-t border-rule pt-4 font-mono text-mono-xs uppercase">
@@ -124,10 +117,7 @@ function Ticket({ view, rail, onRetry, onOther }: { view: IntentView; rail: Rail
           <a href={explorer} target="_blank" rel="noopener" className="text-signal-deep underline-offset-4 hover:underline">View tx ↗</a>
         )}
       </div>
-      <p className="mt-3 w-full text-left text-small text-ink-3">
-        Held in escrow until your session ends. If the robot drops, it comes back to your wallet.{' '}
-        <button type="button" onClick={onOther} className="text-signal-deep underline-offset-4 hover:underline">Other payment methods</button>
-      </p>
+      <p className="mt-3 w-full text-left text-small text-ink-3">Held in escrow until your session ends. If the robot drops, it comes back to your wallet.</p>
     </div>
   );
 }
@@ -138,5 +128,60 @@ function Qr({ url }: { url: string }) {
     <img src={qr} alt="Solana Pay QR" width={224} height={224} className="mt-6 h-[224px] w-[224px] border border-rule bg-white p-2" />
   ) : (
     <div className="skeleton mt-6 h-[224px] w-[224px]" aria-hidden />
+  );
+}
+
+// ---------- desktop: the injected wallet (Phantom, Solflare); mobile: the solana: deep link ----------
+
+type Injected = {
+  connect: () => Promise<{ publicKey: { toBase58(): string } }>;
+  signAndSendTransaction: (tx: unknown) => Promise<{ signature: string }>;
+};
+const injected = (): Injected | null => {
+  const w = window as unknown as { phantom?: { solana?: Injected }; solflare?: Injected; solana?: Injected };
+  return w.phantom?.solana ?? w.solflare ?? w.solana ?? null;
+};
+
+/** Solana Pay transaction request done by hand: POST the account, get the escrow transaction, let the wallet sign and send. */
+async function payWithInjected(wallet: Injected, txUrl: string) {
+  const { publicKey } = await wallet.connect();
+  const res = await fetch(txUrl, { method: 'POST', headers: { ...GW_HEADERS, 'Content-Type': 'application/json' }, body: JSON.stringify({ account: publicKey.toBase58() }) });
+  const body = (await res.json().catch(() => ({}))) as { transaction?: string; error?: string; message?: string };
+  if (!res.ok || !body.transaction) throw new Error(body.message ?? body.error ?? `HTTP ${res.status}`);
+  const { Transaction } = await import('@solana/web3.js');
+  await wallet.signAndSendTransaction(Transaction.from(Uint8Array.from(atob(body.transaction), (c) => c.charCodeAt(0))));
+}
+
+function WalletButtons({ url, network }: { url: string; network?: string }) {
+  const wallet = injected();
+  const txUrl = url.startsWith('solana:http') ? url.slice('solana:'.length) : null;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pay = async () => {
+    if (!wallet || !txUrl) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await payWithInjected(wallet, txUrl);
+    } catch (e) {
+      setError((e as Error).message || 'The wallet did not sign.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      {wallet && txUrl ? (
+        <Button label="Pay with wallet" loading={busy} className="mt-6 w-full" onClick={pay} />
+      ) : (
+        <Button as="a" href={url} label="Open in wallet" className="mt-6 w-full" />
+      )}
+      {error && <p role="alert" className="mt-3 text-small text-danger">{error}</p>}
+      <p className="mt-3 text-small text-ink-2">
+        {wallet ? 'Or scan the QR with your phone' : 'Or scan with Phantom or Solflare'}
+        {network ? ` on ${network}` : ''}.
+      </p>
+      <div className="mt-1"><CopyButton text={url} label="Copy payment link" /></div>
+    </>
   );
 }

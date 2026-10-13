@@ -83,6 +83,9 @@ importers:
       '@ras/shell-spec':
         specifier: workspace:*
         version: link:../../packages/shell-spec
+      '@solana/web3.js':
+        specifier: ^1.98.0
+        version: 1.99.0(typescript@5.5.4)
       '@tanstack/react-query':
         specifier: ^5.59.0
         version: 5.59.0(react@18.3.1)
