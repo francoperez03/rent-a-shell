@@ -6,9 +6,9 @@
 // Reads apps/gateway/.env.local. Its own variables (all optional):
 //   CAMERA        macOS: index (avfoundation, default 0) · Windows: exact name (dshow) · Linux: /dev/videoN · "test"
 //   CAMERA_SIZE   e.g. 1280x720 · CAMERA_FPS e.g. 30 (on Windows they are skipped unless set: native mode)
-//   TUNNEL        cloudflared (default when PUBLIC_URL is missing or localhost) | none
+//   TUNNEL        cloudflared (default when PUBLIC_URL is missing or localhost) | ngrok (fixed domain: set PUBLIC_URL to it) | none
 //   HUB_URL       if set, registers there (and re-registers when the tunnel URL changes)
-//   MEDIAMTX_PATH, FFMPEG_PATH, CLOUDFLARED_PATH  paths if they are not on the PATH
+//   MEDIAMTX_PATH, FFMPEG_PATH, CLOUDFLARED_PATH, NGROK_PATH  paths if they are not on the PATH
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { cameraArgs, readEnvFile } from "./lib.mjs";
@@ -24,7 +24,7 @@ const URL_FILE = path.join(GW_DIR, "data", "public-url.txt");
 const env = { ...readEnvFile(ENV_FILE), ...process.env };
 const WIN = process.platform === "win32";
 const MAC = process.platform === "darwin";
-const bin = { mediamtx: env.MEDIAMTX_PATH || "mediamtx", ffmpeg: env.FFMPEG_PATH || "ffmpeg", cloudflared: env.CLOUDFLARED_PATH || "cloudflared" };
+const bin = { mediamtx: env.MEDIAMTX_PATH || "mediamtx", ffmpeg: env.FFMPEG_PATH || "ffmpeg", cloudflared: env.CLOUDFLARED_PATH || "cloudflared", ngrok: env.NGROK_PATH || "ngrok" };
 const SHELL_ID = env.SHELL_ID || "el-tucu";
 const PORT = Number(env.PORT || 8787);
 const log = (who, msg) => console.log(`${new Date().toLocaleTimeString()} [${who}] ${msg}`);
@@ -93,7 +93,7 @@ if (camArgs) setTimeout(() => keep("camera", bin.ffmpeg, camArgs, { verbose: tru
 
 // 2. tunnel (optional) → public URL
 const fixedUrl = env.PUBLIC_URL && !env.PUBLIC_URL.includes("localhost") ? env.PUBLIC_URL.replace(/\/$/, "") : null;
-const useTunnel = (env.TUNNEL ?? (fixedUrl ? "none" : "cloudflared")) === "cloudflared";
+const tunnel = env.TUNNEL ?? (fixedUrl ? "none" : "cloudflared");
 
 let publicUrl = fixedUrl ?? `http://localhost:${PORT}`;
 let gateway = null;
@@ -134,7 +134,7 @@ async function register() {
   log("hub", "could not register: check HUB_URL and the tunnel");
 }
 
-if (useTunnel) {
+if (tunnel === "cloudflared") {
   keep("tunnel", bin.cloudflared, ["tunnel", "--no-autoupdate", "--url", `http://localhost:${PORT}`], {}, (line) => {
     const m = line.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
     if (m && m[0] !== publicUrl) {
@@ -146,6 +146,17 @@ if (useTunnel) {
   });
   // if the tunnel is slow, the gateway still starts locally
   setTimeout(() => !gateway && startGateway(), 20_000);
+} else if (tunnel === "ngrok") {
+  // fixed domain (free ngrok account): PUBLIC_URL is known upfront, the gateway does not wait for the tunnel
+  if (!fixedUrl) {
+    log("tunnel", "TUNNEL=ngrok needs PUBLIC_URL=https://<your-domain>.ngrok-free.dev");
+    process.exit(1);
+  }
+  keep("tunnel", bin.ngrok, ["http", "--url", new URL(fixedUrl).host, "--log", "stdout", "--log-format", "term", String(PORT)], {}, (line) => {
+    if (/ERR|error/i.test(line)) log("tunnel", line);
+  });
+  startGateway();
+  void register();
 } else {
   startGateway();
   void register();

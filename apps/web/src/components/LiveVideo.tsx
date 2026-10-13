@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Shell } from '@ras/shell-spec';
-import { apiUrl } from '@/lib/api';
+import { apiUrl, GW_HEADERS } from '@/lib/api';
 import { cn } from '@/lib/cn';
 
 type Mode = 'connecting' | 'hls' | 'frame' | 'disconnected';
@@ -15,8 +15,8 @@ const FRAME_MS = 1_000;
 export function LiveVideo({ shell, className, children }: { shell: Shell | undefined; className?: string; children?: ReactNode }) {
   const video = useRef<HTMLVideoElement>(null);
   const [mode, setMode] = useState<Mode>('connecting');
-  const [tick, setTick] = useState(0);
   const [attempt, setAttempt] = useState(0);
+  const [frameUrl, setFrameUrl] = useState<string | null>(null);
   const hls = shell?.camera.hls ?? null;
   const frame = shell?.camera.frame ?? null;
 
@@ -47,7 +47,7 @@ export function LiveVideo({ shell, className, children }: { shell: Shell | undef
       import('hls.js').then(({ default: Hls }) => {
         if (cancelled) return;
         if (!Hls.isSupported()) return fail();
-        const h = new Hls({ liveDurationInfinity: true });
+        const h = new Hls({ liveDurationInfinity: true, xhrSetup: (xhr) => xhr.setRequestHeader('ngrok-skip-browser-warning', '1') });
         h.on(Hls.Events.ERROR, (_e, data) => {
           if (data.fatal) {
             h.destroy();
@@ -67,11 +67,26 @@ export function LiveVideo({ shell, className, children }: { shell: Shell | undef
     };
   }, [shell, hls, attempt]);
 
-  // Frame: refresh every 1 s. Disconnected: retry everything every 10 s.
+  // Frame: fetch every 1 s (fetch, not <img src>, so GW_HEADERS go along). Disconnected: retry everything every 10 s.
   useEffect(() => {
-    if (mode === 'frame') {
-      const id = setInterval(() => setTick((t) => t + 1), FRAME_MS);
-      return () => clearInterval(id);
+    if (mode === 'frame' && frame) {
+      let url: string | null = null;
+      const load = () =>
+        fetch(`${apiUrl(frame)}${frame.includes('?') ? '&' : '?'}t=${Date.now()}`, { headers: GW_HEADERS })
+          .then((r) => (r.ok && r.headers.get('content-type')?.startsWith('image/') ? r.blob() : Promise.reject(new Error(`HTTP ${r.status}`))))
+          .then((b) => {
+            if (url) URL.revokeObjectURL(url);
+            url = URL.createObjectURL(b);
+            setFrameUrl(url);
+          })
+          .catch(() => setMode('disconnected'));
+      void load();
+      const id = setInterval(load, FRAME_MS);
+      return () => {
+        clearInterval(id);
+        if (url) URL.revokeObjectURL(url);
+        setFrameUrl(null);
+      };
     }
     if (mode === 'disconnected') {
       const id = setTimeout(() => {
@@ -80,7 +95,7 @@ export function LiveVideo({ shell, className, children }: { shell: Shell | undef
       }, RETRY_MS);
       return () => clearTimeout(id);
     }
-  }, [mode, hls]);
+  }, [mode, hls, frame]);
 
   const name = shell?.name ?? 'The shell';
   const badge = mode === 'hls' ? 'Live' : mode === 'frame' ? 'Frame by frame' : mode === 'connecting' ? 'Connecting' : 'No signal';
@@ -97,14 +112,7 @@ export function LiveVideo({ shell, className, children }: { shell: Shell | undef
         aria-label={`Live camera of ${name}`}
         className={cn('h-full w-full object-cover', mode !== 'hls' && 'invisible')}
       />
-      {mode === 'frame' && frame && (
-        <img
-          src={`${apiUrl(frame)}${frame.includes('?') ? '&' : '?'}t=${tick}`}
-          alt={`Latest camera frame of ${name}`}
-          className="absolute inset-0 h-full w-full object-cover"
-          onError={() => setMode('disconnected')}
-        />
-      )}
+      {mode === 'frame' && frameUrl && <img src={frameUrl} alt={`Latest camera frame of ${name}`} className="absolute inset-0 h-full w-full object-cover" />}
       {(mode === 'disconnected' || mode === 'connecting') && (
         <div role="status" className="dot-grid-bench absolute inset-0 grid place-items-center p-8 text-center">
           <div>
