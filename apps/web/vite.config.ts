@@ -43,6 +43,7 @@ Skill for Claude Code: ${'{SITE}'}/skills/rent/SKILL.md
       writeFileSync(path.join(dist, '.well-known', 'agent.json'), (await get('/.well-known/agent.json')) || JSON.stringify({ gateway: apiUrl }));
       mkdirSync(path.join(dist, 'skills', 'rent'), { recursive: true });
       for (const f of ['SKILL.md', 'rent.mjs']) copyFileSync(path.join(SKILL_DIR, f), path.join(dist, 'skills', 'rent', f));
+      console.log(`[agent-files] wrote llms.txt, .well-known/agent.json, skills/rent/ in ${dist}`);
     },
   };
 }
