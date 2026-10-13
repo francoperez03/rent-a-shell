@@ -5,11 +5,10 @@
 The `rent-a-shell-forger` skill walks Claude Code through the whole setup: requirements, ESP32, camera (MediaMTX + ffmpeg), configuration, escrow, tunnel and hub registration, and finishes with `pnpm forger:doctor`.
 
 ```bash
-mkdir -p ~/.claude/skills/rent-a-shell-forger
-curl -fsSL <HUB_URL>/skills/forger/SKILL.md -o ~/.claude/skills/rent-a-shell-forger/SKILL.md
+npx skills add francoperez03/rent-a-shell --skill rent-a-shell-forger
 ```
 
-`<HUB_URL>`: public hub URL, TBD. Then, in Claude Code: "I want to publish my robot on Rent a Shell". The skill is also in the repo, at `skills/rent-a-shell-forger/`.
+Then, in Claude Code: "I want to publish my robot on Rent a Shell". The skill is also in the repo, at `skills/rent-a-shell-forger/`.
 
 The Forger's computer will most likely be a **Mac**: the skill is written for macOS first (Homebrew, Terminal camera and local network permissions, `caffeinate`, start via Login Items) and includes a section with the differences for Windows and Linux.
 
