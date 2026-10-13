@@ -26,7 +26,7 @@ This. A live camera, the real angle of every joint, and the safe limits. If you 
 
 [Pick 5 minutes, "Go to payment", confirm in Phantom.]
 
-Who keeps the money? A smart contract on Solana. If the robot fails, the money comes back to me. When my time ends, ninety percent goes to the owner of the robot.
+Who keeps the money? A program on Solana. If the robot fails, the money comes back to me. When my time ends, ninety percent goes to the owner of the robot.
 
 [Tick, tx hash, "Go to the lab". Move the base, then the gripper. Glance at the real arm.]
 
