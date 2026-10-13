@@ -2,142 +2,132 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens. OKLCH is canonical; DESIGN.md carries the hex mirror. One accent (signal). */
 :root {
-  /* ===== Colors: landing2 base (navy + blue accent + alert amber) ===== */
-  --bg:               oklch(99.3% 0.003 248);   /* #FBFDFF  page, bluish white */
-  --bg-elevated:      oklch(94.0% 0.015 251);   /* #E4ECF5  light blue well / elevated surfaces */
-  --bg-inset:         oklch(96.2% 0.010 253);   /* #EEF3F9  subtler well (lighter) */
+  /* Paper: reading surfaces */
+  --paper:        oklch(96.5% 0.012 85);
+  --paper-2:      oklch(93.5% 0.014 85);
+  --ink:          oklch(18% 0.01 60);
+  --ink-2:        oklch(38% 0.012 60);
+  --ink-3:        oklch(52% 0.012 60);   /* 4.99:1 on paper */
+  --rule:         oklch(84% 0.012 80);
+  --rule-2:       oklch(72% 0.014 80);
 
-  /* Navy/ink aligned to the ELECTRIC BLUE of the videos: hue ~250 (pure blue, without the
-     earlier violet component of 272) and more chroma, so dark surfaces
-     feel "backlit" as the manual asks. */
-  --ink:              oklch(29.6% 0.088 250);   /* electric blue navy: headings / strong text */
-  --ink-soft:         oklch(33.0% 0.030 252);   /* body: charcoal with a cold blue tint */
-  --ink-mute:         oklch(54.9% 0.040 252);   /* cold bluish mute (keeps AA) */
+  /* Signal: the only accent. Text on it is ink (white fails contrast). */
+  --signal:       oklch(66% 0.21 40);
+  --signal-deep:  oklch(52% 0.19 40);   /* signal as text on paper (5.41:1), hover fill */
+  --signal-ink:   oklch(99% 0 0);
 
-  --hairline:         oklch(84.0% 0.018 250);   /* borders / dividers, blue tint */
-  --hairline-strong:  oklch(76.0% 0.026 250);   /* hover / strong divider */
+  /* Status */
+  --ok:           oklch(62% 0.15 150);   /* dots only */
+  --ok-deep:      oklch(45% 0.13 150);   /* "online" as text on paper */
+  --warn:         oklch(75% 0.16 80);    /* bench surfaces */
+  --danger:       oklch(55% 0.2 28);
 
-  --accent:           oklch(58.0% 0.205 248);   /* vivid electric blue: links / CTAs / signal */
-  --accent-hover:     oklch(52.0% 0.190 248);   /* darker on hover (light theme) */
-  --accent-ink:       oklch(99.3% 0.003 248);   /* #FBFDFF  text on accent = page white */
+  /* Bench: console and camera wells */
+  --bench:        oklch(16% 0.012 60);
+  --bench-2:      oklch(22% 0.012 60);
+  --bench-ink:    oklch(94% 0.01 85);
+  --bench-ink-2:  oklch(70% 0.012 85);   /* 7.27:1 on bench */
+  --bench-rule:   oklch(32% 0.012 60);
 
-  /* Contained alert: amber for high risk / finding / severity (manual §5). */
-  --alert:            oklch(54.9% 0.125 63);    /* #A35E00  darkened amber to pass AA as text */
-  --alert-on-dark:    oklch(80% 0.14 70);       /* the same amber, lightened for text and STOP on navy */
-  /* The brand "signal" is the electric blue (manual §5): an alias of accent, so the
-     `signal` name is available, aligned to the manual, without rewriting accent uses. */
-  --signal:           var(--accent);
+  /* Fonts */
+  --font-sans: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Martian Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  --grid:             oklch(29.6% 0.088 250 / 0.05);  /* ink @ 5% */
-
-  /* "Dark" panels (video background / dark placeholder): same electric hue 250,
-     more chroma → deep backlit ink blue. */
-  --panel-dark:       oklch(22.0% 0.078 250);
-  --panel-dark-deep:  oklch(16.0% 0.068 250);
-
-  /* ===== Fonts ===== */
-  /* Display: Fraunces (modern editorial serif) for headlines.
-     Sans: IBM Plex Sans for body, eyebrows, CTAs, data. Mono: IBM Plex Mono. */
-  --font-display:  "Fraunces", Georgia, "Times New Roman", serif;
-  --font-sans:     "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono:     "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-
-  /* ===== Motion ===== */
+  /* Motion */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  --dur-fast:    180ms;
-  --dur-base:    320ms;
-  --dur-medium:  560ms;
-  --dur-slow:    900ms;
-
-  /* ===== Shadows ===== */
-  --shadow-hairline: inset 0 0 0 1px var(--hairline);
-  --shadow-soft:     0 1px 2px rgba(16, 38, 86, 0.05), 0 8px 24px rgba(16, 38, 86, 0.07);
-  --shadow-medium:   0 2px 4px rgba(16, 38, 86, 0.07), 0 16px 40px rgba(16, 38, 86, 0.09);
+  --dur-fast:    150ms;
+  --dur-base:    240ms;
+  --dur-medium:  400ms;
 }
 
-/* ===== Base reset / base typography ===== */
-*, *::before, *::after {
-  box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; }
 
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  /* Kills the elastic overscroll bounce (shows nothing beyond the content). */
   overscroll-behavior: none;
-  /* Dark background behind everything: any residual bounce matches the dark
-     hero/footer instead of flashing white. */
-  background-color: var(--panel-dark-deep);
+  background-color: var(--paper);
 }
 
 body {
   margin: 0;
   overscroll-behavior: none;
-  background-color: var(--panel-dark-deep);
-  color: var(--ink);
+  background-color: var(--paper);
+  color: var(--ink-2);
   font-family: var(--font-sans);
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.6;
-  letter-spacing: -0.005em;
+  font-stretch: 100%;
 }
 
-/* Fraunces: SOFT and WONK axes pinned at 0 so the serif stays sharp
-   (technical editorial). */
+h1, h2, h3, h4 {
+  color: var(--ink);
+  text-wrap: balance;
+  margin: 0;
+}
+p { margin: 0; text-wrap: pretty; }
+
+/* Archivo width axis: display and page titles are expanded, like an instrument nameplate. */
 @layer utilities {
-  .font-display {
-    font-variation-settings: "SOFT" 0, "WONK" 0;
+  .wide-112 { font-stretch: 112%; }
+  .wide-106 { font-stretch: 106%; }
+  .narrow-90 { font-stretch: 90%; }
+  .tabular { font-variant-numeric: tabular-nums; }
+  /* Datasheet texture: 24px dot grid in rule color. */
+  .dot-grid {
+    background-image: radial-gradient(var(--rule) 1px, transparent 1.5px);
+    background-size: 24px 24px;
+  }
+  .dot-grid-bench {
+    background-image: radial-gradient(var(--bench-rule) 1px, transparent 1.5px);
+    background-size: 24px 24px;
   }
 }
 
-/* Global focus visible */
+/* Focus: 2px ink ring on paper, bench-ink on bench. */
 *:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 2px;
 }
+.on-bench *:focus-visible, .on-bench:focus-visible { outline-color: var(--bench-ink); }
 
-/* ===== Viewport height with fallback ===== */
-/* Some in-app browsers (X, Instagram) silently ignore `dvh`: the `vh` line
-   stays as the floor and the `dvh` one replaces it only if the browser
-   supports it. Without this, the panel collapses to its content height. */
-.h-viewport {
-  height: 100vh;
-  height: 100dvh;
-}
-.min-h-viewport {
-  min-height: 100vh;
-  min-height: 100dvh;
-}
+/* Viewport height with dvh fallback (some in-app browsers ignore dvh). */
+.h-viewport { height: 100vh; height: 100dvh; }
+.min-h-viewport { min-height: 100vh; min-height: 100dvh; }
 
-/* ===== Text selection ===== */
-::selection {
-  background: var(--accent);
-  color: var(--accent-ink);
-}
+::selection { background: var(--signal); color: var(--ink); }
 
-/* ===== Telemetry panel status dot ===== */
-/* Slow pulse of the accent indicator: a live signal (manual §13). */
+/* Live marker pulse. */
 @keyframes status-pulse {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.35; }
 }
+.animate-status-pulse { animation: status-pulse 2.4s ease-in-out infinite; }
 
-.animate-status-pulse {
-  animation: status-pulse 3.2s ease-in-out infinite;
+/* Skeleton shimmer for loading rows. */
+@keyframes skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--paper-2) 25%, var(--rule) 50%, var(--paper-2) 75%);
+  background-size: 200% 100%;
+  animation: skeleton 1.6s linear infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-status-pulse {
-    animation: none;
-  }
+/* Console sliders */
+.joint-range {
+  accent-color: var(--signal);
+  height: 28px; /* touch target */
+  cursor: pointer;
 }
+.joint-range:disabled { cursor: not-allowed; opacity: 0.4; }
 
-/* ===== Honor reduced motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -146,12 +136,3 @@ body {
     scroll-behavior: auto !important;
   }
 }
-
-
-/* ===== Console sliders ===== */
-.joint-range {
-  accent-color: var(--accent);
-  height: 28px; /* touch target */
-  cursor: pointer;
-}
-.joint-range:disabled { cursor: not-allowed; opacity: 0.4; }

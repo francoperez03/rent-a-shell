@@ -1,19 +1,22 @@
 import { Link } from 'react-router-dom';
+import { cn } from '@/lib/cn';
 
-/** Compact landing2 footer on navy: wordmark, tagline and a mono line with the machine links. */
-export function Footer() {
+/** Datasheet footer: one rule, wordmark, a line of machine links in mono. */
+export function Footer({ surface = 'paper' }: { surface?: 'paper' | 'bench' }) {
+  const bench = surface === 'bench';
+  const link = cn('transition-colors duration-fast hover:underline', bench ? 'text-bench-ink-2 hover:text-bench-ink' : 'text-ink-3 hover:text-ink');
   return (
-    <footer className="relative z-10 mx-auto w-full max-w-container px-5 pb-8 md:px-8 md:pb-10">
-      <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:gap-5">
-        <p className="font-display text-[22px] leading-none text-white">Rent a Shell</p>
-        <p className="font-sans text-[15px] leading-snug text-white/75">Real hardware, rented by the block. From Salta, Argentina.</p>
-      </div>
-      <div className="mt-5 flex flex-col gap-3 border-t border-white/15 pt-4 md:flex-row md:items-center md:justify-between">
-        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">El Tucu · 4-axis arm · Salta, AR</p>
-        <div className="flex gap-6 font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">
-          <Link to="/agents" className="transition-colors duration-fast hover:text-white">Agentes</Link>
-          <a href="/llms.txt" className="transition-colors duration-fast hover:text-white">llms.txt</a>
-          <a href="/.well-known/agent.json" className="transition-colors duration-fast hover:text-white">agent.json</a>
+    <footer className={cn('mx-auto w-full max-w-container px-4 pb-8 pt-6 md:px-6', bench ? 'on-bench border-t border-bench-rule' : 'border-t border-rule')}>
+      <div className="flex flex-col gap-4 md:flex-row md:items-baseline md:justify-between">
+        <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:gap-4">
+          <p className={cn('wide-112 font-sans text-h3 font-bold', bench ? 'text-bench-ink' : 'text-ink')}>Rent a Shell</p>
+          <p className={cn('text-small', bench ? 'text-bench-ink-2' : 'text-ink-2')}>Real hardware, rented by the minute. From Salta, Argentina.</p>
+        </div>
+        <div className={cn('flex flex-wrap gap-x-5 gap-y-2 font-mono text-mono-xs uppercase')}>
+          <Link to="/agents" className={link}>Agents</Link>
+          <a href="/llms.txt" className={link}>llms.txt</a>
+          <a href="/.well-known/agent.json" className={link}>agent.json</a>
+          <a href="https://github.com/francoperez03/rent-a-shell" className={link} rel="noopener">Source</a>
         </div>
       </div>
     </footer>
