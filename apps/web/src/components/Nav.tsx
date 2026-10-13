@@ -1,44 +1,48 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { Roll } from '@/motion-kit/split';
+import { useShells } from '@/lib/api';
+import { StatusDot } from './StatusDot';
 
 const LINKS = [
   { to: '/#shells', label: 'Shells' },
   { to: '/agents', label: 'Agents' },
 ];
 
-/**
- * landing2 nav: Fraunces wordmark and two links with roll. Fixed, transparent,
- * gains blur on scroll. Always on dark (the site opens and closes in navy).
- */
+/** Instrument nameplate: wordmark, links and the live status of shell #1. Paper by default, bench on the console. */
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const { pathname } = useLocation();
+  const bench = pathname === '/session';
+  const { data: shells } = useShells();
+  const first = shells?.[0];
+
   useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 24);
+    const on = () => setScrolled(window.scrollY > 8);
     on();
     window.addEventListener('scroll', on, { passive: true });
     return () => window.removeEventListener('scroll', on);
   }, []);
 
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-50">
-      <div
-        className={cn('absolute inset-0 border-b border-transparent transition-colors duration-base ease-out-quint', scrolled && 'border-white/10 bg-[rgba(0,12,41,0.92)] backdrop-blur-md')}
-      />
-      <nav aria-label="Main" className="relative mx-auto flex h-[72px] w-full max-w-container items-center justify-between px-5 md:h-[84px] md:px-8">
-        <Link to="/" className="pointer-events-auto font-display text-[24px] font-medium tracking-[-0.01em] text-white md:text-[28px]">
+    <header className={cn('fixed inset-x-0 top-0 z-50 border-b transition-colors duration-base', bench ? 'on-bench border-bench-rule bg-bench text-bench-ink' : cn('border-rule bg-paper text-ink', !scrolled && 'border-transparent'))}>
+      <nav aria-label="Main" className="mx-auto flex h-16 w-full max-w-container items-center justify-between gap-6 px-4 md:px-6">
+        <Link to="/" className="wide-112 font-sans text-[1.375rem] font-bold leading-none tracking-[-0.02em]">
           Rent a Shell
         </Link>
-        <ul className="pointer-events-auto flex items-center gap-6">
-          {LINKS.map((l) => (
-            <li key={l.to}>
-              <NavLink to={l.to} className="roll-parent font-sans text-[13px] font-medium uppercase tracking-[0.08em] text-white/80 transition-colors duration-base hover:text-white">
-                <Roll text={l.label} />
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+        <div className="flex items-center gap-6 md:gap-8">
+          {first && <StatusDot status={first.status} surface={bench ? 'bench' : 'paper'} className="hidden sm:inline-flex" />}
+          <ul className="flex items-center gap-5 md:gap-6">
+            {LINKS.map((l) => (
+              <li key={l.to}>
+                <NavLink to={l.to} className={cn('roll-parent font-mono text-mono uppercase transition-colors duration-base', bench ? 'text-bench-ink-2 hover:text-bench-ink' : 'text-ink-2 hover:text-ink')}>
+                  <Roll text={l.label} />
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
     </header>
   );

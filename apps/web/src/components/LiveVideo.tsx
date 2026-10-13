@@ -9,8 +9,8 @@ const RETRY_MS = 10_000;
 const FRAME_MS = 1_000;
 
 /**
- * Shell camera. Order: HLS (native in Safari, hls.js elsewhere) → latest frame
- * refreshed every 1 s → "disconnected", retrying every 10 s. Pattern from robot-a/Camera.tsx.
+ * Shell camera in a bench well with tick marks on the frame. Order: HLS (native in Safari, hls.js
+ * elsewhere) → latest frame refreshed every 1 s → "no signal", retrying every 10 s.
  */
 export function LiveVideo({ shell, className, children }: { shell: Shell | undefined; className?: string; children?: ReactNode }) {
   const video = useRef<HTMLVideoElement>(null);
@@ -83,9 +83,12 @@ export function LiveVideo({ shell, className, children }: { shell: Shell | undef
   }, [mode, hls]);
 
   const name = shell?.name ?? 'The shell';
+  const badge = mode === 'hls' ? 'Live' : mode === 'frame' ? 'Frame by frame' : mode === 'connecting' ? 'Connecting' : 'No signal';
 
   return (
-    <div className={cn('relative overflow-hidden bg-[var(--panel-dark-deep)]', className)}>
+    <div className={cn('on-bench relative overflow-hidden border border-bench-rule bg-bench text-bench-ink', className)}>
+      {/* tick marks: the well reads as an instrument window */}
+      <Ticks />
       <video
         ref={video}
         autoPlay
@@ -103,15 +106,35 @@ export function LiveVideo({ shell, className, children }: { shell: Shell | undef
         />
       )}
       {(mode === 'disconnected' || mode === 'connecting') && (
-        <p role="status" className="absolute inset-0 grid place-items-center p-8 text-center font-mono text-[12px] uppercase tracking-[0.12em] text-white/60">
-          {mode === 'disconnected' ? `${name} is disconnected. Retrying every 10 seconds.` : 'Connecting…'}
-        </p>
+        <div role="status" className="dot-grid-bench absolute inset-0 grid place-items-center p-8 text-center">
+          <div>
+            <p className="tabular font-mono text-data text-bench-ink-2">{mode === 'disconnected' ? '— — —' : '· · ·'}</p>
+            <p className="mt-3 font-mono text-mono-xs uppercase text-bench-ink-2">
+              {mode === 'disconnected' ? `${name} has no signal. Retrying every 10 s.` : 'Connecting to the camera'}
+            </p>
+          </div>
+        </div>
       )}
-      <span className="absolute left-3 top-3 flex items-center gap-2 bg-[rgba(0,12,41,0.8)] px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-white/85">
-        <span aria-hidden className={cn('h-2 w-2 rounded-full', mode === 'disconnected' ? 'bg-white/30' : 'animate-status-pulse bg-accent')} />
-        {mode === 'hls' ? 'Live' : mode === 'frame' ? 'Frame by frame' : mode === 'connecting' ? 'Connecting' : 'No signal'}
+      <span className="absolute left-3 top-3 flex items-center gap-2 border border-bench-rule bg-bench/85 px-2 py-1 font-mono text-mono-xs uppercase text-bench-ink">
+        <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', mode === 'disconnected' ? 'bg-bench-rule' : 'animate-status-pulse bg-signal')} />
+        {badge}
       </span>
       {children}
     </div>
+  );
+}
+
+function Ticks() {
+  return (
+    <svg aria-hidden className="pointer-events-none absolute inset-0 z-10 h-full w-full text-bench-ink-2/60" preserveAspectRatio="none">
+      {[0.25, 0.5, 0.75].map((p) => (
+        <g key={p}>
+          <line x1={`${p * 100}%`} y1="0" x2={`${p * 100}%`} y2={p === 0.5 ? 10 : 6} stroke="currentColor" strokeWidth="1" />
+          <line x1={`${p * 100}%`} y1="100%" x2={`${p * 100}%`} y2={p === 0.5 ? 'calc(100% - 10px)' : 'calc(100% - 6px)'} stroke="currentColor" strokeWidth="1" />
+          <line x1="0" y1={`${p * 100}%`} x2={p === 0.5 ? 10 : 6} y2={`${p * 100}%`} stroke="currentColor" strokeWidth="1" />
+          <line x1="100%" y1={`${p * 100}%`} x2={p === 0.5 ? 'calc(100% - 10px)' : 'calc(100% - 6px)'} y2={`${p * 100}%`} stroke="currentColor" strokeWidth="1" />
+        </g>
+      ))}
+    </svg>
   );
 }

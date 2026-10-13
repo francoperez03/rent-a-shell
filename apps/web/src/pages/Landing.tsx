@@ -1,138 +1,132 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import type { Payment, Shell } from '@ras/shell-spec';
-import { Orb, Cursor, useLenis, useOrbPath, useHeroChars, type OrbColors, type OrbKey } from '@/motion-kit';
-import { Chars } from '@/motion-kit/split';
 import { LiveVideo } from '@/components/LiveVideo';
-import { Pill } from '@/components/Pill';
-import { Eyebrow } from '@/components/Eyebrow';
-import { SectionHeading } from '@/components/SectionHeading';
+import { Button } from '@/components/Button';
+import { Readout } from '@/components/Readout';
+import { SectionIndex } from '@/components/SectionIndex';
 import { StatusDot } from '@/components/StatusDot';
-import { TelemetryPanel } from '@/components/TelemetryPanel';
+import { Panel } from '@/components/Panel';
 import { Footer } from '@/components/Footer';
 import { fmtClock, shellHref, toMs, useEvents, useNow, useQueue, useShells, useShellState } from '@/lib/api';
-import { useReducedMotion } from '@/lib/useReducedMotion';
 import { useReveal } from '@/lib/useReveal';
 import { JOINTS, JOINT_LABEL } from '@/lib/joints';
-
-// Orb in the landing2 navy + accent family (instead of offbrand's yellow/pink).
-const ORB_COLORS: OrbColors = { a: '#007CEB', b: '#3D8FF5', c: '#9CC4F2', d: '#001B3D', e: '#0A3A78' };
-
-// Custom path: starts behind the hero video and fades out before "How it works".
-const ORB_KEYS: OrbKey[] = [
-  { p: 0, w: 0.92, cx: 0.74, cy: 0.52 },
-  { p: 0.08, w: 0.7, cx: 0.82, cy: 0.35 },
-  { p: 0.16, w: 0, cx: 0.9, cy: 0.2 },
-  { p: 1, w: 0, cx: 0.9, cy: 0.2 },
-];
+import { cn } from '@/lib/cn';
 
 const STEPS = [
-  { n: '0.1', title: 'Pick', body: 'A shell and how many five-minute blocks you want. You see the camera and the queue before paying.' },
-  { n: '0.2', title: 'Pay', body: 'USDC on Solana: a Solana Pay QR, or x402 if you are an agent. The price is locked when you confirm.' },
-  { n: '0.3', title: 'Control', body: 'Move each joint, run routines and stop whenever you want. When time runs out, it returns to HOME on its own.' },
+  { n: '01', title: 'Rent', body: 'Pick a shell and how many five-minute blocks you need. You see the camera, the ranges and the queue before paying.' },
+  { n: '02', title: 'Run', body: 'Move each joint from the console, run a routine, or let your agent send the commands over HTTP or MCP.' },
+  { n: '03', title: 'Measure', body: 'Read the real angles, the current each move draws and the frames. Then fix the code and run it again.' },
 ];
 
+/** Landing: brand register. Paper, one signal band, measurements as the hero image. */
 export default function Landing() {
-  const reduced = useReducedMotion();
-  const orb = useRef<HTMLDivElement>(null);
-  const hero = useRef<HTMLElement>(null);
-  const [finePointer] = useState(() => matchMedia('(pointer: fine)').matches);
-
-  useLenis();
-  useOrbPath(orb, ORB_KEYS);
-  useHeroChars(hero, { after: null });
-
-  // The orb sits fixed behind everything (z −2): the body has to let it show while the landing is mounted.
-  useEffect(() => {
-    const prev = document.body.style.background;
-    document.body.style.background = 'transparent';
-    return () => {
-      document.body.style.background = prev;
-    };
-  }, []);
-
   const { data: shells } = useShells();
   const tucu = shells?.[0];
 
   return (
-    <>
-      <Orb ref={orb} colors={ORB_COLORS} rings={false} />
-      {finePointer && !reduced && <Cursor className="bg-white" size={28} />}
-
-      <main>
-        <Hero refEl={hero} shell={tucu} />
-        <HowItWorks />
-        <Audiences />
-        <Shells shells={shells} />
-        <LiveNumbers shell={tucu} />
-        <Closing shell={tucu} />
-      </main>
-    </>
+    <main>
+      <Hero shell={tucu} />
+      <Numbers shell={tucu} />
+      <HowItWorks />
+      <Audiences shell={tucu} />
+      <Shells shells={shells} />
+      <LiveNumbers shell={tucu} />
+      <Closing shell={tucu} />
+    </main>
   );
 }
 
-function Hero({ refEl, shell }: { refEl: React.RefObject<HTMLElement>; shell: Shell | undefined }) {
-  const title = 'Move a real robot from your browser.';
+function Hero({ shell }: { shell: Shell | undefined }) {
+  const reveal = useReveal();
+  const { data: state } = useShellState(shell?.id, 2_000);
   const city = shell?.location.split(',')[0] ?? 'Salta';
-  const status = shell?.status ?? 'offline';
-  const hud = `${shell?.name ?? 'El Tucu'} · ${status === 'busy' ? 'in use' : status} · ${city}`;
 
   return (
-    <section ref={refEl} id="hero" className="relative min-h-viewport">
-      <div className="mx-auto grid min-h-viewport w-full max-w-container grid-cols-1 items-center gap-10 px-5 pb-12 pt-28 md:px-8 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-16">
+    <section id="hero" className="dot-grid relative border-b border-rule">
+      <div className="mx-auto grid w-full max-w-container grid-cols-1 items-end gap-10 px-4 pb-12 pt-28 md:px-6 md:pt-36 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-16">
         <div>
-          <p className="mb-6 flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.16em] text-white/70">
-            <span aria-hidden className={status === 'offline' ? 'h-2 w-2 rounded-full bg-white/30' : 'h-2 w-2 animate-status-pulse rounded-full bg-accent'} />
-            {hud}
-          </p>
-          <h1 className="font-display font-light tracking-[-0.015em] text-white" style={{ fontSize: 'clamp(2.75rem, 6vw, 5.25rem)', lineHeight: 1.02 }} aria-label={title}>
-            <span aria-hidden>
-              {title.split(' ').map((w, i) => (
-                <span key={i}>
-                  <span className="inline-block overflow-hidden whitespace-nowrap pb-[0.08em] align-top">
-                    <Chars text={w} />
-                  </span>{' '}
-                </span>
-              ))}
-            </span>
-          </h1>
-          <p className="mt-6 max-w-[46ch] text-[1.125rem] font-light leading-[1.55] text-white/80 md:text-[1.25rem]">
-            El Tucu is a four-axis arm in Salta, Argentina. Rent it in five-minute blocks, watch it on camera, and control it yourself or through your agent.
-          </p>
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Pill as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Try El Tucu" />
-            <Pill as="link" to="/agents" variant="secondary" label="For agents" />
-          </div>
+          <motion.p {...reveal()} className="flex items-center gap-3 font-mono text-mono uppercase text-ink-3">
+            <StatusDot status={shell?.status} />
+            <span>{shell?.name ?? 'El Tucu'} · {city}</span>
+          </motion.p>
+          <motion.h1 {...reveal(0.05)} className="wide-112 mt-5 max-w-[14ch] text-display">
+            Test your code on real hardware. Today.
+          </motion.h1>
+          <motion.p {...reveal(0.1)} className="mt-6 max-w-[44ch] text-lead text-ink-2">
+            {shell?.name ?? 'El Tucu'} is a four-axis arm in {city}, Argentina. Rent it in five-minute blocks, run your code against it, read the real angles and current, and watch it on camera.
+          </motion.p>
+          <motion.div {...reveal(0.15)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label={`Rent ${shell?.name ?? 'El Tucu'}`} />
+            <Button as="link" to="/agents" variant="secondary" label="For agents" />
+          </motion.div>
         </div>
 
-        <div className="relative">
-          <LiveVideo shell={shell} className="aspect-[4/3] w-full border border-white/15">
-            <span className="absolute bottom-3 right-3 bg-[rgba(0,12,41,0.8)] px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-white/75">
+        <motion.div {...reveal(0.1)}>
+          <LiveVideo shell={shell} className="aspect-[4/3] w-full">
+            <span className="absolute right-3 top-3 border border-bench-rule bg-bench/85 px-2 py-1 font-mono text-mono-xs uppercase text-bench-ink-2">
               {shell?.location ?? 'Salta, AR'}
             </span>
           </LiveVideo>
-        </div>
+          <dl className="grid grid-cols-3 gap-px border border-t-0 border-bench-rule bg-bench-rule sm:grid-cols-5">
+            {JOINTS.map((j) => (
+              <div key={j} className="bg-bench px-3 py-2">
+                <Readout label={JOINT_LABEL[j]} value={state ? Math.round(state.angles[j]) : '—'} unit="°" surface="bench" />
+              </div>
+            ))}
+            <div className="bg-bench px-3 py-2">
+              <Readout label="Current" value={typeof state?.current_ma === 'number' ? state.current_ma : '—'} unit="mA" surface="bench" live={typeof state?.current_ma === 'number'} />
+            </div>
+          </dl>
+        </motion.div>
       </div>
     </section>
+  );
+}
+
+/** The signal band: three hard numbers, the argument in one line. */
+function Numbers({ shell }: { shell: Shell | undefined }) {
+  const price = shell?.pricing.usd ?? '1.00';
+  const minutes = shell?.pricing.block_minutes ?? 5;
+  const parts = shell?.build.parts_usd ?? 45;
+  const days = shell?.build.lead_days ?? 14;
+  return (
+    <section aria-label="Key numbers" className="bg-signal text-ink">
+      <dl className="mx-auto grid w-full max-w-container grid-cols-1 divide-y divide-ink/20 px-4 md:grid-cols-3 md:divide-x md:divide-y-0 md:px-6">
+        <Band k="A block" v={`$${price}`} u={`/ ${minutes} min`} note="Pay per use, in USDC on Solana." />
+        <Band k="Owning this arm" v={`$${parts}`} u="in parts" note={`Plus ${days} days of shipping and a day of assembly.`} />
+        <Band k="Waiting" v="0" u="days" note="The robot is online now. First test in the next five minutes." />
+      </dl>
+    </section>
+  );
+}
+
+function Band({ k, v, u, note }: { k: string; v: string; u: string; note: string }) {
+  return (
+    <div className="py-6 md:px-6 md:first:pl-0 md:last:pr-0">
+      <dt className="font-mono text-mono-xs uppercase text-ink/70">{k}</dt>
+      <dd className="mt-1">
+        <span className="tabular font-mono text-data-lg">{v}</span>
+        <span className="ml-2 font-mono text-mono text-ink/70">{u}</span>
+      </dd>
+      <dd className="mt-2 max-w-[32ch] text-small text-ink/80">{note}</dd>
+    </div>
   );
 }
 
 function HowItWorks() {
   const reveal = useReveal();
   return (
-    <section id="how-it-works" className="relative bg-bg py-24 md:py-32">
-      <div className="mx-auto w-full max-w-container px-5 md:px-8">
-        <motion.div {...reveal()}>
-          <Eyebrow>How it works</Eyebrow>
-        </motion.div>
-        <SectionHeading title="Three steps, like a manual." anim={reveal} />
-        <ol className="mt-16 grid grid-cols-1 border-t border-hairline md:grid-cols-3">
+    <section id="how-it-works" className="py-section">
+      <div className="mx-auto w-full max-w-container px-4 md:px-6">
+        <SectionIndex index="01" title="Three steps, like a bench test." anim={reveal()} />
+        <ol className="mt-12 grid grid-cols-1 gap-px bg-rule md:grid-cols-3">
           {STEPS.map((s, i) => (
-            <motion.li key={s.n} {...reveal(0.1 * i)} className="border-b border-hairline py-8 md:border-b-0 md:border-l md:px-8 md:first:border-l-0 md:first:pl-0">
-              <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-accent">{s.n}</p>
-              <h3 className="mt-4 font-display text-[clamp(1.5rem,2.4vw,2.125rem)] font-light leading-tight text-ink">{s.title}</h3>
-              <p className="mt-3 max-w-[38ch] text-[1.0625rem] font-light leading-[1.6] text-ink-soft">{s.body}</p>
+            <motion.li key={s.n} {...reveal(0.08 * i)} className="bg-paper py-6 md:pr-8">
+              <p className="tabular font-mono text-mono text-signal-deep">{s.n}</p>
+              <h3 className="wide-106 mt-3 text-h2">{s.title}</h3>
+              <p className="mt-3 max-w-[36ch] text-body text-ink-2">{s.body}</p>
             </motion.li>
           ))}
         </ol>
@@ -141,78 +135,61 @@ function HowItWorks() {
   );
 }
 
-function Audiences() {
+function Audiences({ shell }: { shell: Shell | undefined }) {
   const reveal = useReveal();
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const curl = `curl -i -X POST \\
-  "${origin}/api/sessions/x402?shell=el-tucu&blocks=1"`;
   const response = [
     'HTTP/1.1 402 Payment Required',
     'payment-required: eyJ4NDAyVmVyc2lvbiI6Miwi…',
     '',
-    '# decodificado',
-    '{',
-    '  "x402Version": 2,',
-    '  "accepts": [{',
-    '    "scheme": "exact",',
+    '# decoded',
+    '{ "accepts": [{ "scheme": "exact",',
     '    "network": "solana:EtWT…",',
-    '    "amount": "1000000",  // 1 USDC',
-    '    "description": "El Tucu · 1 block of 5 min"',
-    '  }]',
-    '}',
+    '    "amount": "1000000",   // 1 USDC',
+    '    "description": "El Tucu · 1 block of 5 min" }] }',
   ];
 
   return (
-    <section id="who-its-for" className="relative bg-[var(--panel-dark-deep)] py-24 md:py-32">
-      <div className="mx-auto grid w-full max-w-container grid-cols-1 gap-16 px-5 md:px-8 lg:grid-cols-2 lg:gap-20">
-        <div>
-          <motion.div {...reveal()}>
-            <Eyebrow dark>For people</Eyebrow>
-          </motion.div>
-          <SectionHeading
-            tone="dark"
-            title="Pay the way you already pay."
-            body={[
-              'Scan a Solana Pay QR with Phantom or Solflare and pay in USDC. Pick your blocks, it confirms in seconds and the console opens on its own.',
-              'The console has four sliders, routines and a big STOP. It also works with the keyboard.',
-            ]}
-            anim={reveal}
-          />
-          <motion.div {...reveal(0.3)} className="mt-10">
-            <Pill as="link" to="/shells/el-tucu" label="Pick blocks" />
-          </motion.div>
-        </div>
+    <section id="who-its-for" className="border-t border-rule bg-paper-2 py-section">
+      <div className="mx-auto w-full max-w-container px-4 md:px-6">
+        <SectionIndex index="02" title="Who it is for" anim={reveal()} />
+        <div className="mt-12 grid grid-cols-1 gap-10 lg:grid-cols-[1.3fr_1fr_1fr] lg:gap-8">
+          <motion.article {...reveal()} className="border-t-2 border-ink pt-5">
+            <p className="font-mono text-mono-xs uppercase text-ink-3">Small hardware teams</p>
+            <h3 className="wide-106 mt-3 text-h2">You wrote the firmware with AI. Now run it on something real.</h3>
+            <p className="mt-4 max-w-prose text-body text-ink-2">
+              A simulator never shows the servo that lands two degrees short or the current spike when a joint stalls. Rent the arm, run your sequence, read the measurements, fix the code. Five minutes, one dollar, no equipment to buy.
+            </p>
+            <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent a block" className="mt-6" />
+          </motion.article>
 
-        <div>
-          <motion.div {...reveal()}>
-            <Eyebrow dark>For agents</Eyebrow>
-          </motion.div>
-          <SectionHeading
-            tone="dark"
-            title="One POST, one 402, one token."
-            body="Your agent reads llms.txt, pays in USDC with x402 and gets a token to send commands. No account, no form."
-            anim={reveal}
-          />
-          <motion.pre
-            {...reveal(0.2)}
-            className="mt-10 overflow-x-auto border border-white/15 bg-[var(--panel-dark)] p-5 font-mono text-[12px] leading-[1.7] text-white/80"
-          >
-            <code>
-              <span className="text-white/45">$ </span>
-              {curl}
-              {'\n\n'}
-              {response.map((l, i) => (
-                <motion.span key={i} className="block" {...reveal(0.4 + i * 0.05)}>
-                  {i === 0 ? <span className="text-white">{l}</span> : l || ' '}
-                </motion.span>
-              ))}
-            </code>
-          </motion.pre>
-          <motion.div {...reveal(0.3)} className="mt-6">
-            <Link to="/agents" className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/60 underline-offset-4 transition-colors hover:text-white hover:underline">
-              Read the agent guide
-            </Link>
-          </motion.div>
+          <motion.article {...reveal(0.08)} className="min-w-0 border-t border-rule pt-5">
+            <p className="font-mono text-mono-xs uppercase text-ink-3">AI agents</p>
+            <h3 className="mt-3 text-h3">One POST, one 402, one token.</h3>
+            <p className="mt-3 text-small text-ink-2">Your agent reads llms.txt, pays with x402 and sends commands. No account, no form.</p>
+            <pre className="on-bench mt-5 overflow-x-auto border border-bench-rule bg-bench p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
+              <code>
+                <span className="text-bench-ink-2">$ </span>curl -X POST {origin}/api/sessions/x402?shell=el-tucu&blocks=1{'\n'}
+                {response.map((l, i) => (
+                  <span key={i} className={cn('block', i === 0 && 'text-signal')}>{l || ' '}</span>
+                ))}
+              </code>
+            </pre>
+            <Link to="/agents" className="mt-4 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">Agent guide</Link>
+          </motion.article>
+
+          <motion.article {...reveal(0.16)} className="min-w-0 border-t border-rule pt-5">
+            <p className="font-mono text-mono-xs uppercase text-ink-3">Forgers</p>
+            <h3 className="mt-3 text-h3">Have a robot sitting idle? Publish it.</h3>
+            <p className="mt-3 text-small text-ink-2">
+              Run the gateway next to your hardware, set the price, get paid per minute in your own wallet. Customization requests come to you.
+            </p>
+            <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-rule pt-4">
+              <Readout label="Your cut" value="90" unit="%" />
+              <Readout label="Setup" value="1" unit="command" />
+            </dl>
+            <a href="https://github.com/francoperez03/rent-a-shell/blob/main/docs/forgers.md" rel="noopener" className="mt-4 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">Become a Forger</a>
+          </motion.article>
         </div>
       </div>
     </section>
@@ -221,18 +198,26 @@ function Audiences() {
 
 function Shells({ shells }: { shells: Shell[] | undefined }) {
   const reveal = useReveal();
+  const online = shells?.filter((s) => s.status !== 'offline').length ?? 0;
   return (
-    <section id="shells" className="relative scroll-mt-20 bg-bg py-24 md:py-32">
-      <div className="mx-auto w-full max-w-container px-5 md:px-8">
-        <motion.div {...reveal()}>
-          <Eyebrow>Available shells</Eyebrow>
-        </motion.div>
-        <SectionHeading title={shells?.some((s) => s.status !== 'offline') ? 'One today. It is on.' : 'One today.'} anim={reveal} />
-        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {shells === undefined && <p className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute">Loading shells…</p>}
-          {shells?.length === 0 && <p className="text-ink-soft">No shells are published right now.</p>}
+    <section id="shells" className="scroll-mt-16 border-t border-rule py-section">
+      <div className="mx-auto w-full max-w-container px-4 md:px-6">
+        <SectionIndex
+          index="03"
+          title="Shells"
+          anim={reveal()}
+          aside={shells && <Readout label="Online now" value={online} unit={`/ ${shells.length}`} />}
+        />
+        <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+          {shells === undefined && (
+            <>
+              <div className="skeleton h-56" aria-hidden />
+              <div className="skeleton h-56" aria-hidden />
+            </>
+          )}
+          {shells?.length === 0 && <p className="text-body text-ink-2">No shells are published right now. Forgers add them from their own gateway.</p>}
           {shells?.map((s, i) => (
-            <motion.div key={s.id} {...reveal(0.1 * i)}>
+            <motion.div key={s.id} {...reveal(0.08 * i)}>
               <ShellCard shell={s} />
             </motion.div>
           ))}
@@ -246,26 +231,26 @@ function ShellCard({ shell }: { shell: Shell }) {
   const { data: state } = useShellState(shell.id, 3_000);
   const angles = state?.angles;
   return (
-    <Link to={shellHref(shell)} className="group block rounded-sm bg-bg-inset p-6 shadow-[var(--shadow-hairline)] transition-shadow duration-base hover:shadow-[inset_0_0_0_1px_var(--hairline-strong)] md:p-8">
-      <div className="flex items-center justify-between">
-        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-mute">{shell.kind} · {shell.location}</p>
-        <StatusDot status={shell.status} className="text-ink" />
+    <Link to={shellHref(shell)} className="group block border border-rule bg-paper transition-colors duration-base hover:border-ink">
+      <div className="flex items-center justify-between border-b border-rule px-5 py-3">
+        <p className="font-mono text-mono-xs uppercase text-ink-3">{shell.kind} · {shell.location}</p>
+        <StatusDot status={shell.status} />
       </div>
-      <h3 className="mt-6 font-display text-[clamp(1.75rem,3vw,2.5rem)] font-light leading-none text-ink">{shell.name}</h3>
-      <dl className="mt-8 grid grid-cols-4 gap-3 border-t border-hairline pt-4">
-        {JOINTS.map((j) => (
-          <div key={j}>
-            <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-mute">{JOINT_LABEL[j]}</dt>
-            <dd className="mt-1 font-mono text-[15px] text-ink">{angles ? `${Math.round(angles[j])}°` : '·'}</dd>
-          </div>
-        ))}
-      </dl>
-      <div className="mt-6 flex items-end justify-between border-t border-hairline pt-4">
-        <p className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink-soft">
-          USD {shell.pricing.usd} · {shell.pricing.block_minutes} min
+      <div className="px-5 py-5">
+        <h3 className="wide-106 text-h2">{shell.name}</h3>
+        <p className="mt-1 font-mono text-mono-xs uppercase text-ink-3">Forger {shell.forger.name}</p>
+        <dl className="mt-6 grid grid-cols-4 gap-3 border-t border-rule pt-4">
+          {JOINTS.map((j) => (
+            <Readout key={j} label={JOINT_LABEL[j]} value={angles ? Math.round(angles[j]) : '—'} unit="°" />
+          ))}
+        </dl>
+      </div>
+      <div className="flex items-end justify-between border-t border-rule px-5 py-4">
+        <p className="tabular font-mono text-mono text-ink">
+          ${shell.pricing.usd} <span className="text-ink-3">/ {shell.pricing.block_minutes} min</span>
         </p>
-        <span className="roll-parent font-sans text-[13px] font-medium uppercase tracking-[0.08em] text-accent">
-          View shell <span className="arrow">→</span>
+        <span className="roll-parent font-mono text-mono uppercase text-signal-deep">
+          Open <span className="arrow">→</span>
         </span>
       </div>
     </Link>
@@ -285,47 +270,47 @@ function LiveNumbers({ shell }: { shell: Shell | undefined }) {
 
   const active = queue?.active;
   const rows = [
-    { label: 'Status', value: <StatusDot status={shell?.status} /> },
-    { label: 'Current session', value: active ? `${active.rail} · ${fmtClock(toMs(active.expires_at) - now)} left` : 'Free' },
-    { label: 'In queue', value: queue ? String(queue.waiting) : '·' },
+    { label: 'Current session', value: active ? `${fmtClock(toMs(active.expires_at) - now)} left` : 'Free' },
+    { label: 'In queue', value: queue ? String(queue.waiting) : '—' },
     { label: 'Sessions since you arrived', value: String(sessions) },
     {
       label: 'Last payment',
       value: lastPay ? (
         lastPay.explorerUrl ? (
-          <a href={lastPay.explorerUrl} target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-white">
-            {lastPay.rail} · {lastPay.tx ? `${lastPay.tx.slice(0, 10)}…` : 'view'} ↗
+          <a href={lastPay.explorerUrl} target="_blank" rel="noopener" className="text-signal underline-offset-4 hover:underline">
+            {lastPay.tx ? `${lastPay.tx.slice(0, 8)}…` : lastPay.rail} ↗
           </a>
         ) : (
           lastPay.rail
         )
       ) : (
-        'Waiting for the next one'
+        '—'
       ),
     },
   ];
 
   return (
-    <section id="live" className="relative bg-[var(--panel-dark-deep)] py-24 md:py-32">
-      <div className="mx-auto grid w-full max-w-container grid-cols-1 items-start gap-12 px-5 md:px-8 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
-        <div>
-          <motion.div {...reveal()}>
-            <Eyebrow dark>Live</Eyebrow>
-          </motion.div>
-          <SectionHeading
-            tone="dark"
-            title="What is happening on the gateway right now."
-            body="Every session and every payment arrives as a gateway event. If someone is moving El Tucu, you see it here."
-            anim={reveal}
-          />
-        </div>
-        <motion.div {...reveal(0.15)}>
-          <TelemetryPanel
-            label="GATEWAY · EVENTS"
-            aside={<span className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/50">{connected ? 'connected' : 'reconnecting'}</span>}
+    <section id="live" className="on-bench dot-grid-bench border-t border-bench-rule bg-bench py-section text-bench-ink">
+      <div className="mx-auto grid w-full max-w-container grid-cols-1 items-start gap-10 px-4 md:px-6 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
+        <SectionIndex
+          index="04"
+          title="What the gateway is doing right now."
+          body="Every session and every payment arrives as an event. If someone is moving the arm, you see it here."
+          surface="bench"
+          anim={reveal()}
+        />
+        <motion.div {...reveal(0.1)}>
+          <Panel
+            label="Gateway · events"
+            aside={<span className={cn('font-mono text-mono-xs uppercase', connected ? 'text-bench-ink-2' : 'text-warn')}>{connected ? 'connected' : 'reconnecting'}</span>}
             live={connected}
             rows={rows}
-          />
+          >
+            <div className="flex items-center justify-between">
+              <StatusDot status={shell?.status} surface="bench" />
+              <Link to="/agents" className="font-mono text-mono-xs uppercase text-bench-ink-2 hover:text-bench-ink hover:underline">Subscribe via /api/events</Link>
+            </div>
+          </Panel>
         </motion.div>
       </div>
     </section>
@@ -335,18 +320,17 @@ function LiveNumbers({ shell }: { shell: Shell | undefined }) {
 function Closing({ shell }: { shell: Shell | undefined }) {
   const reveal = useReveal();
   return (
-    <section id="closing" className="relative bg-[var(--panel-dark-deep)] pt-24 md:pt-32">
-      <div className="mx-auto w-full max-w-container px-5 pb-24 md:px-8 md:pb-32">
-        <SectionHeading
-          size="display"
-          tone="dark"
-          title="Five minutes is enough to know if your code moves something real."
-          body={`A block costs USD ${shell?.pricing.usd ?? '1.00'}. When time runs out, El Tucu returns to HOME on its own.`}
-          anim={reveal}
-        />
-        <motion.div {...reveal(0.28)} className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Pill as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Rent a block" />
-          <Pill as="a" href="/llms.txt" variant="secondary" label="Read llms.txt" />
+    <section id="closing" className="border-t border-rule">
+      <div className="mx-auto w-full max-w-container px-4 py-section md:px-6">
+        <motion.h2 {...reveal()} className="wide-112 max-w-[18ch] text-display">
+          Five minutes is enough to know if your code moves something real.
+        </motion.h2>
+        <motion.p {...reveal(0.08)} className="mt-6 max-w-prose text-lead text-ink-2">
+          A block costs ${shell?.pricing.usd ?? '1.00'}. When time runs out, {shell?.name ?? 'El Tucu'} returns to HOME on its own.
+        </motion.p>
+        <motion.div {...reveal(0.16)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent a block" />
+          <Button as="a" href="/llms.txt" variant="secondary" label="Read llms.txt" />
         </motion.div>
       </div>
       <Footer />

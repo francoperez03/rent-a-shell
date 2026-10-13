@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { Angles, Command, Joint, SessionGrant, Shell } from '@ras/shell-spec';
 import { LiveVideo } from '@/components/LiveVideo';
-import { TelemetryPanel } from '@/components/TelemetryPanel';
-import { Pill } from '@/components/Pill';
+import { Panel } from '@/components/Panel';
+import { Button } from '@/components/Button';
+import { Readout } from '@/components/Readout';
 import { ApiError, api, clearGrant, fmtClock, loadGrant, toMs, useEvents, useNow, useShell, useShellState, type SessionInfo } from '@/lib/api';
 import { JOINTS, JOINT_LABEL } from '@/lib/joints';
 import { cn } from '@/lib/cn';
@@ -26,16 +27,17 @@ const KEYS: Record<string, [Joint, 1 | -1]> = {
 
 type Ended = 'expired' | 'ended' | 'revoked' | 'offline';
 
-/** Session console. No Lenis, no custom cursor, no pins: a live product. */
+/** Session console: the only full-bench surface. Product register, 150 to 250 ms motion, keyboard first. */
 export default function SessionPage() {
   const [grant] = useState(loadGrant);
   if (!grant) {
     return (
-      <main className="mx-auto grid min-h-viewport max-w-container place-items-center px-5 text-center text-white">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">No session</p>
-          <h1 className="mt-4 font-display text-[clamp(2rem,4vw,3rem)] font-light">There is no active session in this tab.</h1>
-          <Pill as="link" to="/#shells" label="Pick a shell" className="mt-8" />
+      <main className="on-bench grid min-h-viewport place-items-center bg-bench px-4 pt-16 text-center text-bench-ink">
+        <div className="max-w-prose">
+          <Readout label="Session" value="— —" surface="bench" className="items-center" />
+          <h1 className="wide-106 mt-6 text-h1 text-bench-ink">There is no active session in this tab.</h1>
+          <p className="mt-4 text-body text-bench-ink-2">Rent a block from a shell page and the console opens here.</p>
+          <Button as="link" to="/#shells" label="Pick a shell" className="mt-8" />
         </div>
       </main>
     );
@@ -196,95 +198,117 @@ function Console({ grant }: { grant: SessionGrant }) {
     return () => window.removeEventListener('keydown', onDown);
   }, [locked, shell, stop, queueJoint]);
 
+  const urgent = !waiting && left < 60_000;
+  const activity = waiting
+    ? 'Robot busy. Your block starts on its own when the previous one ends.'
+    : state
+      ? state.rutina
+        ? `Routine ${state.rutina}`
+        : state.moving
+          ? 'Moving'
+          : 'Idle'
+      : 'Reading state…';
 
   return (
-    <main className="mx-auto w-full max-w-[1600px] px-4 pb-28 pt-20 md:px-6 md:pt-24 lg:pb-8">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_400px] lg:gap-6">
-        <LiveVideo shell={shell} className="aspect-video w-full border border-white/15 lg:aspect-auto lg:h-[calc(100dvh-8rem)]">
+    <main className="on-bench min-h-viewport bg-bench px-4 pb-28 pt-20 text-bench-ink md:px-6 lg:pb-6">
+      <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-4 lg:grid-cols-[1fr_420px] lg:gap-5">
+        <LiveVideo shell={shell} className="aspect-video w-full lg:aspect-auto lg:h-[calc(100dvh-6.5rem)]">
           {state && (
-            <span className="absolute bottom-3 left-3 right-3 bg-[rgba(0,12,41,0.8)] px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-white/80 sm:right-auto">
-              {JOINTS.map((j) => `${JOINT_LABEL[j]} ${Math.round(state.angles[j])}°`).join(' · ')}
-              {typeof state.current_ma === 'number' && ` · ${state.current_ma} mA`}
-            </span>
+            <div className="absolute bottom-0 left-0 right-0 z-10 grid grid-cols-2 gap-px border-t border-bench-rule bg-bench-rule sm:grid-cols-5">
+              {JOINTS.map((j) => (
+                <div key={j} className="bg-bench/90 px-3 py-2">
+                  <p className="font-mono text-mono-xs uppercase text-bench-ink-2">{JOINT_LABEL[j]}</p>
+                  <p className="tabular font-mono text-data text-bench-ink">{Math.round(state.angles[j])}<span className="text-mono text-bench-ink-2">°</span></p>
+                </div>
+              ))}
+              <div className="bg-bench/90 px-3 py-2">
+                <p className="font-mono text-mono-xs uppercase text-bench-ink-2">Current</p>
+                <p className="tabular font-mono text-data text-bench-ink">
+                  {typeof state.current_ma === 'number' ? state.current_ma : '—'}
+                  <span className="text-mono text-bench-ink-2"> mA</span>
+                </p>
+              </div>
+            </div>
           )}
         </LiveVideo>
 
-        <TelemetryPanel
+        <Panel
           label={`Session · ${shell?.name ?? grant.shell}`}
           live={!ended}
           aside={
-            <span className={cn('font-mono text-[13px] tabular-nums tracking-[0.06em]', left < 60_000 ? 'text-alert-dark' : 'text-white')} aria-label={`${waiting ? 'Starts in' : 'Time left'} ${fmtClock(left)}`}>
-              {waiting && <span className="mr-2 text-[11px] uppercase text-white/50">starts in</span>}
+            <span className={cn('tabular font-mono text-data', urgent ? 'text-warn' : 'text-bench-ink')} aria-label={`${waiting ? 'Starts in' : 'Time left'} ${fmtClock(left)}`}>
+              {waiting && <span className="mr-2 text-mono-xs uppercase text-bench-ink-2">starts in</span>}
               {fmtClock(left)}
             </span>
           }
-          className="lg:h-[calc(100dvh-8rem)]"
+          className="lg:h-[calc(100dvh-6.5rem)]"
           footer={
-          <div>
-            <p className="mb-3 hidden font-mono text-[10px] uppercase leading-relaxed tracking-[0.1em] text-white/40 md:block">
-              ← → base · ↑ ↓ shoulder · W S elbow · A D grip · space STOP
-            </p>
-            <button
-              type="button"
-              onClick={stop}
-              disabled={locked}
-              className="fixed inset-x-4 bottom-4 z-40 h-14 rounded-sm bg-alert-dark font-sans text-[15px] font-semibold uppercase tracking-[0.14em] text-[var(--panel-dark-deep)] shadow-[0_8px_24px_rgba(0,12,41,0.5)] transition-transform duration-fast active:scale-[0.985] disabled:opacity-40 lg:static lg:w-full lg:shadow-none"
-            >
-              STOP
-            </button>
-            <button type="button" onClick={end} disabled={!!ended} className="mt-3 w-full text-center font-mono text-[11px] uppercase tracking-[0.16em] text-white/45 hover:text-white disabled:opacity-40">
-              End session
-            </button>
-          </div>
+            <div>
+              <p className="mb-3 hidden font-mono text-mono-xs uppercase leading-relaxed text-bench-ink-2 md:block">
+                ← → base · ↑ ↓ shoulder · W S elbow · A D grip · space STOP
+              </p>
+              <Button
+                variant="danger"
+                size="lg"
+                roll={false}
+                label="STOP"
+                onClick={stop}
+                disabled={locked}
+                className="fixed inset-x-4 bottom-4 z-40 w-auto shadow-[0_4px_0_var(--bench)] lg:static lg:w-full lg:shadow-none"
+              />
+              <button type="button" onClick={end} disabled={!!ended} className="mt-3 w-full text-center font-mono text-mono-xs uppercase text-bench-ink-2 transition-colors duration-fast hover:text-bench-ink hover:underline disabled:opacity-40">
+                End session
+              </button>
+            </div>
           }
         >
-          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 [scrollbar-color:rgba(255,255,255,0.2)_transparent] [scrollbar-width:thin]">
-          <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.1em] text-white/50" aria-live="polite">
-            {waiting ? 'The robot is busy. Your block starts on its own when the previous one ends.' : state ? (state.rutina ? `Routine ${state.rutina}` : state.moving ? 'Moving' : 'Idle') : 'Reading state…'}
-          </p>
+          <div className="flex h-full min-h-0 flex-col overflow-y-auto overflow-x-hidden pr-1 [scrollbar-color:var(--bench-rule)_transparent] [scrollbar-width:thin]">
+            <p className={cn('font-mono text-mono uppercase', waiting ? 'text-warn' : 'text-bench-ink-2')} aria-live="polite">
+              {activity}
+            </p>
 
-          <div className="mt-3 flex flex-col gap-3">
-            {shell &&
-              JOINTS.map((j) => (
-                <JointSlider
-                  key={j}
-                  joint={j}
-                  range={shell.joints[j]}
-                  value={target?.[j]}
-                  real={state?.angles[j]}
-                  disabled={locked || !target}
-                  onDrag={(a) => queueJoint(j, a)}
-                  onCommit={(a) => commitJoint(j, a)}
-                />
-              ))}
-          </div>
-
-          <div className="mt-5 border-t border-white/15 pt-4">
-            <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.12em] text-white/50">Routines</p>
-            <div className="grid grid-cols-2 gap-2">
-              {shell?.routines.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  disabled={locked}
-                  onClick={() => dance(r)}
-                  className={cn(
-                    'h-10 rounded-sm border font-mono text-[12px] uppercase tracking-[0.1em] transition-colors duration-base ease-out-quint disabled:opacity-40',
-                    state?.rutina === r ? 'border-accent bg-white/10 text-white' : 'border-white/20 text-white/80 hover:border-white/60'
-                  )}
-                >
-                  {r}
-                </button>
-              ))}
+            <div className="mt-4 flex flex-col gap-4">
+              {shell &&
+                JOINTS.map((j) => (
+                  <JointSlider
+                    key={j}
+                    joint={j}
+                    range={shell.joints[j]}
+                    value={target?.[j]}
+                    real={state?.angles[j]}
+                    disabled={locked || !target}
+                    onDrag={(a) => queueJoint(j, a)}
+                    onCommit={(a) => commitJoint(j, a)}
+                  />
+                ))}
             </div>
-          </div>
 
-          <p className="mt-4 min-h-[2.5em] text-[13px] leading-snug text-white/65" role="status">
-            {note}
-          </p>
-          </div>
+            <div className="mt-6 border-t border-bench-rule pt-4">
+              <p className="mb-3 font-mono text-mono-xs uppercase text-bench-ink-2">Routines</p>
+              <div className="grid grid-cols-2 gap-2">
+                {shell?.routines.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    disabled={locked}
+                    onClick={() => dance(r)}
+                    aria-pressed={state?.rutina === r}
+                    className={cn(
+                      'h-10 rounded-sm border font-mono text-mono uppercase transition-colors duration-base ease-out disabled:opacity-40',
+                      state?.rutina === r ? 'border-signal bg-signal text-ink' : 'border-bench-rule text-bench-ink hover:border-bench-ink'
+                    )}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        </TelemetryPanel>
+            <p className="mt-4 min-h-[2.5em] text-small text-bench-ink-2" role="status">
+              {note}
+            </p>
+          </div>
+        </Panel>
       </div>
 
       {ended && <EndedOverlay shell={shell} reason={ended} />}
@@ -313,16 +337,22 @@ function JointSlider({
   const pct = (a: number) => Math.min(100, Math.max(0, ((a - lo) / (hi - lo)) * 100));
   return (
     <div>
-      <div className="mb-1 flex items-baseline justify-between font-mono text-[11px] uppercase tracking-[0.1em]">
-        <label htmlFor={id} className="text-white/70">
-          {JOINT_LABEL[joint]} <span className="text-white/35">{lo}° to {hi}°</span>
+      <div className="mb-1 flex items-baseline justify-between font-mono text-mono-xs uppercase">
+        <label htmlFor={id} className="text-bench-ink">
+          {JOINT_LABEL[joint]} <span className="text-bench-ink-2">{lo}° to {hi}°</span>
         </label>
-        <span className="tabular-nums text-white/85">
+        <span className="tabular text-bench-ink">
           {value !== undefined ? `${Math.round(value)}°` : '·'}
-          <span className="ml-2 text-white/40">real {real !== undefined ? `${Math.round(real)}°` : '·'}</span>
+          <span className="ml-2 text-bench-ink-2">real {real !== undefined ? `${Math.round(real)}°` : '·'}</span>
         </span>
       </div>
       <div className="relative">
+        {/* range ticks: the slider reads as an instrument scale */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between px-[2px]">
+          {Array.from({ length: 9 }, (_, i) => (
+            <span key={i} className={cn('w-px bg-bench-rule', i % 4 === 0 ? 'h-4' : 'h-2')} />
+          ))}
+        </div>
         <input
           id={id}
           type="range"
@@ -334,10 +364,10 @@ function JointSlider({
           onChange={(e) => onDrag(Number(e.target.value))}
           onPointerUp={(e) => onCommit(Number(e.currentTarget.value))}
           aria-valuetext={`${value ?? lo} degrees`}
-          className="joint-range w-full"
+          className="joint-range relative w-full"
         />
         {real !== undefined && (
-          <span aria-hidden className="pointer-events-none absolute top-1/2 h-3 w-px -translate-y-1/2 bg-white/60" style={{ left: `${pct(real)}%` }} />
+          <span aria-hidden className="pointer-events-none absolute top-1/2 h-4 w-0.5 -translate-y-1/2 bg-signal" style={{ left: `${pct(real)}%` }} />
         )}
       </div>
     </div>
@@ -348,6 +378,7 @@ function EndedOverlay({ shell, reason }: { shell: Shell | undefined; reason: End
   const name = shell?.name ?? 'The shell';
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => ref.current?.focus(), []);
+  const kicker = reason === 'offline' ? 'Robot disconnected' : reason === 'revoked' ? 'Token expired' : 'Block over';
   return (
     <div
       ref={ref}
@@ -355,21 +386,20 @@ function EndedOverlay({ shell, reason }: { shell: Shell | undefined; reason: End
       role="dialog"
       aria-modal="true"
       aria-labelledby="ended-title"
-      className="fixed inset-0 z-[60] grid place-items-center bg-[rgba(0,12,41,0.86)] px-5 backdrop-blur-sm"
+      className="on-bench fixed inset-0 z-[60] grid place-items-center bg-bench/90 px-4"
     >
-      <div className="max-w-[40rem] text-center">
-        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/55">
-          {reason === 'offline' ? 'The robot disconnected' : reason === 'revoked' ? 'Token expired' : 'Block over'}
-        </p>
-        <h1 id="ended-title" className="mt-4 font-display text-[clamp(2rem,4.5vw,3.5rem)] font-light leading-[1.05] text-white">
-          Session ended · {name} returns to HOME
+      <div className="w-full max-w-[40rem] border border-bench-rule bg-bench-2 p-6 text-center md:p-10">
+        <p className="font-mono text-mono-xs uppercase text-bench-ink-2">{kicker}</p>
+        <h1 id="ended-title" className="wide-106 mt-4 text-h1 text-bench-ink">
+          Session ended. {name} returns to HOME.
         </h1>
-        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Pill as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Rent another block" />
-          <Pill as="link" to="/" variant="secondary" label="Back to home" />
+        {reason === 'offline' && <p className="mt-4 text-body text-bench-ink-2">Paid with escrow? The gateway refunds this block on its own.</p>}
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Button as="link" to={`/shells/${shell?.id ?? 'el-tucu'}`} label="Rent another block" />
+          <Button as="link" to="/" variant="secondary" surface="bench" label="Back to home" />
         </div>
-        <Link to="/agents" className="mt-8 inline-block font-mono text-[11px] uppercase tracking-[0.16em] text-white/45 hover:text-white">
-          Want to use it from an agent?
+        <Link to="/agents" className="mt-6 inline-block font-mono text-mono-xs uppercase text-bench-ink-2 hover:text-bench-ink hover:underline">
+          Use it from an agent instead
         </Link>
       </div>
     </div>

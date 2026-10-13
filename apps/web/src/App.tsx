@@ -1,12 +1,14 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { Nav } from '@/components/Nav';
+import { Button } from '@/components/Button';
+import { Readout } from '@/components/Readout';
 import { setGateway } from '@/lib/api';
 import ShellPage from '@/pages/Shell';
 import SessionPage from '@/pages/Session';
 import AgentsPage from '@/pages/Agents';
 
-// Landing pulls in three (orb) and Checkout the QR generator: each loads only on its route.
+// Landing and Checkout (QR generator) load only on their route.
 const Landing = lazy(() => import('@/pages/Landing'));
 const CheckoutPage = lazy(() => import('@/pages/Checkout'));
 
@@ -46,11 +48,12 @@ export default function App() {
 
 function NotFound() {
   return (
-    <main className="mx-auto grid min-h-viewport max-w-container place-items-center px-5 text-center text-white">
+    <main className="dot-grid mx-auto grid min-h-viewport max-w-container place-items-center px-4 pt-16 text-center">
       <div>
-        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">404</p>
-        <h1 className="mt-4 font-display text-[40px] font-light">This page does not exist.</h1>
-        <a href="/" className="mt-6 inline-block font-mono text-[12px] uppercase tracking-[0.16em] text-white/70 underline-offset-4 hover:underline">Back to home</a>
+        <Readout label="Status" value="404" className="items-center" />
+        <h1 className="wide-106 mt-6 text-h1">This page does not exist.</h1>
+        <p className="mt-3 text-body text-ink-2">The shells live on the home page; the API lives on the gateway.</p>
+        <Button as="link" to="/" variant="secondary" label="Back to home" className="mt-8" />
       </div>
     </main>
   );
