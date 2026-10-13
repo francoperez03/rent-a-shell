@@ -88,7 +88,7 @@ function Hero({ shell }: { shell: Shell | undefined }) {
 
 /** The signal band: three hard numbers, the argument in one line. */
 function Numbers({ shell }: { shell: Shell | undefined }) {
-  const price = shell?.pricing.usd ?? '1.00';
+  const price = shell?.pricing.usd ?? '0.05';
   const minutes = shell?.pricing.block_minutes ?? 5;
   const parts = shell?.build.parts_usd ?? 45;
   const days = shell?.build.lead_days ?? 14;
@@ -146,7 +146,7 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
     '# decoded',
     '{ "accepts": [{ "scheme": "exact",',
     '    "network": "solana:EtWT…",',
-    '    "amount": "1000000",   // 1 USDC',
+    '    "amount": "50000",   // 0.05 USDC',
     '    "description": "El Tucu · 5 min" }] }',
   ];
 
@@ -327,7 +327,7 @@ function Closing({ shell }: { shell: Shell | undefined }) {
           Five minutes is enough to know if your code moves something real.
         </motion.h2>
         <motion.p {...reveal(0.08)} className="mt-6 max-w-prose text-lead text-ink-2">
-          Five minutes cost ${shell?.pricing.usd ?? '1.00'}, paid in USDC on Solana. When time runs out, {shell?.name ?? 'El Tucu'} returns to HOME on its own.
+          Five minutes cost ${shell?.pricing.usd ?? '0.05'}: one cent per minute, paid in USDC on Solana. When time runs out, {shell?.name ?? 'El Tucu'} returns to HOME on its own.
         </motion.p>
         <motion.div {...reveal(0.16)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />

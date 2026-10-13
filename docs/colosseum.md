@@ -28,28 +28,28 @@ Today there is one Forger (the team, with El Tucu). The spec sheet already carri
 
 ## How much it saves
 
-Owning El Tucu costs about USD 45 in parts, 14 days of waiting and 10 h of assembly and calibration (details in [`costs.md`](costs.md)). Rented: USD 1 per 5 minutes, starting today. The parts are worth ≈ 3.75 h of use, and an iteration (upload the routine, run it, measure) fits in a USD 1 block. The first test moves from day 15 to day 1. The gap grows with expensive hardware, which is what Forgers add.
+Owning El Tucu costs about USD 45 in parts, 14 days of waiting and 10 h of assembly and calibration (details in [`costs.md`](costs.md)). Rented: one cent per minute (USD 0.05 per 5 minutes), starting today. The parts are worth about 75 hours of use, and an iteration (upload the routine, run it, measure) fits in five cents. The first test moves from day 15 to day 1. The gap grows with expensive hardware, which is what Forgers add.
 
 ## Why Solana
 
 Solana is the infrastructure agents operate on: they discover the shell, pay, test and verify themselves with no account, no card and no human in the middle.
 
-- **Agents that test themselves**: an agent that wrote a controller runs it on real hardware, measures (position reached and, with a current sensor on the shell, the mA each servo draws while moving) and fixes its own code. Each iteration is a USD 1 payment, and that only works with sub-cent fees and confirmation in seconds.
+- **Agents that test themselves**: an agent that wrote a controller runs it on real hardware, measures (position reached and, with a current sensor on the shell, the mA each servo draws while moving) and fixes its own code. Each iteration is a five-cent payment, and that only works with sub-cent fees and confirmation in seconds.
 - **Gasless x402 for the agent**: the agent signs a USDC transfer and the facilitator submits it and pays the fee. A wallet holding only USDC is enough.
 - **Solana Pay** for people: a QR with a `reference` per session. It's confirmed by looking up that account, with no contract and no odd amounts.
-- **Confirmation in seconds and sub-cent fees**: they make USD 1 blocks viable and open the session as soon as the payment lands.
+- **Confirmation in seconds and sub-cent fees**: they make one-cent-per-minute billing viable and open the session as soon as the payment lands.
 - **Global payments with no intermediaries**: a team in any country pays in USDC, and the Forger gets paid straight to their wallet.
 
 ## Demo
 
 An agent tests its robotics code on real hardware:
 
-1. It reads `llms.txt` and sees El Tucu (4-axis arm with live camera), USD 1 per 5 minutes.
+1. It reads `llms.txt` and sees El Tucu (4-axis arm with live camera), USD 0.05 per 5 minutes (one cent per minute).
 2. It pays for 1 block with x402 in USDC and gets the session token.
 3. It runs its motion sequence on the real arm.
 4. It measures whether each joint reached the requested angle.
 5. It returns the report with the tx on Solscan. The arm returns to HOME.
-6. Video close: "this test cost USD 1 and 5 minutes; building the arm, USD 45 and two weeks".
+6. Video close: "this test cost five cents and five minutes; building the arm, USD 45 and two weeks".
 
 In parallel, a person scans the QR with Phantom and takes control from the web console.
 

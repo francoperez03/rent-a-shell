@@ -58,7 +58,7 @@ Served by the gateway at `GET /api/shells` and used by the website, `llms.txt` a
   "home": { "base": 90, "shoulder": 90, "elbow": 90, "grip": 70 },
   "routines": ["robot", "lento", "saludo", "recta"],
   "sensors": ["angles", "current_ma"],
-  "pricing": { "block_minutes": 5, "usd": "1.00" }
+  "pricing": { "block_minutes": 5, "usd": "0.05" }
 }
 ```
 
