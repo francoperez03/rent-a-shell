@@ -48,7 +48,7 @@ Served by the gateway at `GET /api/shells` and used by the website, `llms.txt` a
   "id": "el-tucu",
   "name": "El Tucu",
   "kind": "arm-4dof",
-  "location": "Salta, AR",
+  "location": "Tucumán, AR",
   "status": "online",
   "gateway": "https://<gateway-url>",
   "camera": { "hls": "https://<gateway-url>/live/el-tucu/index.m3u8", "frame": "https://<gateway-url>/api/shells/el-tucu/frame" },

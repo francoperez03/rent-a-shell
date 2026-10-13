@@ -10,7 +10,7 @@ export function Footer({ surface = 'paper' }: { surface?: 'paper' | 'bench' }) {
       <div className="flex flex-col gap-4 md:flex-row md:items-baseline md:justify-between">
         <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:gap-4">
           <p className={cn('wide-112 font-sans text-h3 font-bold', bench ? 'text-bench-ink' : 'text-ink')}>Rent a Shell</p>
-          <p className={cn('text-small', bench ? 'text-bench-ink-2' : 'text-ink-2')}>Real hardware, rented by the minute. From Salta, Argentina.</p>
+          <p className={cn('text-small', bench ? 'text-bench-ink-2' : 'text-ink-2')}>Real hardware, rented by the minute. From Tucumán, Argentina.</p>
         </div>
         <div className={cn('flex flex-wrap gap-x-5 gap-y-2 font-mono text-mono-xs uppercase')}>
           <Link to="/agents" className={link}>Agents</Link>
