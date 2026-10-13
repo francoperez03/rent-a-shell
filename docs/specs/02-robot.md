@@ -53,9 +53,9 @@ Served by the gateway at `GET /api/shells` and used by the website, `llms.txt` a
   "gateway": "https://<gateway-url>",
   "camera": { "hls": "https://<gateway-url>/live/el-tucu/index.m3u8", "frame": "https://<gateway-url>/api/shells/el-tucu/frame" },
   "joints": {
-    "base": [20, 160], "shoulder": [50, 130], "elbow": [50, 130], "grip": [40, 110]
+    "base": [20, 160], "shoulder": [80, 170], "elbow": [80, 130], "grip": [130, 175]
   },
-  "home": { "base": 90, "shoulder": 90, "elbow": 90, "grip": 70 },
+  "home": { "base": 105, "shoulder": 115, "elbow": 90, "grip": 150 },
   "routines": ["robot", "lento", "saludo", "recta"],
   "sensors": ["angles", "current_ma"],
   "pricing": { "block_minutes": 5, "usd": "0.05" }
