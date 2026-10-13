@@ -9,6 +9,7 @@ import { SectionIndex } from '@/components/SectionIndex';
 import { StatusDot } from '@/components/StatusDot';
 import { Panel } from '@/components/Panel';
 import { Footer } from '@/components/Footer';
+import { INSTALL } from '@/content/install';
 import { fmtClock, shellHref, toMs, useEvents, useNow, useQueue, useShells, useShellState } from '@/lib/api';
 import { useReveal } from '@/lib/useReveal';
 import { useReducedMotion } from '@/lib/useReducedMotion';
@@ -180,7 +181,7 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
             <pre className="on-bench mt-4 whitespace-pre-wrap break-words border border-bench-rule bg-bench p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
               <code>
                 <span className="text-bench-ink-2"># install the skill once{'\n'}</span>
-                mkdir -p ~/.claude/skills/rent-a-shell && curl -fsSL {origin}/skills/rent/SKILL.md -o ~/.claude/skills/rent-a-shell/SKILL.md
+                {INSTALL}
               </code>
             </pre>
             <div className="mt-6 lg:mt-auto lg:pt-6">

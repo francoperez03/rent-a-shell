@@ -97,9 +97,9 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
 - MCP (Streamable HTTP): ${publicUrl}/mcp, tools list_shells and get_shell
 - Add your hardware as a Forger: POST ${publicUrl}/api/forgers {"gateway":"https://your-gateway"}
 - Claude Code skill to rent and test code on real hardware:
-  mkdir -p ~/.claude/skills/rent-a-shell && curl -fsSL ${publicUrl}/skills/rent/SKILL.md -o ~/.claude/skills/rent-a-shell/SKILL.md
+  npx skills add francoperez03/rent-a-shell --skill rent-a-shell (or read ${publicUrl}/skills/rent/SKILL.md)
 - Claude Code skill for Forgers (installs and configures the gateway, camera and tunnel):
-  mkdir -p ~/.claude/skills/rent-a-shell-forger && curl -fsSL ${publicUrl}/skills/forger/SKILL.md -o ~/.claude/skills/rent-a-shell-forger/SKILL.md
+  npx skills add francoperez03/rent-a-shell --skill rent-a-shell-forger (or read ${publicUrl}/skills/forger/SKILL.md)
 `;
   };
 
