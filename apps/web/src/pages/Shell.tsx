@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { LiveVideo } from '@/components/LiveVideo';
+import { PayModal } from '@/components/PayModal';
 import { Button } from '@/components/Button';
 import { Readout } from '@/components/Readout';
 import { StatusDot } from '@/components/StatusDot';
@@ -24,6 +25,7 @@ export default function ShellPage() {
   const { data: queue } = useQueue(id);
   const now = useNow();
   const [blocks, setBlocks] = useState(1);
+  const [paying, setPaying] = useState(false);
 
   if (isLoading)
     return (
@@ -169,14 +171,8 @@ export default function ShellPage() {
               <Readout label="Time" value={minutes} unit="min" />
               <Readout label="Total" value={`$${total}`} unit="USD" />
             </div>
-            <Button
-              as="link"
-              to={`/checkout?shell=${shell.id}&blocks=${blocks}`}
-              state={{ shell: shell.id, blocks }}
-              label="Go to payment"
-              className={cn('mt-5 w-full', offline && 'pointer-events-none opacity-40')}
-              aria-disabled={offline}
-            />
+            <Button label="Go to payment" className="mt-5 w-full" disabled={offline} onClick={() => setPaying(true)} />
+            <PayModal shell={shell} blocks={blocks} open={paying} onClose={() => setPaying(false)} />
             <p className="mt-3 font-mono text-mono-xs uppercase text-ink-3">Queue · {queueText}</p>
             <p className="mt-3 border-t border-rule pt-3 font-mono text-mono-xs uppercase text-ink-3">Powered by Solana · USDC</p>
             {offline && <p className="mt-3 text-small text-danger">{shell.name} is offline. Come back in a while.</p>}
