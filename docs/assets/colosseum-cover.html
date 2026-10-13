@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Rent a Shell cover</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Martian+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bench:#15110D;--bench-2:#221D18;--ink:#F7F3EB;--ink-2:#A29E96;--rule:#3B3530;--signal:#F65400;--ok:#4CAF6E}
+  *{box-sizing:border-box;margin:0}
+  html,body{width:1200px;height:630px;overflow:hidden;background:var(--bench);color:var(--ink);font-family:"Archivo",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .card{position:relative;width:1200px;height:630px;padding:56px 64px;display:grid;grid-template-columns:1fr 400px;grid-template-rows:auto 1fr auto;gap:0 48px}
+  .tick{position:absolute;width:22px;height:22px;border:1.5px solid var(--ink-2)}
+  .tl{top:28px;left:28px;border-right:0;border-bottom:0}.tr{top:28px;right:28px;border-left:0;border-bottom:0}
+  .bl{bottom:28px;left:28px;border-right:0;border-top:0}.br{bottom:28px;right:28px;border-left:0;border-top:0}
+  .mono{font-family:"Martian Mono",ui-monospace,monospace;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+  .eyebrow{grid-column:1/3;display:flex;gap:28px;align-items:center}
+  .eyebrow .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:8px;vertical-align:1px}
+  h1{grid-column:1;align-self:center;font-size:92px;line-height:.98;font-weight:700;font-variation-settings:"wdth" 108;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--signal)}
+  .sub{grid-column:1;align-self:end;font-size:22px;line-height:1.35;color:var(--ink-2);max-width:620px}
+  .term{grid-column:2;grid-row:2/4;align-self:end;background:var(--bench-2);border:1px solid var(--rule);padding:22px 24px;font-family:"Martian Mono",monospace;font-size:14.5px;line-height:1.75;color:var(--ink)}
+  .term .c{color:var(--ink-2)}.term .s{color:var(--signal)}.term .ok{color:var(--ok)}
+  .term .head{display:flex;justify-content:space-between;border-bottom:1px solid var(--rule);padding-bottom:10px;margin-bottom:12px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+  .arm{position:absolute;right:64px;top:52px;width:72px;height:72px}
+</style></head><body>
+<div class="card">
+  <i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i>
+  <svg class="arm" viewBox="0 0 32 32"><path d="M10 23V13.5a3.5 3.5 0 0 1 7 0V17h4" fill="none" stroke="#F7F3EB" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23" cy="17" r="2.6" fill="#F65400"/></svg>
+  <div class="eyebrow mono"><span>Rent a Shell</span><span><span class="dot"></span>El Tucu · online · Tucumán</span><span>USDC on Solana</span></div>
+  <h1>Real robots<br>your agent<br>can <em>rent.</em></h1>
+  <p class="sub">A gateway puts real hardware behind an API with timed sessions. Agents pay with x402, people scan a Solana Pay QR. One cent per minute.</p>
+  <div class="term">
+    <div class="head"><span>session · x402</span><span>el-tucu</span></div>
+    <div><span class="c">$</span> curl -X POST /api/sessions/x402</div>
+    <div><span class="s">402</span> Payment Required · 0.05 USDC</div>
+    <div><span class="c">→</span> signed, facilitator paid the fee</div>
+    <div><span class="ok">201</span> token · expires in 5:00</div>
+    <div><span class="c">$</span> POST /joint shoulder 120°</div>
+    <div><span class="c">·</span> reached 119° · <span class="ok">ok</span></div>
+    <div><span class="c">·</span> expired → HOME</div>
+  </div>
+</div>
+</body></html>
