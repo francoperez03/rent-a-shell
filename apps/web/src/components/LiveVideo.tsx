@@ -7,6 +7,7 @@ type Mode = 'connecting' | 'hls' | 'frame' | 'disconnected';
 
 const RETRY_MS = 10_000;
 const FRAME_MS = 1_000;
+const CONNECT_MS = 12_000;
 
 /**
  * Shell camera in a bench well with tick marks on the frame. Order: HLS (native in Safari, hls.js
@@ -32,21 +33,18 @@ export function LiveVideo({ shell, className, children }: { shell: Shell | undef
     let cleanup = () => {};
     setMode('connecting');
     const fail = () => !cancelled && setMode('frame');
-    const onPlaying = () => !cancelled && setMode('hls');
+    const onPlaying = () => {
+      clearTimeout(timer);
+      if (!cancelled) setMode('hls');
+    };
     el.addEventListener('playing', onPlaying);
 
-    if (el.canPlayType('application/vnd.apple.mpegurl')) {
-      el.addEventListener('error', fail, { once: true });
-      el.src = hls;
-      el.play().catch(() => {});
-      cleanup = () => {
-        el.removeEventListener('error', fail);
-        el.removeAttribute('src');
-      };
-    } else {
-      import('hls.js').then(({ default: Hls }) => {
-        if (cancelled) return;
-        if (!Hls.isSupported()) return fail();
+    // hls.js first (it can send GW_HEADERS); native <video src> only where MSE is missing (iOS Safari).
+    // If nothing plays within CONNECT_MS, fall back to frames.
+    const timer = setTimeout(fail, CONNECT_MS);
+    import('hls.js').then(({ default: Hls }) => {
+      if (cancelled) return;
+      if (Hls.isSupported()) {
         const h = new Hls({ liveDurationInfinity: true, xhrSetup: (xhr) => xhr.setRequestHeader('ngrok-skip-browser-warning', '1') });
         h.on(Hls.Events.ERROR, (_e, data) => {
           if (data.fatal) {
@@ -58,10 +56,19 @@ export function LiveVideo({ shell, className, children }: { shell: Shell | undef
         h.attachMedia(el);
         el.play().catch(() => {});
         cleanup = () => h.destroy();
-      });
-    }
+      } else if (el.canPlayType('application/vnd.apple.mpegurl')) {
+        el.addEventListener('error', fail, { once: true });
+        el.src = hls;
+        el.play().catch(() => {});
+        cleanup = () => {
+          el.removeEventListener('error', fail);
+          el.removeAttribute('src');
+        };
+      } else fail();
+    });
     return () => {
       cancelled = true;
+      clearTimeout(timer);
       el.removeEventListener('playing', onPlaying);
       cleanup();
     };
