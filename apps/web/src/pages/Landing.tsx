@@ -55,23 +55,23 @@ function Hero({ shell }: { shell: Shell | undefined }) {
     <section id="hero" ref={ref} className="dot-grid relative border-b border-rule">
       <div className="mx-auto grid w-full max-w-container grid-cols-1 items-end gap-10 px-4 pb-12 pt-28 md:px-6 md:pt-36 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-16">
         <div>
-          <motion.p {...reveal()} className="flex items-center gap-3 font-mono text-mono uppercase text-ink-3">
+          <motion.p {...reveal(0, 'mount')} className="flex items-center gap-3 font-mono text-mono uppercase text-ink-3">
             <StatusDot status={shell?.status} />
             <span>{shell?.name ?? 'El Tucu'} · {city}</span>
           </motion.p>
-          <motion.h1 {...reveal(0.05)} className="wide-112 mt-5 max-w-[16ch] text-display">
+          <motion.h1 {...reveal(0.05, 'mount')} className="wide-112 mt-5 max-w-[16ch] text-display">
             Test your code on real hardware. Today.
           </motion.h1>
-          <motion.p {...reveal(0.1)} className="mt-6 max-w-[44ch] text-lead text-ink-2">
+          <motion.p {...reveal(0.1, 'mount')} className="mt-6 max-w-[44ch] text-lead text-ink-2">
             {shell?.name ?? 'El Tucu'} is a four-axis arm in {city}, Argentina. Rent it by the minute, run your code against it, read the real angles and current, and watch it on camera.
           </motion.p>
-          <motion.div {...reveal(0.15)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <motion.div {...reveal(0.15, 'mount')} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label={`Rent ${shell?.name ?? 'El Tucu'}`} />
             <Button as="link" to="/agents" variant="secondary" label="For agents" />
           </motion.div>
         </div>
 
-        <motion.div {...reveal(0.1)} style={{ y }}>
+        <motion.div {...reveal(0.1, 'mount')} style={{ y }}>
           <LiveVideo shell={shell} className="aspect-[4/3] w-full">
             <span className="absolute right-3 top-3 border border-bench-rule bg-bench/85 px-2 py-1 font-mono text-mono-xs uppercase text-bench-ink-2">
               {shell?.location ?? 'Tucumán, AR'}
