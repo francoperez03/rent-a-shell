@@ -37,6 +37,9 @@ export function cameraArgs(platform, e) {
     "-loglevel", "error",
     ...cameraInput(platform, e),
     // yuv420p: webcams often output yuyv422 and browsers do not play H.264 4:2:2
+    // -fps_mode cfr: avfoundation timestamps barely advance, so MediaMTX never closes an HLS segment ("reached maximum segment size")
+    // 720p tall side: enough for the bench and light enough for the tunnel
+    "-vf", "scale='if(gt(iw,ih),-2,720)':'if(gt(iw,ih),720,-2)'", "-fps_mode", "cfr", "-r", String(fps),
     "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-g", String(fps),
     "-f", "rtsp", "-rtsp_transport", "tcp", `rtsp://localhost:8554/${e.SHELL_ID || "el-tucu"}`,
   ];
