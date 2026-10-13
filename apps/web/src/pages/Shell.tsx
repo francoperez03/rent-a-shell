@@ -71,25 +71,14 @@ export default function ShellPage() {
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr] lg:gap-12">
         <div>
-          <LiveVideo shell={shell} className="aspect-video w-full">
-            {state && (
-              <div className="absolute bottom-0 left-0 right-0 z-10 grid grid-cols-2 gap-px border-t border-bench-rule bg-bench-rule sm:grid-cols-5">
-                {JOINTS.map((j) => (
-                  <div key={j} className="bg-bench/90 px-3 py-2">
-                    <p className="font-mono text-mono-xs uppercase text-bench-ink-2">{JOINT_LABEL[j]}</p>
-                    <p className="tabular font-mono text-data text-bench-ink">{Math.round(state.angles[j])}<span className="text-mono text-bench-ink-2">°</span></p>
-                  </div>
-                ))}
-                <div className="bg-bench/90 px-3 py-2">
-                  <p className="font-mono text-mono-xs uppercase text-bench-ink-2">Current</p>
-                  <p className="tabular font-mono text-data text-bench-ink">
-                    {typeof state.current_ma === 'number' ? state.current_ma : '—'}
-                    <span className="text-mono text-bench-ink-2"> mA</span>
-                  </p>
-                </div>
+          <LiveVideo shell={shell} className="aspect-video min-h-[14rem] w-full" />
+          <dl className="grid grid-cols-2 gap-px border border-t-0 border-bench-rule bg-bench-rule sm:grid-cols-4">
+            {JOINTS.map((j) => (
+              <div key={j} className="bg-bench px-2 py-2 sm:px-3">
+                <Readout label={JOINT_LABEL[j]} value={state ? Math.round(state.angles[j]) : '—'} unit="°" surface="bench" />
               </div>
-            )}
-          </LiveVideo>
+            ))}
+          </dl>
 
           {/* spec sheet */}
           <section aria-labelledby="ranges" className="mt-10">

@@ -77,15 +77,12 @@ function Hero({ shell }: { shell: Shell | undefined }) {
               {shell?.location ?? 'Tucumán, AR'}
             </span>
           </LiveVideo>
-          <dl className="grid grid-cols-3 gap-px border border-t-0 border-bench-rule bg-bench-rule sm:grid-cols-5">
+          <dl className="grid grid-cols-2 gap-px border border-t-0 border-bench-rule bg-bench-rule sm:grid-cols-4">
             {JOINTS.map((j) => (
-              <div key={j} className="bg-bench px-3 py-2">
+              <div key={j} className="bg-bench px-2 py-2 sm:px-3">
                 <Readout label={JOINT_LABEL[j]} value={state ? Math.round(state.angles[j]) : '—'} unit="°" surface="bench" />
               </div>
             ))}
-            <div className="bg-bench px-3 py-2">
-              <Readout label="Current" value={typeof state?.current_ma === 'number' ? state.current_ma : '—'} unit="mA" surface="bench" live={typeof state?.current_ma === 'number'} />
-            </div>
           </dl>
         </motion.div>
       </div>

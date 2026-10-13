@@ -212,25 +212,17 @@ function Console({ grant }: { grant: SessionGrant }) {
   return (
     <main className="on-bench min-h-viewport bg-bench px-4 pb-28 pt-20 text-bench-ink md:px-6 lg:pb-6">
       <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-4 lg:grid-cols-[1fr_420px] lg:gap-5">
-        <LiveVideo shell={shell} className="aspect-video w-full lg:aspect-auto lg:h-[calc(100dvh-6.5rem)]">
-          {state && (
-            <div className="absolute bottom-0 left-0 right-0 z-10 grid grid-cols-2 gap-px border-t border-bench-rule bg-bench-rule sm:grid-cols-5">
-              {JOINTS.map((j) => (
-                <div key={j} className="bg-bench/90 px-3 py-2">
-                  <p className="font-mono text-mono-xs uppercase text-bench-ink-2">{JOINT_LABEL[j]}</p>
-                  <p className="tabular font-mono text-data text-bench-ink">{Math.round(state.angles[j])}<span className="text-mono text-bench-ink-2">°</span></p>
-                </div>
-              ))}
-              <div className="bg-bench/90 px-3 py-2">
-                <p className="font-mono text-mono-xs uppercase text-bench-ink-2">Current</p>
-                <p className="tabular font-mono text-data text-bench-ink">
-                  {typeof state.current_ma === 'number' ? state.current_ma : '—'}
-                  <span className="text-mono text-bench-ink-2"> mA</span>
-                </p>
+        {/* ponytail: readouts under the video, not over it; min-h keeps the camera usable on a phone */}
+        <div className="flex flex-col lg:h-[calc(100dvh-6.5rem)]">
+          <LiveVideo shell={shell} className="aspect-video min-h-[14rem] w-full lg:aspect-auto lg:min-h-0 lg:flex-1" />
+          <dl className="grid grid-cols-2 gap-px border border-t-0 border-bench-rule bg-bench-rule sm:grid-cols-4">
+            {JOINTS.map((j) => (
+              <div key={j} className="bg-bench px-2 py-2 sm:px-3">
+                <Readout label={JOINT_LABEL[j]} value={state ? Math.round(state.angles[j]) : '—'} unit="°" surface="bench" />
               </div>
-            </div>
-          )}
-        </LiveVideo>
+            ))}
+          </dl>
+        </div>
 
         <Panel
           label={`Session · ${shell?.name ?? grant.shell}`}
