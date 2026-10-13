@@ -162,23 +162,28 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
     <section id="who-its-for" className="border-t border-rule bg-paper-2 py-section">
       <div className="mx-auto w-full max-w-container px-4 md:px-6">
         <SectionIndex index="02" title="Who it is for" anim={reveal()} />
-        <div className="mt-12 grid grid-cols-1 gap-10 lg:grid-cols-[1.3fr_1fr_1fr] lg:gap-8">
-          <motion.article {...reveal()} className="border-t-2 border-ink pt-5">
+        <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-12 lg:grid-cols-12">
+          <motion.article {...reveal()} className="flex flex-col border-t-2 border-ink pt-5 lg:col-span-5">
             <p className="font-mono text-mono-xs uppercase text-ink-3">Small hardware teams</p>
             <h3 className="wide-106 mt-3 text-h2">You wrote the firmware with AI. Now run it on something real.</h3>
             <p className="mt-4 max-w-prose text-body text-ink-2">
               A simulator never shows the servo that lands two degrees short or the current spike when a joint stalls. Rent the arm, run your sequence, read the measurements, fix the code. Five minutes, a few cents, no equipment to buy.
             </p>
-            <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" className="mt-6" />
+            {/* mt-auto: the key sits on the same baseline as "Agent guide" next to it */}
+            <div className="mt-6 lg:mt-auto lg:pt-6">
+              <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
+            </div>
           </motion.article>
 
-          <motion.article {...reveal(0.08)} className="min-w-0 border-t border-rule pt-5">
+          <motion.article {...reveal(0.08)} className="min-w-0 border-t border-rule pt-5 lg:col-span-7">
             <p className="font-mono text-mono-xs uppercase text-ink-3">AI agents</p>
-            <h3 className="mt-3 text-h3">One POST, one 402, one token.</h3>
-            <p className="mt-3 text-small text-ink-2">Your agent reads llms.txt, pays with x402 and sends commands. No account, no form.</p>
-            <pre className="on-bench mt-5 overflow-x-auto border border-bench-rule bg-bench p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
+            <h3 className="wide-106 mt-3 text-h2">One POST, one 402, one token.</h3>
+            <p className="mt-4 max-w-prose text-body text-ink-2">Your agent reads llms.txt, pays with x402 and sends commands. No account, no form.</p>
+            {/* pre-wrap: no line is longer than ~60 chars, and on a phone it wraps instead of scrolling */}
+            <pre className="on-bench mt-5 whitespace-pre-wrap break-words border border-bench-rule bg-bench p-5 font-mono text-mono leading-[1.7] text-bench-ink">
               <code>
-                <span className="text-bench-ink-2">$ </span>curl -X POST {origin}/api/sessions/x402?shell=el-tucu&blocks=1{'\n'}
+                <span className="text-bench-ink-2">$ </span>curl -X POST \{'\n'}
+                {'    '}{origin}/api/sessions/x402?shell=el-tucu&blocks=1{'\n'}
                 {response.map((l, i) => (
                   <motion.span key={i} {...row(i, 0.3)} className={cn('block', i === 0 && 'text-signal')}>{l || ' '}</motion.span>
                 ))}
@@ -187,17 +192,22 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
             <Link to="/agents" className="mt-4 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">Agent guide</Link>
           </motion.article>
 
-          <motion.article {...reveal(0.16)} className="min-w-0 border-t border-rule pt-5">
+          {/* Forgers as a full-width band, same grammar as SectionIndex: eyebrow, text, numbers to the right */}
+          <motion.article {...reveal(0.16)} className="grid grid-cols-1 gap-x-8 gap-y-6 border-t border-rule pt-6 lg:col-span-12 lg:grid-cols-[6rem_1fr_auto]">
             <p className="font-mono text-mono-xs uppercase text-ink-3">Forgers</p>
-            <h3 className="mt-3 text-h3">Have a robot sitting idle? Publish it.</h3>
-            <p className="mt-3 text-small text-ink-2">
-              Run the gateway next to your hardware, set the price, get paid per minute in your own wallet. Customization requests come to you.
-            </p>
-            <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-rule pt-4">
-              <Readout label="Your cut" value={<CountUp value={90} />} unit="%" />
-              <Readout label="Setup" value="1" unit="command" />
-            </dl>
-            <a href="https://github.com/francoperez03/rent-a-shell/blob/main/docs/forgers.md" rel="noopener" className="mt-4 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">Become a Forger</a>
+            <div>
+              <h3 className="text-h3">Have a robot sitting idle? Publish it.</h3>
+              <p className="mt-3 max-w-prose text-body text-ink-2">
+                Run the gateway next to your hardware, set the price, get paid per minute in your own wallet. Customization requests come to you.
+              </p>
+            </div>
+            <div className="lg:justify-self-end lg:text-right">
+              <dl className="grid grid-cols-2 gap-8">
+                <Readout label="Your cut" value={<CountUp value={90} />} unit="%" />
+                <Readout label="Setup" value="1" unit="command" />
+              </dl>
+              <a href="https://github.com/francoperez03/rent-a-shell/blob/main/docs/forgers.md" rel="noopener" className="mt-4 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">Become a Forger</a>
+            </div>
           </motion.article>
         </div>
       </div>
@@ -217,7 +227,7 @@ function Shells({ shells }: { shells: Shell[] | undefined }) {
           anim={reveal()}
           aside={shells && <Readout label="Online now" value={online} unit={`/ ${shells.length}`} />}
         />
-        <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-[repeat(auto-fit,minmax(20rem,36rem))]">
           {shells === undefined && (
             <>
               <div className="skeleton h-56" aria-hidden />
