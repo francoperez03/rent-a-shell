@@ -104,7 +104,7 @@ function Ticket({ view, rail, onRetry }: { view: IntentView; rail: RailManifest 
       {expired ? (
         <Button label="New payment" className="mt-6 w-full" onClick={onRetry} />
       ) : url ? (
-        <WalletButtons url={url} network={network} />
+        <WalletButtons url={url} network={network} chain={chainFor(rail?.wallet?.chains[0]?.id)} />
       ) : null}
 
       <div className="mt-6 flex w-full items-center justify-between gap-4 border-t border-rule pt-4 font-mono text-mono-xs uppercase">
@@ -131,29 +131,44 @@ function Qr({ url }: { url: string }) {
   );
 }
 
-// ---------- desktop: the injected wallet (Phantom, Solflare); mobile: the solana: deep link ----------
+// ---------- desktop: a Wallet Standard wallet (Phantom, Solflare) on the rail's chain; mobile: the solana: deep link ----------
 
-type Injected = {
-  connect: () => Promise<{ publicKey: { toBase58(): string } }>;
-  signAndSendTransaction: (tx: unknown) => Promise<{ signature: string }>;
-};
-const injected = (): Injected | null => {
-  const w = window as unknown as { phantom?: { solana?: Injected }; solflare?: Injected; solana?: Injected };
-  return w.phantom?.solana ?? w.solflare ?? w.solana ?? null;
+type StdAccount = { address: string; chains: readonly string[] };
+type StdWallet = {
+  name: string;
+  chains: readonly string[];
+  accounts: readonly StdAccount[];
+  features: Record<string, unknown> & {
+    'standard:connect'?: { connect: () => Promise<{ accounts: readonly StdAccount[] }> };
+    'solana:signAndSendTransaction'?: { signAndSendTransaction: (i: { transaction: Uint8Array; account: StdAccount; chain: string }) => Promise<{ signature: Uint8Array }[]> };
+  };
 };
 
-/** Solana Pay transaction request done by hand: POST the account, get the escrow transaction, let the wallet sign and send. */
-async function payWithInjected(wallet: Injected, txUrl: string) {
-  const { publicKey } = await wallet.connect();
-  const res = await fetch(txUrl, { method: 'POST', headers: { ...GW_HEADERS, 'Content-Type': 'application/json' }, body: JSON.stringify({ account: publicKey.toBase58() }) });
-  const body = (await res.json().catch(() => ({}))) as { transaction?: string; error?: string; message?: string };
-  if (!res.ok || !body.transaction) throw new Error(body.message ?? body.error ?? `HTTP ${res.status}`);
-  const { Transaction } = await import('@solana/web3.js');
-  await wallet.signAndSendTransaction(Transaction.from(Uint8Array.from(atob(body.transaction), (c) => c.charCodeAt(0))));
+/** Wallets registered through the Wallet Standard (no library: the app-ready event hands them over). */
+function standardWallets(): StdWallet[] {
+  const found: StdWallet[] = [];
+  window.dispatchEvent(new CustomEvent('wallet-standard:app-ready', { detail: { register: (...w: StdWallet[]) => { found.push(...w); return () => {}; } } }));
+  return found.filter((w) => w.features['solana:signAndSendTransaction'] && w.features['standard:connect']);
 }
 
-function WalletButtons({ url, network }: { url: string; network?: string }) {
-  const wallet = injected();
+/** Wallet Standard chain id for the rail's CAIP-2 network (genesis hash) → 'solana:devnet' | 'solana:mainnet'. */
+const chainFor = (caip2?: string) => (caip2 === 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp' ? 'solana:mainnet' : 'solana:devnet');
+
+/** Solana Pay transaction request done by hand: POST the account, get the escrow transaction, let the wallet sign and send on `chain`. */
+async function payWithWallet(wallet: StdWallet, txUrl: string, chain: string) {
+  const { accounts } = await wallet.features['standard:connect']!.connect();
+  const account = accounts.find((a) => a.chains.includes(chain)) ?? accounts[0];
+  if (!account) throw new Error('The wallet has no account.');
+  if (!wallet.chains.includes(chain)) throw new Error(`${wallet.name} does not support ${chain.replace('solana:', 'Solana ')}.`);
+  const res = await fetch(txUrl, { method: 'POST', headers: { ...GW_HEADERS, 'Content-Type': 'application/json' }, body: JSON.stringify({ account: account.address }) });
+  const body = (await res.json().catch(() => ({}))) as { transaction?: string; error?: string; message?: string };
+  if (!res.ok || !body.transaction) throw new Error(body.message ?? body.error ?? `HTTP ${res.status}`);
+  const transaction = Uint8Array.from(atob(body.transaction), (c) => c.charCodeAt(0));
+  await wallet.features['solana:signAndSendTransaction']!.signAndSendTransaction({ transaction, account, chain });
+}
+
+function WalletButtons({ url, network, chain }: { url: string; network?: string; chain: string }) {
+  const [wallet] = useState(() => standardWallets()[0] ?? null);
   const txUrl = url.startsWith('solana:http') ? url.slice('solana:'.length) : null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -162,7 +177,7 @@ function WalletButtons({ url, network }: { url: string; network?: string }) {
     setBusy(true);
     setError(null);
     try {
-      await payWithInjected(wallet, txUrl);
+      await payWithWallet(wallet, txUrl, chain);
     } catch (e) {
       setError((e as Error).message || 'The wallet did not sign.');
     } finally {
@@ -172,7 +187,7 @@ function WalletButtons({ url, network }: { url: string; network?: string }) {
   return (
     <>
       {wallet && txUrl ? (
-        <Button label="Pay with wallet" loading={busy} className="mt-6 w-full" onClick={pay} />
+        <Button label={`Pay with ${wallet.name}`} loading={busy} className="mt-6 w-full" onClick={pay} />
       ) : (
         <Button as="a" href={url} label="Open in wallet" className="mt-6 w-full" />
       )}
