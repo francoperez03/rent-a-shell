@@ -37,8 +37,9 @@ const [major] = process.versions.node.split(".").map(Number);
 major >= 22 ? ok(`Node ${process.versions.node}`) : ko(`Node ${process.versions.node}`, "Install Node 22 or newer.");
 for (const t of ["ffmpeg", "mediamtx"]) has(t) ? ok(`${t} installed`) : ko(`${t} missing`, `Install it (macOS: brew install ${t}; Windows: winget or the official zip).`, false);
 
+const solana = (env.RAILS ?? "").includes("solana");
 for (const k of ["SOLANA_PAY_TO", "SESSION_SECRET", "ESP32_URL", "PUBLIC_URL"]) {
-  env[k] ? ok(`${k} set`) : ko(`${k} missing in apps/gateway/.env.local`, "Fill it in (see the configuration step in skills/rent-a-shell-forger/SKILL.md).");
+  env[k] ? ok(`${k} set`) : ko(`missing ${k} in apps/gateway/.env.local`, k === "SOLANA_PAY_TO" ? "Set your Solana address to get paid (RAILS=solana-x402,solana-pay)." : "Fill it in (see the configuration step in skills/rent-a-shell-forger/SKILL.md).", k !== "SOLANA_PAY_TO" || solana);
 }
 if ((env.SESSION_SECRET ?? "").length < 32) ko("SESSION_SECRET too short", "Generate it with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"");
 

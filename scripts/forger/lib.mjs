@@ -26,7 +26,8 @@ export function cameraInput(platform, e) {
     if (!e.CAMERA) throw new Error("Missing CAMERA: run with --list-cameras and copy the exact name.");
     return ["-f", "dshow", "-rtbufsize", "100M", ...size, ...(e.CAMERA_FPS ? ["-framerate", e.CAMERA_FPS] : []), "-i", `video=${e.CAMERA}`];
   }
-  if (platform === "darwin") return ["-f", "avfoundation", "-framerate", e.CAMERA_FPS || "30", ...size, "-i", e.CAMERA || "0"];
+  // macOS cameras deliver nv12/uyvy422, never yuv420p: ask for nv12 on input, libx264 converts on output
+  if (platform === "darwin") return ["-f", "avfoundation", "-pixel_format", e.CAMERA_PIXFMT || "nv12", "-framerate", e.CAMERA_FPS || "30", ...size, "-i", e.CAMERA || "0"];
   return ["-f", "v4l2", ...(e.CAMERA_FPS ? ["-framerate", e.CAMERA_FPS] : []), ...size, "-i", e.CAMERA || "/dev/video0"];
 }
 
