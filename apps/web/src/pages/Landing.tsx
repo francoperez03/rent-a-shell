@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import type { Payment, Shell } from '@ras/shell-spec';
 import { LiveVideo } from '@/components/LiveVideo';
 import { Button } from '@/components/Button';
@@ -10,7 +10,9 @@ import { StatusDot } from '@/components/StatusDot';
 import { Panel } from '@/components/Panel';
 import { Footer } from '@/components/Footer';
 import { fmtClock, shellHref, toMs, useEvents, useNow, useQueue, useShells, useShellState } from '@/lib/api';
-import { useReveal } from '@/lib/useReveal';
+import { useReveal, useRows } from '@/lib/useReveal';
+import { useReducedMotion } from '@/lib/useReducedMotion';
+import { CountUp } from '@/components/CountUp';
 import { JOINTS, JOINT_LABEL } from '@/lib/joints';
 import { cn } from '@/lib/cn';
 
@@ -41,11 +43,16 @@ export default function Landing() {
 
 function Hero({ shell }: { shell: Shell | undefined }) {
   const reveal = useReveal();
+  const reduced = useReducedMotion();
   const { data: state } = useShellState(shell?.id, 2_000);
   const city = shell?.location.split(',')[0] ?? 'Tucumán';
+  // The live window drifts a little slower than the page (Crisol video panels): 0 to 40px over the hero scroll.
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
+  const y = useTransform(scrollYProgress, [0, 1], [0, reduced ? 0 : 40]);
 
   return (
-    <section id="hero" className="dot-grid relative border-b border-rule">
+    <section id="hero" ref={ref} className="dot-grid relative border-b border-rule">
       <div className="mx-auto grid w-full max-w-container grid-cols-1 items-end gap-10 px-4 pb-12 pt-28 md:px-6 md:pt-36 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-16">
         <div>
           <motion.p {...reveal()} className="flex items-center gap-3 font-mono text-mono uppercase text-ink-3">
@@ -64,7 +71,7 @@ function Hero({ shell }: { shell: Shell | undefined }) {
           </motion.div>
         </div>
 
-        <motion.div {...reveal(0.1)}>
+        <motion.div {...reveal(0.1)} style={{ y }}>
           <LiveVideo shell={shell} className="aspect-[4/3] w-full">
             <span className="absolute right-3 top-3 border border-bench-rule bg-bench/85 px-2 py-1 font-mono text-mono-xs uppercase text-bench-ink-2">
               {shell?.location ?? 'Tucumán, AR'}
@@ -95,15 +102,15 @@ function Numbers({ shell }: { shell: Shell | undefined }) {
   return (
     <section aria-label="Key numbers" className="bg-signal text-ink">
       <dl className="mx-auto grid w-full max-w-container grid-cols-1 divide-y divide-ink/20 px-4 md:grid-cols-3 md:divide-x md:divide-y-0 md:px-6">
-        <Band k="Five minutes" v={`$${price}`} u={`/ ${minutes} min`} note="Pay per use in USDC. Powered by Solana." />
-        <Band k="Owning this arm" v={`$${parts}`} u="in parts" note={`Plus ${days} days of shipping and a day of assembly.`} />
-        <Band k="Waiting" v="0" u="days" note="The robot is online now. First test in the next five minutes." />
+        <Band k="Five minutes" v={<CountUp prefix="$" value={price} />} u={`/ ${minutes} min`} note="Pay per use in USDC. Powered by Solana." />
+        <Band k="Owning this arm" v={<CountUp prefix="$" value={parts} />} u="in parts" note={`Plus ${days} days of shipping and a day of assembly.`} />
+        <Band k="Waiting" v={<CountUp value={0} />} u="days" note="The robot is online now. First test in the next five minutes." />
       </dl>
     </section>
   );
 }
 
-function Band({ k, v, u, note }: { k: string; v: string; u: string; note: string }) {
+function Band({ k, v, u, note }: { k: string; v: React.ReactNode; u: string; note: string }) {
   return (
     <div className="py-6 md:px-6 md:first:pl-0 md:last:pr-0">
       <dt className="font-mono text-mono-xs uppercase text-ink/70">{k}</dt>
@@ -138,6 +145,7 @@ function HowItWorks() {
 
 function Audiences({ shell }: { shell: Shell | undefined }) {
   const reveal = useReveal();
+  const row = useRows();
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const response = [
     'HTTP/1.1 402 Payment Required',
@@ -172,7 +180,7 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
               <code>
                 <span className="text-bench-ink-2">$ </span>curl -X POST {origin}/api/sessions/x402?shell=el-tucu&blocks=1{'\n'}
                 {response.map((l, i) => (
-                  <span key={i} className={cn('block', i === 0 && 'text-signal')}>{l || ' '}</span>
+                  <motion.span key={i} {...row(i, 0.3)} className={cn('block', i === 0 && 'text-signal')}>{l || ' '}</motion.span>
                 ))}
               </code>
             </pre>
@@ -186,7 +194,7 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
               Run the gateway next to your hardware, set the price, get paid per minute in your own wallet. Customization requests come to you.
             </p>
             <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-rule pt-4">
-              <Readout label="Your cut" value="90" unit="%" />
+              <Readout label="Your cut" value={<CountUp value={90} />} unit="%" />
               <Readout label="Setup" value="1" unit="command" />
             </dl>
             <a href="https://github.com/francoperez03/rent-a-shell/blob/main/docs/forgers.md" rel="noopener" className="mt-4 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">Become a Forger</a>

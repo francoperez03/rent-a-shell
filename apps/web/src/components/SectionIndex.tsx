@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { motion, type MotionProps } from 'framer-motion';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/useReducedMotion';
+import { dur, easeOut } from '@/lib/motion';
 
 interface SectionIndexProps {
   /** Datasheet section number, e.g. "01". */
@@ -17,9 +19,21 @@ interface SectionIndexProps {
 /** Section header in the datasheet grammar: top rule, mono index, title, optional body. Replaces repeated eyebrows. */
 export function SectionIndex({ index, title, body, surface = 'paper', size = 'h2', anim, aside, className }: SectionIndexProps) {
   const bench = surface === 'bench';
+  const reduced = useReducedMotion();
   const paragraphs = Array.isArray(body) ? body : body ? [body] : [];
   return (
-    <motion.header {...(anim ?? {})} className={cn('border-t pt-4', bench ? 'border-bench-rule' : 'border-rule', className)}>
+    <motion.header {...(anim ?? {})} className={cn('relative border-t pt-4', bench ? 'border-bench-rule' : 'border-rule', className)}>
+      {/* the rule draws itself left to right when the section scrolls in, like a plotter */}
+      {anim && !reduced && (
+        <motion.span
+          aria-hidden
+          className={cn('absolute -top-px left-0 h-px w-full origin-left', bench ? 'bg-bench-ink' : 'bg-ink')}
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
+          transition={{ duration: dur.medium * 2, ease: easeOut }}
+        />
+      )}
       <div className="grid grid-cols-1 gap-x-8 gap-y-3 md:grid-cols-[6rem_1fr_auto]">
         <span className={cn('font-mono text-mono tabular', bench ? 'text-bench-ink-2' : 'text-ink-3')}>{index}</span>
         <div className="max-w-prose">
