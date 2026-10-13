@@ -159,7 +159,7 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
             <p className="font-mono text-mono-xs uppercase text-ink-3">Small hardware teams</p>
             <h3 className="wide-106 mt-3 text-h2">You wrote the firmware with AI. Now run it on something real.</h3>
             <p className="mt-4 max-w-prose text-body text-ink-2">
-              A simulator never shows the servo that lands two degrees short or the current spike when a joint stalls. Rent the arm, run your sequence, read the measurements, fix the code. Five minutes, one dollar, no equipment to buy.
+              A simulator never shows the servo that lands two degrees short or the current spike when a joint stalls. Rent the arm, run your sequence, read the measurements, fix the code. Five minutes, a few cents, no equipment to buy.
             </p>
             <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" className="mt-6" />
           </motion.article>
