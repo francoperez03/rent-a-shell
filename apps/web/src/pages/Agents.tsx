@@ -54,6 +54,19 @@ export default function AgentsPage() {
           </dl>
         </motion.header>
 
+        <motion.section {...reveal()} className="mt-section grid grid-cols-1 gap-8 lg:grid-cols-[22rem_1fr]">
+          <div>
+            <h2 className="text-h2">Give your agent this</h2>
+            <p className="mt-3 max-w-prose text-body text-ink-2">
+              One sentence is enough. The site publishes <code className="font-mono text-mono">llms.txt</code> with the live gateway and a client that pays once, then takes one command at a time.
+            </p>
+          </div>
+          <div>
+            <Code label="Say">{`Go to ${origin}, pick the shell, pay for 5 minutes, open the gripper and then ask me what to do next.`}</Code>
+            <Code label="Install the skill once · Claude Code" className="mt-6">{`mkdir -p ~/.claude/skills/rent-a-shell && curl -fsSL ${origin}/skills/rent/SKILL.md -o ~/.claude/skills/rent-a-shell/SKILL.md`}</Code>
+          </div>
+        </motion.section>
+
         <section className="mt-section">
           <SectionIndex index="01" title="Endpoints" body="Every gateway exposes the same API. The hub lists the gateways." anim={reveal()} />
           <div className="mt-8 overflow-x-auto">
