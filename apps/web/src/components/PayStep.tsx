@@ -45,7 +45,7 @@ export function PayStep({ view: first, rail, onRestart }: { view: IntentView; ra
   return (
     <section aria-live="polite" className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_20rem]">
       {/* the ticket */}
-      <div className={cn('border bg-paper-2', expired ? 'border-rule' : paid ? 'border-ok' : 'border-ink')}>
+      <div className={cn('min-w-0 border bg-paper-2', expired ? 'border-rule' : paid ? 'border-ok' : 'border-ink')}>
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-rule px-5 py-3">
           <p className="font-mono text-mono uppercase text-ink">{rail?.label ?? intent.rail}</p>
           <p className={cn('tabular font-mono text-mono uppercase', expired ? 'text-ink-3' : paid ? 'text-ok-deep' : left < 60_000 ? 'text-danger' : 'text-ink-2')}>
@@ -54,7 +54,7 @@ export function PayStep({ view: first, rail, onRestart }: { view: IntentView; ra
         </div>
         <div className="grid grid-cols-1 gap-6 px-5 py-6 md:grid-cols-[auto_1fr] md:gap-10">
           <Readout label="Amount" value={intent.amount} unit={intent.asset} size="lg" />
-          <div className="md:border-l md:border-rule md:pl-10">
+          <div className="min-w-0 md:border-l md:border-rule md:pl-10">
             {expired ? (
               <div>
                 <p className="text-body text-ink-2">The time to pay ran out. Start a new attempt: the amount is the same.</p>
