@@ -46,7 +46,7 @@ export function loadConfig(env: Env): Config {
       id: env.SHELL_ID ?? "el-tucu",
       name: env.SHELL_NAME ?? "El Tucu",
       kind: "arm-4dof",
-      location: env.SHELL_LOCATION ?? "Salta, AR",
+      location: env.SHELL_LOCATION ?? "Tucumán, AR",
       joints: { base: [20, 160], shoulder: [50, 130], elbow: [50, 130], grip: [40, 110] },
       home: { base: 90, shoulder: 90, elbow: 90, grip: 70 },
       routines: ["robot", "lento", "saludo", "recta"],

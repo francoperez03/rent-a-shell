@@ -41,17 +41,17 @@ export default function Landing() {
 function Hero({ shell }: { shell: Shell | undefined }) {
   const reveal = useReveal();
   const { data: state } = useShellState(shell?.id, 2_000);
-  const city = shell?.location.split(',')[0] ?? 'Salta';
+  const city = shell?.location.split(',')[0] ?? 'Tucumán';
 
   return (
     <section id="hero" className="dot-grid relative border-b border-rule">
-      <div className="mx-auto grid w-full max-w-container grid-cols-1 items-end gap-10 px-4 pb-12 pt-28 md:px-6 md:pt-36 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-16">
+      <div className="mx-auto grid w-full max-w-container grid-cols-1 items-end gap-10 px-4 pb-12 pt-28 md:px-6 md:pt-36 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-16">
         <div>
           <motion.p {...reveal()} className="flex items-center gap-3 font-mono text-mono uppercase text-ink-3">
             <StatusDot status={shell?.status} />
             <span>{shell?.name ?? 'El Tucu'} · {city}</span>
           </motion.p>
-          <motion.h1 {...reveal(0.05)} className="wide-112 mt-5 max-w-[14ch] text-display">
+          <motion.h1 {...reveal(0.05)} className="wide-112 mt-5 max-w-[16ch] text-display">
             Test your code on real hardware. Today.
           </motion.h1>
           <motion.p {...reveal(0.1)} className="mt-6 max-w-[44ch] text-lead text-ink-2">
@@ -66,7 +66,7 @@ function Hero({ shell }: { shell: Shell | undefined }) {
         <motion.div {...reveal(0.1)}>
           <LiveVideo shell={shell} className="aspect-[4/3] w-full">
             <span className="absolute right-3 top-3 border border-bench-rule bg-bench/85 px-2 py-1 font-mono text-mono-xs uppercase text-bench-ink-2">
-              {shell?.location ?? 'Salta, AR'}
+              {shell?.location ?? 'Tucumán, AR'}
             </span>
           </LiveVideo>
           <dl className="grid grid-cols-3 gap-px border border-t-0 border-bench-rule bg-bench-rule sm:grid-cols-5">
@@ -123,7 +123,7 @@ function HowItWorks() {
         <SectionIndex index="01" title="Three steps, like a bench test." anim={reveal()} />
         <ol className="mt-12 grid grid-cols-1 gap-px bg-rule md:grid-cols-3">
           {STEPS.map((s, i) => (
-            <motion.li key={s.n} {...reveal(0.08 * i)} className="bg-paper py-6 md:pr-8">
+            <motion.li key={s.n} {...reveal(0.08 * i)} className="bg-paper py-6 md:px-8 md:first:pl-0 md:last:pr-0">
               <p className="tabular font-mono text-mono text-signal-deep">{s.n}</p>
               <h3 className="wide-106 mt-3 text-h2">{s.title}</h3>
               <p className="mt-3 max-w-[36ch] text-body text-ink-2">{s.body}</p>
