@@ -12,7 +12,7 @@ What if your agent could rent a robot? Pay five cents, move the arm, watch the c
 
 [Point at the arm.]
 
-I'm Franco, in Tucumán. This is El Tucu, and that's exactly what it does. Real hardware by the minute, in USDC on Solana. For small teams building with AI, and for the agents they build.
+I'm Franco from Tucumán, and this is El Tucu. That's exactly what it does. Real hardware by the minute, in USDC on Solana. For small teams building with AI, and for the agents they build.
 
 Two ways to use it. Let me show you both.
 
