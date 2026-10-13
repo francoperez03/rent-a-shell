@@ -7,7 +7,7 @@ import { createApp } from "./app.ts";
 
 // Fake ESP32 with the robot-a/SPEC.md §4.4 API; records what it receives.
 const calls: string[] = [];
-let angles: Record<string, number> = { base: 90, shoulder: 90, elbow: 90, grip: 70 };
+let angles: Record<string, number> = { base: 105, shoulder: 115, elbow: 90, grip: 150 };
 const esp = http.createServer(async (req, res) => {
   let body = "";
   for await (const c of req) body += c;
@@ -104,7 +104,7 @@ test("pay, move, enforce allowlist, queue and cutoff to HOME", async () => {
   calls.length = 0;
   await ctx.tick();
   assert.ok(calls.some((c) => c.startsWith("POST /stop")), "sends stop on expiry");
-  assert.equal(angles.base, 90, "base vuelve a HOME");
+  assert.equal(angles.base, 105, "base vuelve a HOME");
   r = await req("/api/cmd", json({ cmd: "stop" }, s1.token));
   assert.equal(r.status, 403);
   r = await req("/api/cmd", json({ cmd: "stop" }, s2.token));

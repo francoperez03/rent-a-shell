@@ -41,14 +41,14 @@ export function loadConfig(env: Env): Config {
     maxBlocks: Number(env.MAX_BLOCKS ?? 6),
     forgerToken: env.FORGER_TOKEN || null,
     dataFile: env.DATA_FILE === "" ? null : (env.DATA_FILE ?? "data/state.json"),
-    // El Tucu spec sheet (docs/specs/02-robot.md; ranges from robot-a/SPEC.md §4.4)
+    // El Tucu spec sheet: same limits and home as the flashed firmware (robot-a apps/firmware sdkconfig TUCU_MIN/MAX_*, DANCE_HOME)
     shell: {
       id: env.SHELL_ID ?? "el-tucu",
       name: env.SHELL_NAME ?? "El Tucu",
       kind: "arm-4dof",
       location: env.SHELL_LOCATION ?? "Tucumán, AR",
-      joints: { base: [20, 160], shoulder: [50, 130], elbow: [50, 130], grip: [40, 110] },
-      home: { base: 90, shoulder: 90, elbow: 90, grip: 70 },
+      joints: { base: [20, 160], shoulder: [80, 170], elbow: [80, 130], grip: [130, 175] },
+      home: { base: 105, shoulder: 115, elbow: 90, grip: 150 },
       routines: ["robot", "lento", "saludo", "recta"],
       sensors: (env.SHELL_SENSORS ?? "angles,current_ma").split(",").map((s) => s.trim()).filter(Boolean),
       pricing: { block_minutes: Number(env.BLOCK_MINUTES ?? 5), usd: env.BLOCK_USD ?? "0.05" },
