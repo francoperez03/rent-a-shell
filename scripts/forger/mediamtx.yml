@@ -5,8 +5,10 @@ rtsp: yes
 rtspAddress: :8554
 hls: yes
 hlsAddress: :8888
-hlsVariant: mpegts
+hlsVariant: fmp4
 hlsSegmentDuration: 1s
+# The gateway proxies /live/* as a "CDN": with this bearer MediaMTX skips the cookieCheck redirect and per-client sessions.
+hlsCDNSecret: rent-a-shell-local
 rtmp: no
 webrtc: no
 srt: no
