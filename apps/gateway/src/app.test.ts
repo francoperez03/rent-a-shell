@@ -178,6 +178,31 @@ test("x402 bound to an intent (spec 14): the paywall charges the intent, the gat
   assert.equal((await a.app.request(url, { method: "POST", headers: { "x-fake-pay": "1" } })).status, 409, "an intent pays once");
 });
 
+test("shell registry (spec 15): registers on start and shows the counters in the spec sheet, llms.txt and agent card", async () => {
+  const { fakeRail } = await import("@ras/rails-core");
+  const registered: string[] = [];
+  const rail = {
+    ...fakeRail(),
+    registry: {
+      async register(s: { id: string; pricing: { usd: string } }) {
+        registered.push(`${s.id}@${s.pricing.usd}`);
+      },
+      async reputation(id: string) {
+        return { completed: 7, refunded: 1, address: "PDA111", explorer: `https://solscan.io/account/PDA111?shell=${id}` };
+      },
+    },
+  };
+  const env = { RAILS: "fake", ESP32_URL: `http://localhost:${(esp.address() as AddressInfo).port}`, BLOCK_USD: "2", DATA_FILE: "" };
+  const a = createApp(loadConfig(env), env, { rails: [rail] });
+  await sleep(10); // registration is best effort in the background
+  assert.deepEqual(registered, ["el-tucu@2"]);
+  const sh = (await (await a.app.request("/api/shells")).json())[0];
+  assert.deepEqual(sh.reputation, { completed: 7, refunded: 1, address: "PDA111", explorer: "https://solscan.io/account/PDA111?shell=el-tucu" });
+  assert.match(await (await a.app.request("/llms.txt")).text(), /Reputation \(on-chain\): 7 completed, 1 refunded \(https:\/\/solscan/);
+  assert.equal((await (await a.app.request("/.well-known/agent.json")).json()).reputation.completed, 7);
+  assert.match(await (await req("/llms.txt")).text(), /Reputation \(on-chain\): not registered yet/, "without a registry rail");
+});
+
 test("MCP: lists tools and rent_shell returns how to pay", async () => {
   const rpc = (id: number, method: string, params: unknown) =>
     req("/mcp", {

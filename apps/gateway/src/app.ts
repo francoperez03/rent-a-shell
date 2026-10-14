@@ -26,11 +26,31 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
   let status: ShellStatus = "online";
   let lastActive: string | null = null;
 
+  // spec 15: the rail with an escrow program keeps a record per shell; register on start (best effort) and read
+  // its counters for the spec sheet, llms.txt, agent card and MCP. Refreshed after every finalize.
+  const registry = rails.find((r) => r.registry)?.registry;
+  let reputation: Shell["reputation"];
+  async function refreshReputation() {
+    if (!registry) return;
+    try {
+      reputation = (await registry.reputation(cfg.shell.id)) ?? undefined;
+    } catch (e) {
+      console.error("[registry] read:", (e as Error).message);
+    }
+  }
+  if (registry) {
+    void registry
+      .register(cfg.shell)
+      .then(() => console.log(`[registry] shell ${cfg.shell.id} registered`), (e) => console.error("[registry] register:", (e as Error).message))
+      .then(refreshReputation);
+  }
+
   const shell = (): Shell => ({
     ...cfg.shell,
     status,
     camera: { hls: cfg.liveUrl, frame: `${cfg.publicUrl}/api/shells/${cfg.shell.id}/frame` },
     gateway: cfg.publicUrl,
+    ...(reputation && { reputation }),
   });
   const price = (blocks: number) => ({ usd: mulUsd(cfg.shell.pricing.usd, blocks) });
   const parseBlocks = (v: unknown) => {
@@ -95,6 +115,7 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
         if (r && r.tx) s.finalize_tx = r.tx;
         sessions.save();
         if (rail?.finalize) console.log(`[finalize] session ${s.sid} ${outcome}${r && r.tx ? ` tx ${r.tx}` : ""}`);
+        if (r && r.tx) await refreshReputation();
       } catch (e) {
         // retried on a later tick; funds stay in escrow and the payer can reclaim them if it never closes
         console.error(`[finalize] session ${s.sid} ${outcome}:`, (e as Error).message);
@@ -314,7 +335,7 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     }),
   );
 
-  const card = () => agentCard(cfg, rails);
+  const card = () => agentCard(cfg, rails, reputation);
   // MediaMTX HLS proxy: the Forger's camera goes out through the same tunnel as the API.
   // The bearer matches hlsCDNSecret in scripts/forger/mediamtx.yml (local only): MediaMTX then serves HLS as a CDN,
   // without the cookieCheck redirect nor per-client sessions, which a server-side proxy cannot follow.

@@ -18,7 +18,7 @@ const { utils } = anchor;
 import { fromAtomic, toAtomic, type IntentOpts, type Money, type Outcome, type PaymentRail } from "@ras/rails-core";
 import type { Intent, Payment } from "@ras/shell-spec";
 import { USDC, facilitatorUrl, payTo, rpcUrl, solNet } from "./config.ts";
-import { EscrowClient, escrowPda, sessionId } from "./escrow.ts";
+import { EscrowClient, escrowPda, sessionId, shellRegistry } from "./escrow.ts";
 
 type Env = Record<string, string | undefined>;
 const TTL = 15 * 60_000;
@@ -97,9 +97,10 @@ const grant = await (await pay(intent.instructions.url, { method: "POST" })).jso
 \`\`\``,
 
     ...(escrow && {
+      registry: shellRegistry(escrow, net, new PublicKey(payTo(env))),
       async createIntent(price: Money, { id, shell, blocks }: IntentOpts): Promise<Intent> {
         const atomic = toAtomic(price.usd, USDC.decimals);
-        await escrow.open({ intentId: id, mint, amount: atomic, forger: new PublicKey(payTo(env)), expiresAt: Math.floor(Date.now() / 1000) + holdSec });
+        await escrow.open({ intentId: id, mint, amount: atomic, forger: new PublicKey(payTo(env)), expiresAt: Math.floor(Date.now() / 1000) + holdSec, shell: await escrow.shellFor(shell) });
         open.set(id, { atomic, expiresAt: Date.now() + TTL });
         const q = new URLSearchParams({ ...(shell && { shell }), ...(blocks && { blocks: String(blocks) }), intent: id });
         return {

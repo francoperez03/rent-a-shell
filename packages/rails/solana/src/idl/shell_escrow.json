@@ -167,6 +167,10 @@
         {
           "name": "expires_at",
           "type": "i64"
+        },
+        {
+          "name": "shell",
+          "type": "pubkey"
         }
       ]
     },
@@ -383,6 +387,10 @@
         {
           "name": "expires_at",
           "type": "i64"
+        },
+        {
+          "name": "shell",
+          "type": "pubkey"
         }
       ]
     },
@@ -563,6 +571,14 @@
               ]
             }
           }
+        },
+        {
+          "name": "shell",
+          "docs": [
+            "Required when escrow.shell is set; its counter moves."
+          ],
+          "writable": true,
+          "optional": true
         },
         {
           "name": "token_program"
@@ -757,6 +773,14 @@
           }
         },
         {
+          "name": "shell",
+          "docs": [
+            "Required when escrow.shell is set; its counter moves."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
           "name": "token_program"
         },
         {
@@ -769,6 +793,79 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "register_shell",
+      "docs": [
+        "Spec 15: one record per shell, created or updated by its operator. settle/refund/reclaim move its counters,",
+        "so completed and refunded come from the chain and no operator can inflate them."
+      ],
+      "discriminator": [
+        164,
+        156,
+        168,
+        86,
+        192,
+        58,
+        157,
+        217
+      ],
+      "accounts": [
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "shell",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  104,
+                  101,
+                  108,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "shell_id_hash"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "shell_id_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "forger",
+          "type": "pubkey"
+        },
+        {
+          "name": "price_usd_cents",
+          "type": "u64"
+        },
+        {
+          "name": "block_minutes",
+          "type": "u16"
+        }
+      ]
     },
     {
       "name": "set_payer",
@@ -1151,6 +1248,14 @@
           }
         },
         {
+          "name": "shell",
+          "docs": [
+            "Required when escrow.shell is set; its counter moves."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
           "name": "token_program"
         },
         {
@@ -1246,6 +1351,19 @@
         218,
         155
       ]
+    },
+    {
+      "name": "ShellRecord",
+      "discriminator": [
+        40,
+        65,
+        150,
+        28,
+        228,
+        142,
+        90,
+        114
+      ]
     }
   ],
   "errors": [
@@ -1303,6 +1421,16 @@
       "code": 6010,
       "name": "NotFunded",
       "msg": "Vault does not hold the escrow amount"
+    },
+    {
+      "code": 6011,
+      "name": "ShellMissing",
+      "msg": "Escrow is bound to a shell: pass its record"
+    },
+    {
+      "code": 6012,
+      "name": "WrongShell",
+      "msg": "Shell record does not match the escrow"
     }
   ],
   "types": [
@@ -1347,6 +1475,13 @@
                 32
               ]
             }
+          },
+          {
+            "name": "shell",
+            "docs": [
+              "ShellRecord this session counts for; default when the shell was not registered at deposit/open time."
+            ],
+            "type": "pubkey"
           },
           {
             "name": "payer",
@@ -1410,6 +1545,54 @@
           },
           {
             "name": "Opened"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShellRecord",
+      "docs": [
+        "Per-shell record, PDA [\"shell\", sha256(shell_id)] (spec 15)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "shell_id_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "forger",
+            "type": "pubkey"
+          },
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "price_usd_cents",
+            "type": "u64"
+          },
+          {
+            "name": "block_minutes",
+            "type": "u16"
+          },
+          {
+            "name": "completed",
+            "type": "u64"
+          },
+          {
+            "name": "refunded",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }

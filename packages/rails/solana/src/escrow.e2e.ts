@@ -10,7 +10,7 @@ import { homedir } from "node:os";
 import anchor, { type Idl } from "@coral-xyz/anchor";
 // the package is CJS: values come from the default export
 const { AnchorProvider, Program, Wallet, utils } = anchor;
-import { Connection, Keypair, LAMPORTS_PER_SOL, Transaction } from "@solana/web3.js";
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from "@solana/web3.js";
 import { createMint, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount, mintTo, transferChecked } from "@solana/spl-token";
 import idl from "./idl/shell_escrow.json" with { type: "json" };
 import { EscrowClient, configPda, sessionId, vaultPda } from "./escrow.ts";
@@ -45,10 +45,13 @@ const env = {
   PUBLIC_URL: "https://gateway.test",
 };
 const rail = solanaPayEscrow(env);
+// spec 15: the gateway registers its shell on start; every escrow created after that binds to the record
+await rail.registry!.register({ id: "el-tucu", pricing: { usd: "0.05", block_minutes: 5 } });
+assert.deepEqual(await rail.registry!.reputation("el-tucu").then((r) => [r?.completed, r?.refunded]), [0, 0]);
 const bal = async (owner: Keypair) => Number((await c.getTokenAccountBalance(getAssociatedTokenAddressSync(mint, owner.publicKey)).catch(() => ({ value: { amount: "0" } }))).value.amount);
 
 async function payWithWallet(id: string) {
-  const intent = await rail.createIntent!({ usd: "1.00" }, { id });
+  const intent = await rail.createIntent!({ usd: "1.00" }, { id, shell: "el-tucu", blocks: 1 });
   assert.equal(intent.instructions.kind, "solana-pay");
   const url = (intent.instructions as { url: string }).url;
   assert.equal(url, `solana:https://gateway.test/api/rails/solana-pay/tx/${id}`);
@@ -71,6 +74,9 @@ const r1 = await rail.finalize!(p1, "completed");
 assert.equal(await bal(forger), 900_000, "90 % to the Forger");
 assert.equal(await bal(treasury), 100_000, "10 % to the platform");
 assert.equal(await rail.finalize!(p1, "completed"), undefined, "finalize is idempotent");
+const rep1 = await rail.registry!.reputation("el-tucu");
+assert.deepEqual([rep1!.completed, rep1!.refunded], [1, 0], "the shell record counts the settle");
+assert.match(rep1!.explorer, /solscan\.io\/account\//);
 
 const p2 = await payWithWallet("intent-caido");
 assert.equal(await bal(payer), 3_000_000);
@@ -81,7 +87,7 @@ assert.equal(await bal(payer), 4_000_000, "full refund if the shell drops");
 // funded on-chain, but check() ignores it, so no session opens and the gateway never tries a settle it cannot sign
 const forged = await rail.createIntent!({ usd: "1.00" }, { id: "intent-forged" });
 await program.methods
-  .deposit(sessionId("intent-forged"), new anchor.BN(1_000_000), forger.publicKey, stranger.publicKey, new anchor.BN(Math.floor(Date.now() / 1000) - 7200))
+  .deposit(sessionId("intent-forged"), new anchor.BN(1_000_000), forger.publicKey, stranger.publicKey, new anchor.BN(Math.floor(Date.now() / 1000) - 7200), PublicKey.default)
   .accountsPartial({ payer: payer.publicKey, mint, payerToken: payerAta.address, tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID })
   .signers([payer])
   .rpc();
@@ -127,4 +133,7 @@ await transferChecked(c, payer, payerAta.address, mint, vaultPda(mint, late.id),
 await x402.finalize!({ intentId: late.id, rail: "solana-x402", payer: payer.publicKey.toBase58(), paidAt: Date.now() }, "refund");
 assert.equal(await bal(payer), 2_000_000, "refund after a late set_payer");
 
-console.log(`escrow e2e ok · settle ${(r1 as { tx: string }).tx.slice(0, 16)}… · forger 0.9 · treasury 0.1 · refund ok · foreign-operator deposit ignored · x402 via escrow: settle ${(ra as { tx: string }).tx.slice(0, 16)}… 90/10, refund ok, late set_payer ok`);
+const rep = await rail.registry!.reputation("el-tucu");
+assert.deepEqual([rep!.completed, rep!.refunded], [2, 3], "record after both rails: 2 settled, 3 refunded (forged deposit counts nothing)");
+
+console.log(`escrow e2e ok · settle ${(r1 as { tx: string }).tx.slice(0, 16)}… · forger 0.9 · treasury 0.1 · refund ok · foreign-operator deposit ignored · x402 via escrow: settle ${(ra as { tx: string }).tx.slice(0, 16)}… 90/10, refund ok, late set_payer ok · shell record ${rep!.completed}/${rep!.refunded}`);

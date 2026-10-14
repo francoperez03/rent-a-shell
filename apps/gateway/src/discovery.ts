@@ -25,6 +25,7 @@ export function llmsTxt(cfg: Config, shell: Shell, rails: PaymentRail[]): string
 - Routines: ${shell.routines.join(", ")}
 - Sensors in /state: ${shell.sensors.join(", ")}${shell.sensors.includes("current_ma") ? " (current_ma = total mA on the servo bus; use it to measure how much your motion draws)" : ""}
 - Price: USD ${shell.pricing.usd} per ${shell.pricing.block_minutes}-minute block, up to ${cfg.maxBlocks} blocks
+- Reputation (on-chain): ${shell.reputation ? `${shell.reputation.completed} completed, ${shell.reputation.refunded} refunded (${shell.reputation.explorer})` : "not registered yet"}
 - Platform fee: 10 % of each session, taken when the escrow settles (fee_bps in the shell_escrow config)${cfg.escrow ? "; the rest goes to the Forger" : ". This gateway runs without escrow: x402 pays the Forger directly and no fee applies"}
 - Camera: HLS ${shell.camera.hls ?? "(not published)"} · latest JPEG frame ${shell.camera.frame}
 - Forger (who builds and maintains it): ${shell.forger.name}${shell.forger.contact ? `, contact ${shell.forger.contact}` : ""}${shell.forger.customizations ? ". Takes customization requests." : ""}
@@ -68,7 +69,7 @@ ${cfg.escrow ? 4 : 3}. The response is { token, sid, starts_at, expires_at, paym
 `;
 }
 
-export function agentCard(cfg: Config, rails: PaymentRail[]) {
+export function agentCard(cfg: Config, rails: PaymentRail[], reputation?: Shell["reputation"]) {
   const u = cfg.publicUrl;
   return {
     name: "Rent a Shell",
@@ -82,6 +83,7 @@ export function agentCard(cfg: Config, rails: PaymentRail[]) {
     ],
     x402Support: rails.some((r) => r.paywall && r.manifest().available),
     active: true,
+    ...(reputation && { reputation }),
     payments: rails.map((r) => r.manifest()).filter((m) => m.available).map((m) => ({ id: m.id, network: m.wallet?.chains[0]?.id, assets: m.assets.map((a) => a.symbol) })),
   };
 }

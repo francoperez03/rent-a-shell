@@ -1,7 +1,13 @@
 import type { MiddlewareHandler } from "hono";
-import type { Intent, Money, Payment, RailManifest } from "@ras/shell-spec";
+import type { Intent, Money, Payment, RailManifest, Reputation, Shell } from "@ras/shell-spec";
 
-export type { Intent, Money, Payment, RailManifest };
+export type { Intent, Money, Payment, RailManifest, Reputation };
+
+/** Shell registry on the rail's chain (spec 15): the gateway registers its shell on start and reads its counters. */
+export interface ShellRegistry {
+  register(shell: Pick<Shell, "id" | "pricing">): Promise<void>;
+  reputation(shellId: string): Promise<Reputation | null>;
+}
 
 export interface IntentOpts {
   asset?: string;
@@ -36,6 +42,8 @@ export interface PaymentRail {
    * "refund" returns it to the payer. Rails that charge directly (x402) do not implement it.
    */
   finalize?(payment: Payment, outcome: Outcome): Promise<{ tx?: string } | void>;
+  /** Rails with an on-chain shell record (escrow program). */
+  registry?: ShellRegistry;
 }
 
 export type Outcome = "completed" | "refund";
