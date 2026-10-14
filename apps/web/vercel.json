@@ -1,3 +1,0 @@
-{
-  "rewrites": [{ "source": "/((?!assets/|llms\\.txt|\\.well-known/|skills/).*)", "destination": "/index.html" }]
-}

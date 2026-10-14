@@ -46,7 +46,7 @@ Creates the wallet the first time and prints the address. To pay it only needs *
 ```bash
 node rent.mjs info --gateway https://rent-a-shell.vercel.app
 ```
-`--gateway` takes the website URL or a gateway URL (the site's `/llms.txt` names the live gateway). `info` returns the spec (joints and safe range, HOME, routines, sensors, price, Forger), the queue and the current state. If it's `busy`, the rental is queued and starts when the shell frees up (the client waits on its own). With a hub: `node rent.mjs catalog --hub <HUB_URL>` lists every shell and its gateway.
+`--gateway` takes the website URL or a gateway URL (the site's `/llms.txt` names the live gateway). `info` returns the spec (joints and safe range, HOME, routines, sensors, price, Forger), the queue and the current state. If it's `busy`, the rental is queued and starts when the shell frees up (the client waits on its own). `node rent.mjs catalog --hub https://rent-a-shell.vercel.app` lists every shell and its gateway (the site is the catalog).
 
 Without the client: the site and each gateway expose `llms.txt` and MCP (`claude mcp add --transport http rent-a-shell <gateway>/mcp`) to explore the catalog. Payment still goes through this client.
 

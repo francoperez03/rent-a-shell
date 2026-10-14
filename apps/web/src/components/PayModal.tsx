@@ -1,12 +1,13 @@
+'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import type { IntentView, RailManifest, Shell } from '@ras/shell-spec';
 import { Button } from '@/components/Button';
 import { CopyButton, usePayment, useQr } from '@/components/PayStep';
 import { GW_HEADERS, createIntent, fmtClock, useRails } from '@/lib/api';
-import { suggest } from '@/pages/Checkout';
+import { suggest } from '@/components/PayStep';
 import { cn } from '@/lib/cn';
 
 /** Pick the rail for the modal: Solana Pay when the gateway offers it, otherwise the suggested human rail (e.g. the dev "fake" rail). */
@@ -81,7 +82,7 @@ export function PayModal({ shell, blocks, open, onClose }: { shell: Shell; block
 
 function Ticket({ view, rail, onRetry, onClose }: { view: IntentView; rail: RailManifest | null; onRetry: () => void; onClose: () => void }) {
   const { intent, left, expired, paid, seen, explorer, tx } = usePayment(view, { autoOpen: false });
-  const navigate = useNavigate();
+  const router = useRouter();
   const [walletError, setWalletError] = useState<string | null>(null);
   const ins = intent.instructions;
   const url = ins.kind === 'solana-pay' ? ins.url : null;
@@ -109,7 +110,7 @@ function Ticket({ view, rail, onRetry, onClose }: { view: IntentView; rail: Rail
               <span className="text-ink-2">Confirmed{network ? ` on ${network}` : ''}</span>
             )}
           </div>
-          <Button label="Go to the lab" className="mt-6 w-full" onClick={() => navigate('/session')} />
+          <Button label="Go to the lab" className="mt-6 w-full" onClick={() => router.push('/session')} />
           <p className="mt-3 w-full text-left text-small text-ink-3">Your session is saved. The console opens when you go in.</p>
         </motion.div>
       ) : phase === 'error' ? (

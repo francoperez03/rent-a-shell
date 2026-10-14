@@ -41,7 +41,7 @@ const HUB = (opt("hub") || process.env.RAS_HUB || "").replace(/\/$/, "");
 const SESSION = process.env.RAS_SESSION || path.join(homedir(), ".rent-a-shell", "session.json");
 const GW = await resolveGateway((opt("gateway") || process.env.RAS_GATEWAY || "").replace(/\/$/, ""));
 
-/** A gateway URL, or the website URL: the site is a SPA, its llms.txt carries a "Gateway: <url>" line. */
+/** A gateway URL, or the website URL: the site's llms.txt carries a "Gateway: <url>" line (first online shell). */
 async function resolveGateway(url) {
   if (!url) return "";
   const probe = await fetch(`${url}/api/shells`, { signal: AbortSignal.timeout(15_000) }).catch(() => null);

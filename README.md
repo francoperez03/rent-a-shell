@@ -51,10 +51,9 @@ Robotics software testing: the agent tests its own code on real hardware. It pay
 | Piece | Where |
 |---|---|
 | Forger gateway (sessions, queue, return to HOME, MCP, `llms.txt`, customization requests) | `apps/gateway` |
-| Marketplace hub (Forger catalog, health, `llms.txt`, MCP) | `apps/hub` |
 | Solana payment rails (`solana-x402`, `solana-pay` with escrow) | `packages/rails/solana` |
 | Escrow program (Anchor, 90/10 split and refund), devnet id `5459LTpropgaL1a7Ct4nRUN6BULGvJs3STMcreh2gf4X` | `programs/programs/shell-escrow` |
-| Website (landing, QR checkout, console, agent guide) | `apps/web` |
+| Website and marketplace hub (landing, QR checkout, console, agent guide; Forger catalog, `llms.txt`, agent card, skills, MCP) | `apps/web` (Next.js, `src/server/hub.ts`) |
 | Example buyer agent | `apps/buyer` |
 | Robot: El Tucu (ESP32, 4 servos) | [`francoperez03/el-tucu`](https://github.com/francoperez03/el-tucu) (firmware and mock) |
 
@@ -65,8 +64,7 @@ pnpm install
 pnpm check-solana          # facilitator and USDC mint on devnet
 pnpm mock                  # simulated El Tucu (port 8080); ROBOT_A_DIR points at the el-tucu checkout
 pnpm gateway               # port 8787, config in apps/gateway/.env.local
-pnpm hub                   # port 8790, Forger catalog (apps/hub/.env.local)
-pnpm web                   # port 5175
+pnpm web                   # port 5175, site + Forger catalog (apps/web/.env.local: HUB_GATEWAYS)
 pnpm --filter buyer keygen # throwaway wallet for the agent
 pnpm buyer                 # the agent pays and tests the sequence
 ```
@@ -86,4 +84,4 @@ Prior reference: `paybot` (`github.com/superposition/paybot`), x402 payment to c
 - **`skills/rent-a-shell`** (rent): a Claude Code instance rents a shell, runs a motion plan, measures angles, current and photos, and returns a report. It pays with x402 under a spending cap approved by the person. The client is `skills/rent-a-shell/rent.mjs`.
 - **`skills/rent-a-shell-forger`** (publish): turns a computer (macOS first, also Windows and Linux) into a Forger with `pnpm forger`, which starts the camera, tunnel, gateway and hub registration, and finishes with `pnpm forger:doctor`.
 
-The hub serves both at `/skills/rent/SKILL.md` and `/skills/forger/SKILL.md`.
+The site serves both at `/skills/rent/SKILL.md` and `/skills/forger/SKILL.md`.

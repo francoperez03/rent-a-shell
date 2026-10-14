@@ -76,7 +76,7 @@ Same scheme as El Tucu (`robot-a/SPEC.md` §4.3):
 
 ## Processes
 
-`pnpm forger` starts MediaMTX, the ffmpeg capture, the tunnel (`cloudflared`) and the gateway as children, restarts whatever crashes and re-registers in the hub when the tunnel URL changes. Autostart: Login Items on macOS, a scheduled task on Windows, pm2 or systemd on Linux (see the Forger skill).
+`pnpm forger` starts MediaMTX, the ffmpeg capture, the tunnel (`cloudflared`) and the gateway as children, restarts whatever crashes and re-registers in the site's catalog (`HUB_URL`) when the tunnel URL changes. Autostart: Login Items on macOS, a scheduled task on Windows, pm2 or systemd on Linux (see the Forger skill).
 
 ## Failures
 

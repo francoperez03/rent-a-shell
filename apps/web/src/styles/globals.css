@@ -32,8 +32,6 @@
   --bench-rule:   oklch(32% 0.012 60);
 
   /* Fonts */
-  --font-sans: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "Martian Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   /* Motion */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);

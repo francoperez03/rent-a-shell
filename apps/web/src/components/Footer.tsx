@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { cn } from '@/lib/cn';
 
 /** Datasheet footer: one rule, wordmark, a line of machine links in mono. */
@@ -13,11 +13,11 @@ export function Footer({ surface = 'paper' }: { surface?: 'paper' | 'bench' }) {
           <p className={cn('text-small', bench ? 'text-bench-ink-2' : 'text-ink-2')}>Real hardware, rented by the minute. From Tucumán, Argentina. Powered by Solana.</p>
         </div>
         <div className={cn('flex flex-wrap gap-x-5 gap-y-2 font-mono text-mono-xs uppercase')}>
-          <Link to="/agents" className={link}>Agents</Link>
+          <Link href="/agents" className={link}>Agents</Link>
           <a href="/llms.txt" className={link}>llms.txt</a>
           <a href="/.well-known/agent.json" className={link}>agent.json</a>
           <a href="https://github.com/francoperez03/rent-a-shell" className={link} rel="noopener">Source</a>
-          <Link to="/terms" className={link}>Terms</Link>
+          <Link href="/terms" className={link}>Terms</Link>
         </div>
       </div>
     </footer>

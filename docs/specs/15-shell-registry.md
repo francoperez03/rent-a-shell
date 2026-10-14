@@ -13,10 +13,10 @@ An agent choosing a shell needs more than a price: how many sessions this shell 
 
 `Escrow` gains `shell: Pubkey` (default when not bound), set by `deposit` and `open`. `settle`, `refund` and `reclaim` take an optional `shell` account: when `escrow.shell != default` it must match and its counter moves. A refund counts against the shell because the renter paid and did not get the time.
 
-## Rail, gateway, hub
+## Rail, gateway, site
 
 - `EscrowClient.registerShell(shell)` and `shellRecord(shellId)`; `pnpm --filter @ras/rails-solana register-shell`. A gateway with an operator key registers or updates its shell on start, with the spec's price.
-- `llms.txt` (gateway and hub) prints `Reputation (on-chain): N completed, M refunded` with the Solscan link of the PDA; the agent card and MCP `list_shells` carry `reputation {completed, refunded, address}`. The rent client shows it in `info`.
+- `llms.txt` (gateway and site) prints `Reputation (on-chain): N completed, M refunded` with the Solscan link of the PDA; the agent card and MCP `list_shells` carry `reputation {completed, refunded, address}`. The rent client shows it in `info`.
 
 ## Mainnet (runbook, not executed here)
 

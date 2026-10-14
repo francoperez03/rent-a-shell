@@ -4,34 +4,35 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
+    "dev": "next dev -p 5175",
+    "build": "next build",
+    "start": "next start -p 5175",
     "typecheck": "tsc --noEmit",
-    "test": "tsc --noEmit"
+    "test": "tsc --noEmit && tsx --test src/server/*.test.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "@phosphor-icons/react": "^2.1.5",
     "@ras/shell-spec": "workspace:*",
     "@tanstack/react-query": "^5.59.0",
+    "@upstash/redis": "^1.39.0",
     "clsx": "^2.1.1",
-    "framer-motion": "^11.2.0",
+    "framer-motion": "^11.18.2",
     "hls.js": "1.7.3",
+    "next": "^16.4.1",
     "qrcode": "^1.5.4",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0",
-    "tailwind-merge": "^2.5.0"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^2.5.0",
+    "zod": "^3.25.28"
   },
   "devDependencies": {
     "@types/qrcode": "^1.5.6",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.4",
-    "typescript": "^5.5.4",
-    "vite": "^5.4.0"
+    "typescript": "^5.5.4"
   }
 }

@@ -2,7 +2,7 @@ import type { Config } from 'tailwindcss';
 
 // Tokens live in src/styles/globals.css (OKLCH); DESIGN.md documents them.
 const config: Config = {
-  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {

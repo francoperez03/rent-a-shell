@@ -65,8 +65,10 @@ The gateway proxies MediaMTX's HLS at `/live/*`, so a single tunnel covers the A
 
 | Variable | Where | Value |
 |---|---|---|
-| `VITE_API_URL` | website (Vercel) | `https://<gateway-url>` |
-| `VITE_HUB_URL` | website (Vercel) | hub URL, optional (catalog of every Forger) |
+| `HUB_GATEWAYS` | website (Vercel, optional) | comma-separated gateways to seed the catalog with |
+| `HUB_ADMIN_TOKEN` | website (Vercel) | token for `DELETE /api/forgers` |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | website (Vercel) | Forger registry, injected by the Upstash Marketplace integration; absent locally (in-memory) |
+| `NEXT_PUBLIC_SITE_URL` | website (optional) | public origin for `llms.txt` and the agent card; derived from the request when unset |
 | `ESP32_URL` | gateway | `http://<esp32-ip>` or `http://localhost:8080` (mock) |
 | `SESSION_SECRET` | gateway | secret to sign session tokens, only on the gateway machine |
 | `RAILS` | gateway | active rails, e.g. `solana-x402,solana-pay` |
@@ -85,9 +87,8 @@ The gateway proxies MediaMTX's HLS at `/live/*`, so a single tunnel covers the A
 ```
 rent-a-shell/
   apps/
-    web/        website (Vite + React 18), deployed on Vercel
+    web/        website + marketplace hub (Next.js, React 19), deployed on Vercel; hub in src/server/hub.ts
     gateway/    Hono on Node 22: sessions, payments, proxy, MCP
-    hub/        marketplace hub: Forger catalog, health, llms.txt, MCP
     buyer/      example buyer agent for the demo (@x402/fetch)
   packages/
     shell-spec/ shared types: shell spec, commands, session

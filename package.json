@@ -9,7 +9,6 @@
     "web": "pnpm --filter web dev",
     "buyer": "pnpm --filter buyer start",
     "check-solana": "pnpm --filter @ras/rails-solana check",
-    "hub": "pnpm --filter hub dev",
     "forger": "node scripts/forger/run.mjs",
     "forger:cameras": "node scripts/forger/run.mjs --list-cameras",
     "forger:find-esp32": "node scripts/forger/find-esp32.mjs",
@@ -23,5 +22,7 @@
     "@types/node": "^22.0.0"
   },
   "packageManager": "pnpm@8.6.12",
-  "engines": { "node": ">=22" }
+  "engines": {
+    "node": ">=22"
+  }
 }
