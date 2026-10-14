@@ -23,6 +23,18 @@ Besides the money:
 - USD 0.05 per 5-minute block, El Tucu's price today (each Forger sets the price of their shell).
 - **Break-even:** the parts are worth about 900 blocks, that is about 75 h of use. A typical iteration (upload a routine, run it, measure) fits in one block.
 
+## Pricing other hardware
+
+Each Forger sets the price per block of their shell (`BLOCK_USD`); the platform keeps 10 % of every escrow settle. El Tucu is the cheap demo; the business is in hardware that costs more and in packages for teams and courses.
+
+| Shell | Price per 5-min block | Hours per day rented | Gross per day | Platform (10 %) | Forger (90 %) |
+|---|---|---|---|---|---|
+| El Tucu (hobby arm) | USD 0.05 | 6 | USD 3.60 | USD 0.36 | USD 3.24 |
+| Sensor test bench | USD 2 | 6 | USD 144 | USD 14.40 | USD 129.60 |
+| Industrial arm | USD 10 | 4 | USD 480 | USD 48 | USD 432 |
+
+A monthly package for a course (for example 200 blocks for USD 300 on a bench) is a prepaid wallet with a spending cap, which is what the rent skill already does with `--max-usd`.
+
 ## Takeaways
 
 - To validate an idea and run the first few dozen tests, renting is cheaper. It also wins on time: you test on day 1 instead of day 15.

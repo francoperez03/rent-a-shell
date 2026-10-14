@@ -38,7 +38,7 @@ Skill for Claude Code: ${'{SITE}'}/skills/rent/SKILL.md
       // title and the "> …" summary stay on top; then the gateway lines, the quick start, and the gateway's own sections
       const [intro, ...rest] = llms.split('\n## ');
       const sections = rest.map((r) => `## ${r}`).join('\n');
-      writeFileSync(path.join(dist, 'llms.txt'), `${intro.trim()}\n\nGateway: ${apiUrl}\nMCP: ${apiUrl}/mcp\n\n${quickStart.replaceAll('{SITE}', site)}${sections}`);
+      writeFileSync(path.join(dist, 'llms.txt'), `${intro.trim()}\n\nGateway: ${apiUrl}\nMCP: ${apiUrl}/mcp\nTerms: ${site}/terms\n\n${quickStart.replaceAll('{SITE}', site)}${sections}`);
       mkdirSync(path.join(dist, '.well-known'), { recursive: true });
       writeFileSync(path.join(dist, '.well-known', 'agent.json'), (await get('/.well-known/agent.json')) || JSON.stringify({ gateway: apiUrl }));
       mkdirSync(path.join(dist, 'skills', 'rent'), { recursive: true });

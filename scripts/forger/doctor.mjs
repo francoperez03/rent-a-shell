@@ -61,6 +61,7 @@ if (h.status === 200) {
   const shells = (await get(`${local}/api/shells`)).body;
   const sh = Array.isArray(shells) ? shells[0] : null;
   if (sh) {
+    sh.pricing?.usd === "0.05" ? ko(`price is the default (USD ${sh.pricing.usd} per ${sh.pricing.block_minutes}-minute block)`, "Set BLOCK_USD (and BLOCK_MINUTES) in apps/gateway/.env.local to the price of your shell.", false) : ok(`price USD ${sh.pricing?.usd} per ${sh.pricing?.block_minutes}-minute block`);
     const f = await get(`${local}/api/shells/${sh.id}/frame`, 8000);
     f.status === 200 ? ok("camera: frame available") : ko("camera: no frame", "Check that MediaMTX is running and ffmpeg publishes to RTSP_URL.", false);
     if (sh.camera?.hls) {
