@@ -17,6 +17,8 @@ export interface Config {
   maxBlocks: number;
   forgerToken: string | null;
   dataFile: string | null;
+  /** Payments go through the shell_escrow program (operator key present): the 10 % fee applies to every rail. */
+  escrow: boolean;
   shell: Omit<Shell, "status" | "camera" | "gateway">;
 }
 
@@ -41,6 +43,7 @@ export function loadConfig(env: Env): Config {
     maxBlocks: Number(env.MAX_BLOCKS ?? 6),
     forgerToken: env.FORGER_TOKEN || null,
     dataFile: env.DATA_FILE === "" ? null : (env.DATA_FILE ?? "data/state.json"),
+    escrow: Boolean(env.SOLANA_OPERATOR_KEY),
     // El Tucu spec sheet: same limits and home as the flashed firmware (robot-a apps/firmware sdkconfig TUCU_MIN/MAX_*, DANCE_HOME)
     shell: {
       id: env.SHELL_ID ?? "el-tucu",
@@ -50,7 +53,8 @@ export function loadConfig(env: Env): Config {
       joints: { base: [20, 160], shoulder: [80, 170], elbow: [80, 130], grip: [130, 175] },
       home: { base: 105, shoulder: 115, elbow: 90, grip: 150 },
       routines: ["robot", "lento", "saludo", "recta"],
-      sensors: (env.SHELL_SENSORS ?? "angles,current_ma").split(",").map((s) => s.trim()).filter(Boolean),
+      // ponytail: "angles" until the INA219 is soldered (spec 11); a Forger with the sensor sets SHELL_SENSORS=angles,current_ma
+      sensors: (env.SHELL_SENSORS ?? "angles").split(",").map((s) => s.trim()).filter(Boolean),
       pricing: { block_minutes: Number(env.BLOCK_MINUTES ?? 5), usd: env.BLOCK_USD ?? "0.05" },
       forger: { name: env.FORGER_NAME ?? "Franco Pérez", contact: env.FORGER_CONTACT || undefined, customizations: true },
       // ponytail: estimate (docs/costs.md): 4 SG90 + ESP32 + PLA + PSU, imported to AR, printing + assembly + calibration
