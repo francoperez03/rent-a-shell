@@ -24,6 +24,23 @@ What runs on the Mac is done by Claude Code. What runs next to the robot, on the
 
 Critical path: F2 (real devnet payment) → F5 → F7.
 
+## After the review (Superteam Argentina, 2026-10-13 · 56/100, target 80)
+
+Submission tagged `colosseum-submission` (`e8a5989`). Only the `/llms.txt` fix went to `main` after it (`2898f7d`, a P0 in the review); everything else lands on `post-submission` and merges after judging. Each phase starts with its spec in `docs/specs/` (same format as the existing ones, with its own verification) and is marked here.
+
+| Phase | Spec | Priority | What | Done when |
+|---|---|---|---|---|
+| F13 | `10-escrow-guard.md` | P1 | `check()` in `packages/rails/solana/src/pay-escrow.ts` requires `operator == gateway operator`, `forger == payTo` and `expires_at` inside the expected window; `init_config` restricted to a fixed admin; `[programs.devnet]` in `Anchor.toml` | a deposit with another operator, forger or expiry does not open a session (new case in `escrow.e2e.ts`); `anchor test` covers `init_config` |
+| F14 | `11-claims.md` | P1 | README, `docs/colosseum.md` and the application say what exists today: one shell built by us, per 5-minute block held in escrow, INA219 as roadmap, a "What is real today vs roadmap" section; program id with explorer link, a deposit and a settle signature, the agent → gateway → rail → robot → HOME diagram, what the firmware repo holds | a reviewer finds program id, tx and diagram in the README in a minute; the old phrases are gone |
+| F15 | `12-terms.md` | P1 | terms for renters and Forgers (who covers what, joint limits and safe cutoff, optional damage deposit per shell); camera rule: fixed framing on the robot, visible notice, no third parties | `docs/terms.md` and `/terms` on the site, linked from checkout and `pnpm forger` |
+| F16 | `13-pricing.md` | P2 | price per shell set by the Forger in the spec sheet and published in `llms.txt`, MCP and checkout; 10% take rate; monthly package for courses; worked example in `docs/costs.md` | `BLOCK_USD` is no longer global; gateway test with two shells at different prices |
+| F17 | `14-x402-escrow.md` | P2 | agent payments go through the escrow (x402 `payTo` = session vault, or the agent signs `deposit`); `finalize()` settles 90/10 or refunds | e2e with a robot that drops mid-session paid by an agent ends in a refund on Solscan |
+| F18 | `15-shell-registry.md` | P2 | PDA per shell (price, Forger wallet, completed and refunded counters updated by `settle` and `refund`), exposed in `llms.txt` and MCP; mainnet with small amounts and the upgrade authority in a Squads multisig | `anchor test` of the registry; the hub's `llms.txt` lists reputation; one mainnet session with its tx |
+
+Before re-recording the demo: live HLS through the gateway proxy (`/live/*`, MediaMTX `cookieCheck` redirect), still open from the 2026-10-12 handoff.
+
+Outside the repo (Franco, this week): 2:00 pitch with the review's structure and subtitles; demo that runs the block out to HOME and opens deposit and settle on Solscan labelled devnet; chapter form fields (one-liner, stack, go-to-market, repo, videos, Colosseum link); first external Forger and first renters with numbers; firmware repo pinned on GitHub, LinkedIn and X linked.
+
 ## To verify
 
 | # | What | How | Blocks |
