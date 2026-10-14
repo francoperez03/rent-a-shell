@@ -21,3 +21,5 @@ A monthly package for a course (for example 200 blocks for USD 300 on a bench) i
 ## Verification
 
 Gateway tests set `BLOCK_USD` explicitly and pass; `llms.txt` prints price and fee; the landing shows the catalog price; `docs/costs.md` has the table above.
+
+**Verified (2026-10-14).** `cd apps/gateway && pnpm test`: 10 passing with `BLOCK_USD: "1"` in the test env (the two tests that compared `"2"` against the default `"0.1"` are green). `/llms.txt` prints `Price: USD 1 per …` and `Platform fee: 10 % of each session, taken when the escrow settles …`; without an operator key it adds that x402 pays the Forger directly with no fee. The hub's `llms.txt` prints the fee sentence above the shell list (`cd apps/hub && pnpm test`: 3 passing). `SHELL_SENSORS` defaults to `angles`.
