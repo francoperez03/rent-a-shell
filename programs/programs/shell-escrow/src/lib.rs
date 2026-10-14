@@ -1,5 +1,6 @@
 // Per-session escrow for Rent a Shell.
-// The renter deposits USDC into the escrow vault. When the session ends well, the operator (the Forger
+// The renter deposits USDC into the escrow vault (people, Solana Pay) or the operator opens the escrow first and
+// the x402 facilitator pays into its vault (agents, spec 14). When the session ends well, the operator (the Forger
 // gateway's keypair) settles: fee_bps to the treasury and the rest to the Forger. If the shell drops, the
 // operator refunds the payer. If the gateway disappears, anyone can return everything to the payer one
 // hour after expires_at. No path sends funds anywhere other than forger, treasury or payer.
@@ -58,6 +59,7 @@ pub mod shell_escrow {
         e.amount = amount;
         e.expires_at = expires_at;
         e.state = EscrowState::Funded;
+        e.rent_to = ctx.accounts.payer.key();
         e.bump = ctx.bumps.escrow;
 
         transfer_checked(
@@ -75,9 +77,41 @@ pub mod shell_escrow {
         )
     }
 
+    /// Agent path (spec 14): the operator opens the escrow and its vault before the x402 402, so the facilitator's
+    /// plain TransferChecked lands in the vault. The payer is unknown until the payment settles.
+    pub fn open(ctx: Context<Open>, session_id: [u8; 32], amount: u64, forger: Pubkey, expires_at: i64) -> Result<()> {
+        require!(amount > 0, EscrowError::ZeroAmount);
+        let e = &mut ctx.accounts.escrow;
+        e.session_id = session_id;
+        e.payer = Pubkey::default();
+        e.forger = forger;
+        e.operator = ctx.accounts.operator.key();
+        e.mint = ctx.accounts.mint.key();
+        e.amount = amount;
+        e.expires_at = expires_at;
+        e.state = EscrowState::Opened;
+        e.rent_to = ctx.accounts.operator.key();
+        e.bump = ctx.bumps.escrow;
+        Ok(())
+    }
+
+    /// Once, after the facilitator paid: records who paid (for refunds) and moves the escrow to Funded.
+    /// ponytail: requires the vault to hold the amount, so Funded always means funded; the gateway retries otherwise.
+    pub fn set_payer(ctx: Context<SetPayer>, payer: Pubkey) -> Result<()> {
+        let e = &mut ctx.accounts.escrow;
+        require!(e.state == EscrowState::Opened, EscrowError::InvalidState);
+        require!(e.payer == Pubkey::default(), EscrowError::PayerAlreadySet);
+        require!(payer != Pubkey::default(), EscrowError::NoPayer);
+        require!(ctx.accounts.vault.amount >= e.amount, EscrowError::NotFunded);
+        e.payer = payer;
+        e.state = EscrowState::Funded;
+        Ok(())
+    }
+
     pub fn settle(ctx: Context<Settle>) -> Result<()> {
         let a = ctx.accounts;
-        let amount = a.escrow.amount;
+        // the vault balance, not the stored amount: the facilitator may have paid in a little more
+        let amount = a.vault.amount;
         let fee = (amount as u128 * a.config.fee_bps as u128 / MAX_FEE_BPS as u128) as u64;
         let seeds: &[&[u8]] = &[b"escrow", &a.escrow.session_id, &[a.escrow.bump]];
         let t = Payout { token_program: &a.token_program, mint: &a.mint, vault: &a.vault, escrow: &a.escrow };
@@ -85,7 +119,7 @@ pub mod shell_escrow {
         if fee > 0 {
             t.send(&a.treasury_token, fee, seeds)?;
         }
-        t.close(&a.payer, seeds)?;
+        t.close(&a.rent_to, seeds)?;
         a.escrow.state = EscrowState::Settled;
         Ok(())
     }
@@ -94,8 +128,8 @@ pub mod shell_escrow {
         let a = ctx.accounts;
         let seeds: &[&[u8]] = &[b"escrow", &a.escrow.session_id, &[a.escrow.bump]];
         let t = Payout { token_program: &a.token_program, mint: &a.mint, vault: &a.vault, escrow: &a.escrow };
-        t.send(&a.payer_token, a.escrow.amount, seeds)?;
-        t.close(&a.payer, seeds)?;
+        t.send(&a.payer_token, a.vault.amount, seeds)?;
+        t.close(&a.rent_to, seeds)?;
         a.escrow.state = EscrowState::Refunded;
         Ok(())
     }
@@ -106,8 +140,8 @@ pub mod shell_escrow {
         require!(now > a.escrow.expires_at.saturating_add(RECLAIM_GRACE_SECS), EscrowError::NotReclaimableYet);
         let seeds: &[&[u8]] = &[b"escrow", &a.escrow.session_id, &[a.escrow.bump]];
         let t = Payout { token_program: &a.token_program, mint: &a.mint, vault: &a.vault, escrow: &a.escrow };
-        t.send(&a.payer_token, a.escrow.amount, seeds)?;
-        t.close(&a.payer, seeds)?;
+        t.send(&a.payer_token, a.vault.amount, seeds)?;
+        t.close(&a.rent_to, seeds)?;
         a.escrow.state = EscrowState::Refunded;
         Ok(())
     }
@@ -139,7 +173,7 @@ impl<'a, 'info> Payout<'a, 'info> {
         )
     }
 
-    /// The empty vault is closed and its rent goes back to the payer, who created it.
+    /// The empty vault is closed and its rent goes back to whoever created it (payer on deposit, operator on open).
     /// ponytail: the Escrow account stays open with its final state (audit trail and blocks session_id reuse).
     fn close(&self, rent_to: &AccountInfo<'info>, seeds: &[&[u8]]) -> Result<()> {
         close_account(CpiContext::new_with_signer(
@@ -169,6 +203,8 @@ pub enum EscrowState {
     Funded,
     Settled,
     Refunded,
+    /// Opened by the operator for an x402 payment; no payer yet (spec 14).
+    Opened,
 }
 
 #[account]
@@ -182,6 +218,8 @@ pub struct Escrow {
     pub amount: u64,
     pub expires_at: i64,
     pub state: EscrowState,
+    /// Receives the vault rent on close: the payer (deposit) or the operator (open).
+    pub rent_to: Pubkey,
     pub bump: u8,
 }
 
@@ -228,6 +266,52 @@ pub struct Deposit<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(session_id: [u8; 32])]
+pub struct Open<'info> {
+    #[account(mut)]
+    pub operator: Signer<'info>,
+    #[account(seeds = [b"config"], bump = config.bump, constraint = config.usdc_mint == mint.key() @ EscrowError::WrongMint)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(mint::token_program = token_program)]
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
+    #[account(init, payer = operator, space = 8 + Escrow::INIT_SPACE, seeds = [b"escrow", session_id.as_ref()], bump)]
+    pub escrow: Box<Account<'info, Escrow>>,
+    #[account(
+        init,
+        payer = operator,
+        associated_token::mint = mint,
+        associated_token::authority = escrow,
+        associated_token::token_program = token_program
+    )]
+    pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub token_program: Interface<'info, TokenInterface>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct SetPayer<'info> {
+    pub operator: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [b"escrow", escrow.session_id.as_ref()],
+        bump = escrow.bump,
+        has_one = operator @ EscrowError::WrongOperator,
+        has_one = mint @ EscrowError::WrongMint
+    )]
+    pub escrow: Box<Account<'info, Escrow>>,
+    #[account(mint::token_program = token_program)]
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
+    #[account(
+        associated_token::mint = mint,
+        associated_token::authority = escrow,
+        associated_token::token_program = token_program
+    )]
+    pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub token_program: Interface<'info, TokenInterface>,
+}
+
+#[derive(Accounts)]
 pub struct Settle<'info> {
     #[account(mut)]
     pub operator: Signer<'info>,
@@ -239,7 +323,7 @@ pub struct Settle<'info> {
         bump = escrow.bump,
         has_one = operator @ EscrowError::WrongOperator,
         has_one = forger,
-        has_one = payer,
+        has_one = rent_to,
         has_one = mint @ EscrowError::WrongMint,
         constraint = escrow.state == EscrowState::Funded @ EscrowError::InvalidState
     )]
@@ -259,7 +343,7 @@ pub struct Settle<'info> {
     pub treasury: UncheckedAccount<'info>,
     /// CHECK: validated by has_one on escrow; receives the vault rent.
     #[account(mut)]
-    pub payer: UncheckedAccount<'info>,
+    pub rent_to: UncheckedAccount<'info>,
     #[account(
         init_if_needed,
         payer = operator,
@@ -291,8 +375,10 @@ pub struct Refund<'info> {
         bump = escrow.bump,
         has_one = operator @ EscrowError::WrongOperator,
         has_one = payer,
+        has_one = rent_to,
         has_one = mint @ EscrowError::WrongMint,
-        constraint = escrow.state == EscrowState::Funded @ EscrowError::InvalidState
+        constraint = escrow.state == EscrowState::Funded @ EscrowError::InvalidState,
+        constraint = escrow.payer != Pubkey::default() @ EscrowError::NoPayer
     )]
     pub escrow: Box<Account<'info, Escrow>>,
     #[account(mint::token_program = token_program)]
@@ -304,9 +390,11 @@ pub struct Refund<'info> {
         associated_token::token_program = token_program
     )]
     pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    /// CHECK: validated by has_one on escrow.
-    #[account(mut)]
+    /// CHECK: validated by has_one on escrow; owner of the token account that gets the refund.
     pub payer: UncheckedAccount<'info>,
+    /// CHECK: validated by has_one on escrow; receives the vault rent.
+    #[account(mut)]
+    pub rent_to: UncheckedAccount<'info>,
     #[account(
         init_if_needed,
         payer = operator,
@@ -330,8 +418,10 @@ pub struct Reclaim<'info> {
         seeds = [b"escrow", escrow.session_id.as_ref()],
         bump = escrow.bump,
         has_one = payer,
+        has_one = rent_to,
         has_one = mint @ EscrowError::WrongMint,
-        constraint = escrow.state == EscrowState::Funded @ EscrowError::InvalidState
+        constraint = escrow.state == EscrowState::Funded @ EscrowError::InvalidState,
+        constraint = escrow.payer != Pubkey::default() @ EscrowError::NoPayer
     )]
     pub escrow: Box<Account<'info, Escrow>>,
     #[account(mint::token_program = token_program)]
@@ -343,9 +433,11 @@ pub struct Reclaim<'info> {
         associated_token::token_program = token_program
     )]
     pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    /// CHECK: validated by has_one on escrow.
-    #[account(mut)]
+    /// CHECK: validated by has_one on escrow; owner of the token account that gets the refund.
     pub payer: UncheckedAccount<'info>,
+    /// CHECK: validated by has_one on escrow; receives the vault rent.
+    #[account(mut)]
+    pub rent_to: UncheckedAccount<'info>,
     #[account(
         init_if_needed,
         payer = caller,
@@ -377,4 +469,10 @@ pub enum EscrowError {
     WrongTreasury,
     #[msg("Only the admin can change the config")]
     WrongAdmin,
+    #[msg("Payer already set")]
+    PayerAlreadySet,
+    #[msg("Escrow has no payer yet")]
+    NoPayer,
+    #[msg("Vault does not hold the escrow amount")]
+    NotFunded,
 }

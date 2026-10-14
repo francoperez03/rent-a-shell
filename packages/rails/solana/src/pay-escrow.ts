@@ -122,11 +122,6 @@ export function solanaPayEscrow(env: Env): PaymentRail {
       };
     },
 
-    async finalize(payment: Payment, outcome: Outcome) {
-      const e = await client.escrow(payment.intentId);
-      if (!e || !e.state.funded) return; // already closed (earlier settle/refund/reclaim): nothing to do
-      const tx = outcome === "completed" ? await client.settle(payment.intentId) : await client.refund(payment.intentId);
-      return { tx };
-    },
+    finalize: (payment: Payment, outcome: Outcome) => client.finalize(payment.intentId, outcome),
   };
 }

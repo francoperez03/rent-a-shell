@@ -37,8 +37,19 @@ const client = new x402Client();
 client.register("solana:*", new ExactSvmScheme(toClientSvmSigner(account)));
 const pay = wrapFetchWithPayment(fetch, client);
 
+// Gateways with escrow (spec 14) bind the payment to an intent: its URL is the x402 endpoint for this session.
+// Gateways without escrow answer 400 (unknown_rail) and the direct URL stays.
+let payUrl = `${GW}/api/sessions/x402?shell=${SHELL}&blocks=1`;
+const it = await fetch(`${GW}/api/sessions/intent`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ shell: SHELL, blocks: 1, rail: "solana-x402" }) });
+if (it.ok) {
+  const v = (await it.json()) as { intent: { id: string; instructions: { kind: string; url?: string } } };
+  if (v.intent.instructions.url) {
+    payUrl = v.intent.instructions.url;
+    console.log(`Intent ${v.intent.id}: the payment goes to an escrow and comes back if the robot drops.`);
+  }
+}
 console.log(`Paying 1 block as ${account.address}…`);
-const res = await pay(`${GW}/api/sessions/x402?shell=${SHELL}&blocks=1`, { method: "POST" });
+const res = await pay(payUrl, { method: "POST" });
 if (!res.ok) {
   const pr = res.headers.get("payment-required");
   const why = pr ? JSON.parse(Buffer.from(pr, "base64").toString("utf8")).error : await res.text();

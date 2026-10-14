@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program, BN } from "@coral-xyz/anchor";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import { createMint, getAccount, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
+import { createMint, getAccount, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount, mintTo, transferChecked } from "@solana/spl-token";
 import { expect } from "chai";
 import { ShellEscrow } from "../target/types/shell_escrow";
 
@@ -50,22 +50,40 @@ describe("shell-escrow", () => {
       .rpc();
     return s;
   }
-  const settle = (s: number[], op = operator) =>
+  // spec 14: the operator opens the escrow for an agent; the facilitator then pays into its vault
+  async function open(amount: BN, expiresAt: number) {
+    const s = sid();
+    await program.methods
+      .open(s, amount, forger, new BN(expiresAt))
+      .accounts({ operator: operator.publicKey, mint, tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID })
+      .signers([operator])
+      .rpc();
+    return s;
+  }
+  const vault = (s: number[]) => getAssociatedTokenAddressSync(mint, escrowPda(s), true);
+  const payVault = (s: number[], amount: number) => transferChecked(conn, payer, payerToken, mint, vault(s), payer, amount, 6);
+  const setPayer = (s: number[], p = payer.publicKey) =>
+    program.methods
+      .setPayer(p)
+      .accountsPartial({ operator: operator.publicKey, escrow: escrowPda(s), mint, tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID })
+      .signers([operator])
+      .rpc();
+  const settle = (s: number[], op = operator, rentTo = payer.publicKey) =>
     program.methods
       .settle()
-      .accountsPartial({ operator: op.publicKey, escrow: escrowPda(s), mint, forger, treasury, payer: payer.publicKey, tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID })
+      .accountsPartial({ operator: op.publicKey, escrow: escrowPda(s), mint, forger, treasury, rentTo, tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID })
       .signers([op])
       .rpc();
-  const refund = (s: number[]) =>
+  const refund = (s: number[], rentTo = payer.publicKey, p = payer.publicKey) =>
     program.methods
       .refund()
-      .accountsPartial({ operator: operator.publicKey, escrow: escrowPda(s), mint, payer: payer.publicKey, tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID })
+      .accountsPartial({ operator: operator.publicKey, escrow: escrowPda(s), mint, payer: p, rentTo, tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID })
       .signers([operator])
       .rpc();
   const reclaim = (s: number[]) =>
     program.methods
       .reclaim()
-      .accountsPartial({ caller: stranger.publicKey, escrow: escrowPda(s), mint, payer: payer.publicKey, tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID })
+      .accountsPartial({ caller: stranger.publicKey, escrow: escrowPda(s), mint, payer: payer.publicKey, rentTo: payer.publicKey, tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID })
       .signers([stranger])
       .rpc();
   const now = () => Math.floor(Date.now() / 1000);
@@ -137,5 +155,37 @@ describe("shell-escrow", () => {
 
   it("rejects a zero amount", async () => {
     await fails(deposit(new BN(0), now() + 300), "ZeroAmount");
+  });
+
+  it("x402 path: open, facilitator pays the vault, set_payer, settle 90/10 and rent back to the operator", async () => {
+    const f = await bal(forger);
+    const t = await bal(treasury);
+    const s = await open(USDC(1), now() + 300);
+    expect((await program.account.escrow.fetch(escrowPda(s))).state).to.deep.equal({ opened: {} });
+    await fails(settle(s, operator, operator.publicKey), "InvalidState");
+    await fails(setPayer(s), "NotFunded");
+    await payVault(s, 1_000_000); // what the x402 facilitator submits: a plain TransferChecked to the vault
+    await setPayer(s);
+    const e = await program.account.escrow.fetch(escrowPda(s));
+    expect(e.state).to.deep.equal({ funded: {} });
+    expect(e.payer.toBase58()).to.equal(payer.publicKey.toBase58());
+    await fails(setPayer(s), "InvalidState");
+    const lamports = await conn.getBalance(operator.publicKey);
+    await settle(s, operator, operator.publicKey);
+    expect(await bal(forger)).to.equal(f + 900_000);
+    expect(await bal(treasury)).to.equal(t + 100_000);
+    expect(await conn.getBalance(operator.publicKey)).to.be.greaterThan(lamports, "vault rent returns to the operator");
+    await fails(settle(s, operator, payer.publicKey), "AccountNotInitialized");
+  });
+
+  it("x402 path: open, pay, set_payer, refund returns the vault balance to the payer", async () => {
+    const before = await bal(payer.publicKey);
+    const s = await open(USDC(1), now() + 300);
+    await fails(refund(s, operator.publicKey, PublicKey.default), "InvalidState"); // no payer yet: nothing to refund to
+    await payVault(s, 1_000_000);
+    await setPayer(s);
+    await refund(s, operator.publicKey);
+    expect(await bal(payer.publicKey)).to.equal(before);
+    expect((await program.account.escrow.fetch(escrowPda(s))).state).to.deep.equal({ refunded: {} });
   });
 });

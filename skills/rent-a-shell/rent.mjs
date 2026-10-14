@@ -119,12 +119,19 @@ const USAGE = "Usage: node rent.mjs wallet | catalog --hub URL | info --gateway 
 async function pay(gw, shell, blocks, maxUsd) {
   const expected = Number(shell.pricing.usd) * blocks;
   if (expected > maxUsd) die(`The rental costs USD ${expected.toFixed(2)} and the cap is USD ${maxUsd}.`);
-  const payUrl = `${gw}/api/sessions/x402?shell=${shell.id}&blocks=${blocks}`;
+  let payUrl = `${gw}/api/sessions/x402?shell=${shell.id}&blocks=${blocks}`;
   let grant;
   if (process.env.RAS_FAKE_PAY === "1") {
     // only for development gateways with the "fake" rail
     grant = (await getJson(payUrl, { method: "POST", headers: { "x-fake-pay": "1" } })).j;
   } else {
+    // 0) gateways with escrow bind the payment to an intent: its URL is the x402 endpoint for this session.
+    //    Gateways without escrow answer 400 (unknown_rail) and the direct URL stays.
+    const it = await getJson(`${gw}/api/sessions/intent`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ shell: shell.id, blocks, rail: "solana-x402" }) }).catch(() => null);
+    if (it?.j?.intent?.instructions?.url) {
+      payUrl = it.j.intent.instructions.url;
+      console.error(`intent ${it.j.intent.id} · escrow holds the payment until the session ends`);
+    }
     // 1) read the 402 and check the amount against the cap BEFORE signing
     const probe = await fetch(payUrl, { method: "POST", signal: AbortSignal.timeout(15_000) });
     if (probe.status !== 402) die(`Expected 402 and got ${probe.status}: ${await probe.text()}`);

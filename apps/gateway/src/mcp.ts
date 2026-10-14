@@ -1,11 +1,13 @@
 // Stateless MCP server (Streamable HTTP, standard Web transport). One server per request.
-// rent_shell does not pay: it returns how to pay with x402 (MCP clients do not sign payments). With the token,
-// send_command and end_session behave like the HTTP API.
+// rent_shell does not pay: it returns how to pay with x402 (MCP clients do not sign payments); on an escrow gateway
+// it creates the intent so the answer is the URL bound to it. With the token, send_command and end_session behave
+// like the HTTP API.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import type { PaymentRail } from "@ras/rails-core";
 import type { Command, Money, Shell } from "@ras/shell-spec";
+import type { IntentRec } from "./sessions.ts";
 import type { Config } from "./config.ts";
 import type { Robot } from "./robot.ts";
 import type { Sessions } from "./sessions.ts";
@@ -19,6 +21,7 @@ interface Deps {
   sessions: Sessions;
   frames: Frames;
   price: (blocks: number) => Money;
+  createIntent: (railId: string | undefined, blocks: number) => Promise<{ rec?: IntentRec; error?: string }>;
   publicUrl: string;
 }
 
@@ -55,17 +58,29 @@ function build(d: Deps) {
     "rent_shell",
     {
       description:
-        "How to rent a shell: returns the price and the x402 endpoint to pay. Pay with an x402 client (POST to the endpoint) and use the returned token in send_command.",
+        "How to rent a shell: returns the price and the x402 endpoint to pay. Pay with an x402 client (POST to the endpoint) and use the returned token in send_command. On gateways with escrow the URL is bound to an intent created for you (valid 15 min).",
       inputSchema: { shell: z.string().default("el-tucu"), blocks: z.number().int().min(1).max(6).default(1) },
     },
     async ({ shell, blocks }) => {
-      const x402 = d.rails.filter((r) => r.paywall && r.manifest().available).map((r) => r.manifest());
+      const rails = d.rails.filter((r) => r.paywall && r.manifest().available);
+      const x402 = rails.map((r) => r.manifest());
+      let url = `${d.publicUrl}/api/sessions/x402?shell=${shell}&blocks=${blocks}`;
+      let intent: string | undefined;
+      // escrow mode (spec 14): the intent opens the escrow; its URL is the paywall bound to it
+      const first = rails.find((r) => r.createIntent);
+      if (first && shell === d.cfg.shell.id) {
+        const r = await d.createIntent(first.id, blocks);
+        if (r.rec?.intent.instructions.kind === "x402") {
+          url = r.rec.intent.instructions.url;
+          intent = r.rec.intent.id;
+        }
+      }
       return text({
         shell,
         blocks,
         minutes: blocks * d.cfg.shell.pricing.block_minutes,
         price: d.price(blocks),
-        pay: { method: "POST", url: `${d.publicUrl}/api/sessions/x402?shell=${shell}&blocks=${blocks}`, protocol: "x402", rails: x402 },
+        pay: { method: "POST", url, protocol: "x402", rails: x402, ...(intent && { intent, note: "This URL is bound to an intent whose escrow holds your payment until the session ends; it expires in 15 min. A new intent: POST /api/sessions/intent." }) },
         queue: { active: Boolean(d.sessions.active(shell)), waiting: d.sessions.waiting(shell).length },
         docs: `${d.publicUrl}/llms.txt`,
       });

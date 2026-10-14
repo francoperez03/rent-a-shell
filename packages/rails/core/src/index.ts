@@ -7,6 +7,9 @@ export interface IntentOpts {
   asset?: string;
   /** stable id the rail can use as a reference; set by the gateway */
   id: string;
+  /** what the intent buys, for rails whose instructions carry a URL back into the gateway (x402 via escrow) */
+  shell?: string;
+  blocks?: number;
 }
 
 /**
