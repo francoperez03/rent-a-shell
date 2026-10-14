@@ -26,7 +26,7 @@ const STEPS = [
 
 /** Landing: brand register. Paper, one signal band, measurements as the hero image. */
 export default function Landing() {
-  const { data: shells } = useShells();
+  const { data: shells, isError } = useShells();
   const tucu = shells?.[0];
 
   return (
@@ -35,7 +35,7 @@ export default function Landing() {
       <Numbers shell={tucu} />
       <HowItWorks />
       <Audiences shell={tucu} />
-      <Shells shells={shells} />
+      <Shells shells={shells} error={isError} />
       <LiveNumbers shell={tucu} />
       <Closing shell={tucu} />
     </main>
@@ -213,7 +213,7 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
   );
 }
 
-function Shells({ shells }: { shells: Shell[] | undefined }) {
+function Shells({ shells, error }: { shells: Shell[] | undefined; error: boolean }) {
   const reveal = useReveal();
   const online = shells?.filter((s) => s.status !== 'offline').length ?? 0;
   return (
@@ -226,7 +226,10 @@ function Shells({ shells }: { shells: Shell[] | undefined }) {
           aside={shells && <Readout label="Online now" value={online} unit={`/ ${shells.length}`} />}
         />
         <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-[repeat(auto-fit,minmax(20rem,36rem))]">
-          {shells === undefined && (
+          {error && shells === undefined && (
+            <p className="text-body text-ink-2">The catalog is not answering right now. Retrying every 10 seconds.</p>
+          )}
+          {!error && shells === undefined && (
             <>
               <div className="skeleton h-56" aria-hidden />
               <div className="skeleton h-56" aria-hidden />
@@ -256,7 +259,7 @@ function ShellCard({ shell }: { shell: Shell }) {
       <div className="px-5 py-5">
         <h3 className="wide-106 text-h2">{shell.name}</h3>
         <p className="mt-1 font-mono text-mono-xs uppercase text-ink-3">Forger {shell.forger.name}</p>
-        <dl className="mt-6 grid grid-cols-4 gap-3 border-t border-rule pt-4">
+        <dl className="mt-6 grid grid-cols-2 gap-3 border-t border-rule pt-4 sm:grid-cols-4">
           {JOINTS.map((j) => (
             <Readout key={j} label={JOINT_LABEL[j]} value={angles ? Math.round(angles[j]) : '—'} unit="°" />
           ))}

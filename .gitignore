@@ -16,3 +16,4 @@ videos/
 # compiled by tsc -b in the past; Vite would pick the .js over vite.config.ts
 apps/web/vite.config.js
 apps/web/vite.config.d.ts
+.playwright-mcp/
