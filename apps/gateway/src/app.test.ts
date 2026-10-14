@@ -37,7 +37,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 before(async () => {
   await new Promise<void>((r) => esp.listen(0, r));
   const port = (esp.address() as AddressInfo).port;
-  const env = { RAILS: "fake", ESP32_URL: `http://localhost:${port}`, BLOCK_MINUTES: "0.005", REST_SECONDS: "0", DATA_FILE: "", FORGER_TOKEN: "forger-test" };
+  // spec 13: the price is the Forger's decision, so the tests set it instead of relying on a default
+  const env = { RAILS: "fake", ESP32_URL: `http://localhost:${port}`, BLOCK_MINUTES: "0.005", BLOCK_USD: "1", REST_SECONDS: "0", DATA_FILE: "", FORGER_TOKEN: "forger-test" };
   ctx = createApp(loadConfig(env), env);
 });
 after(() => esp.close());
@@ -63,7 +64,10 @@ test("spec sheet, rails and discovery", async () => {
   assert.deepEqual(shells[0].routines, ["robot", "lento", "saludo", "recta"]);
   const rails = await (await req("/api/rails")).json();
   assert.equal(rails[0].id, "fake");
-  assert.match(await (await req("/llms.txt")).text(), /api\/sessions\/x402/);
+  const llms = await (await req("/llms.txt")).text();
+  assert.match(llms, /api\/sessions\/x402/);
+  assert.match(llms, /Price: USD 1 per/);
+  assert.match(llms, /Platform fee: 10 %/);
   const card = await (await req("/.well-known/agent.json")).json();
   assert.equal(card.name, "Rent a Shell");
 });
