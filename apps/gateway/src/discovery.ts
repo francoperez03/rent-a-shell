@@ -36,12 +36,18 @@ ${agentRails.length ? agentRails.map((r) => `- ${r.id}: ${r.label}. ${r.descript
 
 ## How to rent (x402)
 
-1. POST ${u}/api/sessions/x402?shell=${shell.id}&blocks=1 answers 402 with the payment requirement (PAYMENT-REQUIRED header).
-2. Sign the payment with an x402 client and retry with the PAYMENT-SIGNATURE header.
+${
+  cfg.escrow
+    ? `1. POST ${u}/api/sessions/intent with JSON {"shell":"${shell.id}","blocks":1,"rail":"solana-x402"}. The answer has intent.id and intent.instructions.url: the x402 endpoint bound to an escrow opened for your session (valid 15 min). GET ${u}/api/sessions/intent/<id> shows its status.
+2. POST intent.instructions.url (${payUrl}&intent=<id>) answers 402 with the payment requirement (PAYMENT-REQUIRED header): payTo is the escrow and extra.memo is the intent id.
+3. Sign the payment with an x402 client and retry with the PAYMENT-SIGNATURE header. The USDC stays in escrow until the session ends: then 90 % goes to the Forger and 10 % to the platform, or everything comes back to you if the robot dropped.`
+    : `1. POST ${payUrl} answers 402 with the payment requirement (PAYMENT-REQUIRED header).
+2. Sign the payment with an x402 client and retry with the PAYMENT-SIGNATURE header.`
+}
 
 ${examples}
 
-3. The response is { token, sid, starts_at, expires_at, payment }. If the robot is busy, starts_at is in the future: wait until then.
+${cfg.escrow ? 4 : 3}. The response is { token, sid, starts_at, expires_at, payment }. If the robot is busy, starts_at is in the future: wait until then.
 
 ## Control
 

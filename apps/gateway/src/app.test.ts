@@ -142,6 +142,42 @@ test("x402: validates before charging, 402 without payment, session with payment
   assert.ok(g.token && g.expires_at > g.starts_at);
 });
 
+test("x402 bound to an intent (spec 14): the paywall charges the intent, the gateway grants its blocks once", async () => {
+  const { fakeRail } = await import("@ras/rails-core");
+  // an x402 rail that works like the escrow one: intents carry the pay URL and the paywall requires ?intent=
+  const base = fakeRail();
+  const rail = {
+    ...base,
+    id: "fake",
+    async createIntent(price: { usd: string }, o: { id: string; shell?: string; blocks?: number }) {
+      return { ...(await base.createIntent!(price, o)), instructions: { kind: "x402" as const, url: `http://gw/api/sessions/x402?shell=${o.shell}&blocks=${o.blocks}&intent=${o.id}` } };
+    },
+    paywall: (_p: string, priceFor: (q: Record<string, string>) => { usd: string }) => async (c: import("hono").Context, next: () => Promise<void>) => {
+      if (!c.req.query("intent")) return c.json({ error: "intent_required", create: "POST /api/sessions/intent" }, 402);
+      if (c.req.header("x-fake-pay") !== "1") return c.json({ error: "payment_required", price: priceFor(c.req.query()) }, 402);
+      c.set("payment" as never, { intentId: "rail-made-this-up", rail: "fake", payer: "agent", paidAt: Date.now() } as never);
+      await next();
+    },
+  };
+  const env = { RAILS: "fake", ESP32_URL: `http://localhost:${(esp.address() as AddressInfo).port}`, BLOCK_MINUTES: "1", BLOCK_USD: "1", REST_SECONDS: "0", DATA_FILE: "" };
+  const a = createApp(loadConfig(env), env, { rails: [rail] });
+  const r0 = await a.app.request("/api/sessions/x402?shell=el-tucu&blocks=2", { method: "POST", headers: { "x-fake-pay": "1" } });
+  assert.equal(r0.status, 402, "no intent, no session");
+  assert.equal((await r0.json()).error, "intent_required");
+  const v = await (await a.app.request("/api/sessions/intent", json({ shell: "el-tucu", blocks: 2, rail: "fake" }))).json();
+  const url = v.intent.instructions.url.replace("http://gw", "");
+  assert.match(url, /&intent=/);
+  assert.equal((await a.app.request(url.replace(v.intent.id, "nope"), { method: "POST", headers: { "x-fake-pay": "1" } })).status, 404, "unknown intent");
+  assert.equal((await a.app.request(url.replace("blocks=2", "blocks=1"), { method: "POST", headers: { "x-fake-pay": "1" } })).status, 400, "blocks must match the intent");
+  const g = await (await a.app.request(url, { method: "POST", headers: { "x-fake-pay": "1" } })).json();
+  assert.ok(g.token);
+  assert.equal(g.expires_at - g.starts_at, 2 * 60_000, "grants the intent's blocks");
+  assert.equal(g.payment.intentId, v.intent.id, "Payment.intentId is the intent, whatever the rail said");
+  const view = await (await a.app.request(`/api/sessions/intent/${v.intent.id}`)).json();
+  assert.equal(view.status, "paid");
+  assert.equal((await a.app.request(url, { method: "POST", headers: { "x-fake-pay": "1" } })).status, 409, "an intent pays once");
+});
+
 test("MCP: lists tools and rent_shell returns how to pay", async () => {
   const rpc = (id: number, method: string, params: unknown) =>
     req("/mcp", {
