@@ -24,3 +24,5 @@ The site copy stops promising current readings and per-minute pay; the gateway s
 ## Verification
 
 `grep -rn "per minute\|straight to their wallet\|already show it\|1 USD\|one-dollar" README.md docs PRODUCT.md apps/web/src skills` returns nothing but the historical 402 sample in `04-payments.md`. The README shows program id, two signatures and the diagram above the fold of "Pieces".
+
+**Verified (2026-10-14).** README carries the "What is real today vs roadmap" table (devnet program id with its Solscan link, deposit `KT4VvLx…` and settle `3np5YVM…` of 2026-10-13, the `el-tucu` firmware repo) and the two-branch flow diagram above "Pieces"; `pnpm mock` reads `ROBOT_A_DIR`. `docs/colosseum.md`, `PRODUCT.md`, `docs/forgers.md`, `docs/costs.md`, the cover, specs 04/05, the landing and the agent guide use the new wording. The grep in "Verification" returns only this spec's own table, `13-pricing.md` (which quotes the old phrase) and the `0.1 USDC` line in the verified paragraph of `04-payments.md`.
