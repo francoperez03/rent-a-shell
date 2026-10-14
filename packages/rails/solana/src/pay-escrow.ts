@@ -9,7 +9,7 @@ const { utils } = anchor;
 import { fromAtomic, toAtomic, type IntentOpts, type Money, type Outcome, type PaymentRail } from "@ras/rails-core";
 import type { Intent, Payment } from "@ras/shell-spec";
 import { USDC, payTo, rpcUrl, solNet } from "./config.ts";
-import { EscrowClient, escrowPda, sessionId, type EscrowAccount } from "./escrow.ts";
+import { EscrowClient, escrowPda, sessionId, shellRegistry, type EscrowAccount } from "./escrow.ts";
 import { newReference } from "./pay.ts";
 
 type Env = Record<string, string | undefined>;
@@ -22,13 +22,15 @@ const DRIFT_SEC = 60;
  * 15 min of life, with a minute of clock drift each way). Pure, so it is unit-tested without a chain.
  */
 export function acceptableDeposit(
-  e: Pick<EscrowAccount, "operator" | "forger" | "expiresAt">,
-  o: { operator: PublicKey; forger: PublicKey; now: number; holdSec: number },
+  e: Pick<EscrowAccount, "operator" | "forger" | "expiresAt"> & Partial<Pick<EscrowAccount, "shell">>,
+  o: { operator: PublicKey; forger: PublicKey; now: number; holdSec: number; shell?: PublicKey },
 ): boolean {
   const exp = Number(e.expiresAt.toString());
   const lo = o.now + o.holdSec - TTL / 1000 - DRIFT_SEC;
   const hi = o.now + o.holdSec + DRIFT_SEC;
-  return e.operator.equals(o.operator) && e.forger.equals(o.forger) && exp >= lo && exp <= hi;
+  // spec 15: a deposit bound to another shell record (or an unregistered one) could never settle
+  const shellOk = (e.shell ?? PublicKey.default).equals(o.shell ?? PublicKey.default);
+  return e.operator.equals(o.operator) && e.forger.equals(o.forger) && shellOk && exp >= lo && exp <= hi;
 }
 
 const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#000c29"/><path d="M18 44h28M24 44V28l8-8 8 8v16" stroke="#fff" stroke-width="4" fill="none"/></svg>`;
@@ -41,7 +43,7 @@ export function solanaPayEscrow(env: Env): PaymentRail {
   const publicUrl = (env.PUBLIC_URL ?? `http://localhost:${env.PORT ?? 8787}`).replace(/\/$/, "");
   const holdSec = Number(env.ESCROW_HOLD_SECONDS ?? 6 * 3600); // time before the payer can reclaim (+1 h in the program)
   // ponytail: intents in memory; if the gateway restarts, open QRs (15 min) stop serving the tx
-  const open = new Map<string, { atomic: bigint; reference: string; expiresAt: number }>();
+  const open = new Map<string, { atomic: bigint; reference: string; expiresAt: number; shell: PublicKey }>();
   const forger = () => new PublicKey(payTo(env));
   const mint = new PublicKey(net.usdc);
 
@@ -57,12 +59,15 @@ export function solanaPayEscrow(env: Env): PaymentRail {
       assets: [{ symbol: USDC.symbol, decimals: USDC.decimals }],
     }),
 
-    async createIntent(price: Money, { id }: IntentOpts): Promise<Intent> {
+    registry: shellRegistry(client, net, forger()),
+
+    async createIntent(price: Money, { id, shell: shellId }: IntentOpts): Promise<Intent> {
       const to = payTo(env);
       const atomic = toAtomic(price.usd, USDC.decimals);
       const amount = fromAtomic(atomic, USDC.decimals);
       const reference = newReference();
-      open.set(id, { atomic, reference, expiresAt: Date.now() + TTL });
+      const shell = await client.shellFor(shellId);
+      open.set(id, { atomic, reference, expiresAt: Date.now() + TTL, shell });
       return {
         id,
         rail: "solana-pay",
@@ -71,7 +76,7 @@ export function solanaPayEscrow(env: Env): PaymentRail {
         expiresAt: Date.now() + TTL,
         // transaction request: the wallet GETs/POSTs this URL (no query, so no encoding needed)
         instructions: { kind: "solana-pay", url: `solana:${publicUrl}/api/rails/solana-pay/tx/${id}`, reference, to, amount, symbol: USDC.symbol },
-        meta: { atomic: atomic.toString(), reference },
+        meta: { atomic: atomic.toString(), reference, shell: shell.toBase58() },
       };
     },
 
@@ -101,15 +106,18 @@ export function solanaPayEscrow(env: Env): PaymentRail {
         forger: forger(),
         expiresAt: Math.floor(Date.now() / 1000) + holdSec,
         reference: new PublicKey(it.reference),
+        shell: it.shell,
       });
       return new Response(JSON.stringify({ transaction, message: `Rent a Shell session · ${fromAtomic(it.atomic, USDC.decimals)} USDC in escrow` }), { headers: cors });
     },
 
     async check(intent: Intent): Promise<Payment | null> {
       const e = await client.escrow(intent.id);
-      const want = BigInt((intent.meta as { atomic: string }).atomic);
+      const meta = intent.meta as { atomic: string; shell?: string };
+      const want = BigInt(meta.atomic);
       if (!e || !e.state.funded || BigInt(e.amount.toString()) < want || !e.mint.equals(mint)) return null;
-      if (!acceptableDeposit(e, { operator: operator.publicKey, forger: forger(), now: Math.floor(Date.now() / 1000), holdSec })) return null;
+      const shell = meta.shell ? new PublicKey(meta.shell) : PublicKey.default;
+      if (!acceptableDeposit(e, { operator: operator.publicKey, forger: forger(), now: Math.floor(Date.now() / 1000), holdSec, shell })) return null;
       open.delete(intent.id);
       const [sig] = await connection.getSignaturesForAddress(escrowPda(sessionId(intent.id)), { limit: 1 });
       return {

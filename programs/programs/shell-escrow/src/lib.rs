@@ -48,10 +48,12 @@ pub mod shell_escrow {
         forger: Pubkey,
         operator: Pubkey,
         expires_at: i64,
+        shell: Pubkey,
     ) -> Result<()> {
         require!(amount > 0, EscrowError::ZeroAmount);
         let e = &mut ctx.accounts.escrow;
         e.session_id = session_id;
+        e.shell = shell;
         e.payer = ctx.accounts.payer.key();
         e.forger = forger;
         e.operator = operator;
@@ -79,10 +81,11 @@ pub mod shell_escrow {
 
     /// Agent path (spec 14): the operator opens the escrow and its vault before the x402 402, so the facilitator's
     /// plain TransferChecked lands in the vault. The payer is unknown until the payment settles.
-    pub fn open(ctx: Context<Open>, session_id: [u8; 32], amount: u64, forger: Pubkey, expires_at: i64) -> Result<()> {
+    pub fn open(ctx: Context<Open>, session_id: [u8; 32], amount: u64, forger: Pubkey, expires_at: i64, shell: Pubkey) -> Result<()> {
         require!(amount > 0, EscrowError::ZeroAmount);
         let e = &mut ctx.accounts.escrow;
         e.session_id = session_id;
+        e.shell = shell;
         e.payer = Pubkey::default();
         e.forger = forger;
         e.operator = ctx.accounts.operator.key();
@@ -108,8 +111,22 @@ pub mod shell_escrow {
         Ok(())
     }
 
+    /// Spec 15: one record per shell, created or updated by its operator. settle/refund/reclaim move its counters,
+    /// so completed and refunded come from the chain and no operator can inflate them.
+    pub fn register_shell(ctx: Context<RegisterShell>, shell_id_hash: [u8; 32], forger: Pubkey, price_usd_cents: u64, block_minutes: u16) -> Result<()> {
+        let r = &mut ctx.accounts.shell;
+        r.shell_id_hash = shell_id_hash;
+        r.forger = forger;
+        r.operator = ctx.accounts.operator.key();
+        r.price_usd_cents = price_usd_cents;
+        r.block_minutes = block_minutes;
+        r.bump = ctx.bumps.shell;
+        Ok(())
+    }
+
     pub fn settle(ctx: Context<Settle>) -> Result<()> {
         let a = ctx.accounts;
+        count(&a.escrow, &mut a.shell, Count::Completed)?;
         // the vault balance, not the stored amount: the facilitator may have paid in a little more
         let amount = a.vault.amount;
         let fee = (amount as u128 * a.config.fee_bps as u128 / MAX_FEE_BPS as u128) as u64;
@@ -126,6 +143,7 @@ pub mod shell_escrow {
 
     pub fn refund(ctx: Context<Refund>) -> Result<()> {
         let a = ctx.accounts;
+        count(&a.escrow, &mut a.shell, Count::Refunded)?;
         let seeds: &[&[u8]] = &[b"escrow", &a.escrow.session_id, &[a.escrow.bump]];
         let t = Payout { token_program: &a.token_program, mint: &a.mint, vault: &a.vault, escrow: &a.escrow };
         t.send(&a.payer_token, a.vault.amount, seeds)?;
@@ -138,6 +156,7 @@ pub mod shell_escrow {
         let a = ctx.accounts;
         let now = Clock::get()?.unix_timestamp;
         require!(now > a.escrow.expires_at.saturating_add(RECLAIM_GRACE_SECS), EscrowError::NotReclaimableYet);
+        count(&a.escrow, &mut a.shell, Count::Refunded)?;
         let seeds: &[&[u8]] = &[b"escrow", &a.escrow.session_id, &[a.escrow.bump]];
         let t = Payout { token_program: &a.token_program, mint: &a.mint, vault: &a.vault, escrow: &a.escrow };
         t.send(&a.payer_token, a.vault.amount, seeds)?;
@@ -145,6 +164,26 @@ pub mod shell_escrow {
         a.escrow.state = EscrowState::Refunded;
         Ok(())
     }
+}
+
+enum Count {
+    Completed,
+    Refunded,
+}
+
+/// Moves the shell's counter when the escrow is bound to a shell (`escrow.shell != default`): then the record must be
+/// passed and match. Unbound escrows (older deposits, unregistered shells) count nothing.
+fn count(escrow: &Escrow, shell: &mut Option<Box<Account<ShellRecord>>>, what: Count) -> Result<()> {
+    if escrow.shell == Pubkey::default() {
+        return Ok(());
+    }
+    let r = shell.as_mut().ok_or(EscrowError::ShellMissing)?;
+    require_keys_eq!(r.key(), escrow.shell, EscrowError::WrongShell);
+    match what {
+        Count::Completed => r.completed = r.completed.saturating_add(1),
+        Count::Refunded => r.refunded = r.refunded.saturating_add(1),
+    }
+    Ok(())
 }
 
 /// Transfers out of the vault, signed by the escrow PDA.
@@ -207,10 +246,26 @@ pub enum EscrowState {
     Opened,
 }
 
+/// Per-shell record, PDA ["shell", sha256(shell_id)] (spec 15).
+#[account]
+#[derive(InitSpace)]
+pub struct ShellRecord {
+    pub shell_id_hash: [u8; 32],
+    pub forger: Pubkey,
+    pub operator: Pubkey,
+    pub price_usd_cents: u64,
+    pub block_minutes: u16,
+    pub completed: u64,
+    pub refunded: u64,
+    pub bump: u8,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct Escrow {
     pub session_id: [u8; 32],
+    /// ShellRecord this session counts for; default when the shell was not registered at deposit/open time.
+    pub shell: Pubkey,
     pub payer: Pubkey,
     pub forger: Pubkey,
     pub operator: Pubkey,
@@ -312,6 +367,24 @@ pub struct SetPayer<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(shell_id_hash: [u8; 32])]
+pub struct RegisterShell<'info> {
+    #[account(mut)]
+    pub operator: Signer<'info>,
+    #[account(
+        init_if_needed,
+        payer = operator,
+        space = 8 + ShellRecord::INIT_SPACE,
+        seeds = [b"shell", shell_id_hash.as_ref()],
+        bump,
+        // a fresh record is zeroed (operator = default); an existing one only by the same operator
+        constraint = shell.operator == Pubkey::default() || shell.operator == operator.key() @ EscrowError::WrongOperator
+    )]
+    pub shell: Box<Account<'info, ShellRecord>>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 pub struct Settle<'info> {
     #[account(mut)]
     pub operator: Signer<'info>,
@@ -360,6 +433,9 @@ pub struct Settle<'info> {
         associated_token::token_program = token_program
     )]
     pub treasury_token: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// Required when escrow.shell is set; its counter moves.
+    #[account(mut)]
+    pub shell: Option<Box<Account<'info, ShellRecord>>>,
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
@@ -403,6 +479,9 @@ pub struct Refund<'info> {
         associated_token::token_program = token_program
     )]
     pub payer_token: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// Required when escrow.shell is set; its counter moves.
+    #[account(mut)]
+    pub shell: Option<Box<Account<'info, ShellRecord>>>,
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
@@ -446,6 +525,9 @@ pub struct Reclaim<'info> {
         associated_token::token_program = token_program
     )]
     pub payer_token: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// Required when escrow.shell is set; its counter moves.
+    #[account(mut)]
+    pub shell: Option<Box<Account<'info, ShellRecord>>>,
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
@@ -475,4 +557,8 @@ pub enum EscrowError {
     NoPayer,
     #[msg("Vault does not hold the escrow amount")]
     NotFunded,
+    #[msg("Escrow is bound to a shell: pass its record")]
+    ShellMissing,
+    #[msg("Shell record does not match the escrow")]
+    WrongShell,
 }

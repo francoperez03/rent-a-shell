@@ -23,6 +23,16 @@ export interface Shell {
   forger: { name: string; contact?: string; customizations: boolean };
   /** What owning one costs, to compare against renting (Forger estimate). */
   build: { parts_usd: number; lead_days: number; build_hours: number };
+  /** On-chain record of this shell (spec 15): sessions settled and refunded, counted by the escrow program. */
+  reputation?: Reputation;
+}
+
+export interface Reputation {
+  completed: number;
+  refunded: number;
+  /** address of the record (PDA) and its explorer link */
+  address: string;
+  explorer: string;
 }
 
 export interface ShellState {

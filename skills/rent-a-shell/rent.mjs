@@ -107,6 +107,7 @@ if (cmd === "info") {
   const s = await shellOf(GW, opt("shell"));
   const q = (await getJson(`${GW}/api/shells/${s.id}/queue`)).j;
   const st = (await getJson(`${GW}/api/shells/${s.id}/state`)).j;
+  if (s.reputation) console.error(`reputation (on-chain): ${s.reputation.completed} completed, ${s.reputation.refunded} refunded · ${s.reputation.explorer}`);
   console.log(JSON.stringify({ shell: s, queue: q, state: st }, null, 2));
   process.exit(0);
 }

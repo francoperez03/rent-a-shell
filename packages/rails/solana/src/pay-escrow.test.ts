@@ -38,3 +38,10 @@ test("rejects expires_at too early (a past deadline lets the renter reclaim)", (
 test("rejects expires_at too late", () => {
   assert.equal(acceptableDeposit(dep({ expiresAt: now + holdSec + 61 }), opts), false);
 });
+
+test("rejects a deposit bound to another shell record, accepts the expected one", () => {
+  const shell = Keypair.generate().publicKey;
+  assert.equal(acceptableDeposit({ ...dep(), shell: Keypair.generate().publicKey }, opts), false);
+  assert.equal(acceptableDeposit({ ...dep(), shell }, { ...opts, shell }), true);
+  assert.equal(acceptableDeposit({ ...dep(), shell }, opts), false, "bound while the rail expected unbound");
+});
