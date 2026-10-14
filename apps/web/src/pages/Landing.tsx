@@ -21,7 +21,7 @@ const STEPS = [
   { n: '01', title: 'Rent', body: 'Pick a shell and how much time you need, from five minutes up. You see the camera, the ranges and the queue before paying.' },
   { n: '02', title: 'Pay', body: 'Powered by Solana: a Solana Pay QR for people, x402 for agents. USDC, settled in seconds, no account. With escrow, a dropped robot refunds you on its own.' },
   { n: '03', title: 'Run', body: 'Move each joint from the console, run a routine, or let your agent send the commands over HTTP or MCP.' },
-  { n: '04', title: 'Measure', body: 'Read the real angles, the current each move draws and the frames. Then fix the code and run it again.' },
+  { n: '04', title: 'Measure', body: 'Read the real angles and the frames. Then fix the code and run it again.' },
 ];
 
 /** Landing: brand register. Paper, one signal band, measurements as the hero image. */
@@ -64,7 +64,7 @@ function Hero({ shell }: { shell: Shell | undefined }) {
             Test your code on real hardware. Today.
           </motion.h1>
           <motion.p {...reveal(0.1, 'mount')} className="mt-6 max-w-[44ch] text-lead text-ink-2">
-            {shell?.name ?? 'El Tucu'} is a four-axis arm in {city}, Argentina. Rent it by the minute, run your code against it, read the real angles and current, and watch it on camera.
+            {shell?.name ?? 'El Tucu'} is a four-axis arm in {city}, Argentina. Rent it in five-minute blocks, run your code against it, read the real angles, and watch it on camera.
           </motion.p>
           <motion.div {...reveal(0.15, 'mount')} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label={`Rent ${shell?.name ?? 'El Tucu'}`} />
@@ -195,7 +195,7 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
             <div>
               <h3 className="text-h3">Have a robot sitting idle? Publish it.</h3>
               <p className="mt-3 max-w-prose text-body text-ink-2">
-                Run the gateway next to your hardware, set the price, get paid per minute in your own wallet. Customization requests come to you.
+                Run the gateway next to your hardware, set the price per block, get paid in your own wallet: upfront with x402, from the escrow when the session ends with Solana Pay. Customization requests come to you.
               </p>
             </div>
             <div className="lg:justify-self-end lg:text-right">

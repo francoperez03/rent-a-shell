@@ -11,7 +11,7 @@ import { INSTALL } from '@/content/install';
 
 const ENDPOINTS: { method: string; path: string; what: string; auth?: boolean }[] = [
   { method: 'GET', path: '/api/shells', what: 'Shell specs: ranges, HOME, routines, sensors, price, camera and status.' },
-  { method: 'GET', path: '/api/shells/:id/state', what: 'Real angles, current in mA and whether it is moving.' },
+  { method: 'GET', path: '/api/shells/:id/state', what: 'Real angles and whether it is moving (current in mA when the shell has the sensor).' },
   { method: 'GET', path: '/api/shells/:id/frame', what: 'Current JPEG camera frame.' },
   { method: 'GET', path: '/api/shells/:id/queue', what: 'Current session and how many are waiting.' },
   { method: 'POST', path: '/api/sessions/x402?shell=&blocks=', what: 'Answers 402 with the requirement. With the signed payment it returns the token.' },
