@@ -20,7 +20,7 @@ Besides the money:
 
 ## Renting it
 
-- USD 0.05 per 5-minute block (one cent per minute), available today.
+- USD 0.05 per 5-minute block, El Tucu's price today (each Forger sets the price of their shell).
 - **Break-even:** the parts are worth about 900 blocks, that is about 75 h of use. A typical iteration (upload a routine, run it, measure) fits in one block.
 
 ## Takeaways

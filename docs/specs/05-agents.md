@@ -37,7 +37,7 @@ The one with the most support in the Colosseum evaluation: **an agent tests its 
 
 90-second script:
 1. In Claude Code: "test this motion sequence on a real arm and tell me if it reaches the position".
-2. The agent reads `llms.txt`, pays 1 USD in USDC with x402 (the tx shows on Solscan).
+2. The agent reads `llms.txt`, pays USD 0.05 in USDC with x402 (the tx shows on Solscan).
 3. The arm moves on the website camera; the HUD shows "SESSION · AGENT · 04:59".
 4. The agent returns the report with frames.
 5. Close: at expiry, the arm returns to HOME on its own.

@@ -16,7 +16,7 @@ The Forger's computer will most likely be a **Mac**: the skill is written for ma
 
 Support tools: `pnpm forger:find-esp32` (finds the ESP32 on the local network), `pnpm forger:doctor` (end-to-end check), `pnpm --filter @ras/rails-solana operator-key` (operator wallet without showing the key) and `scripts/forger/mediamtx.yml` (camera config).
 
-A Forger builds a shell, keeps it online and gets paid per minute of use. They run their own gateway next to their robot and register it in the hub.
+A Forger builds a shell, keeps it online, sets its price per 5-minute block (`BLOCK_USD`) and gets paid per block: with x402, upfront; with Solana Pay, from the escrow when the session ends (90 %). They run their own gateway next to their robot and register it in the hub.
 
 ## 1. Gateway
 

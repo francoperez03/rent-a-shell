@@ -2,7 +2,7 @@
 
 ![Rent a Shell: rent El Tucu, a real robot arm, from the browser or from an agent](evidence/f4/landing.png)
 
-Real hardware, rented by the minute, so small teams can build physical solutions without buying or installing the hardware. Developers and their AI agents use it, and it's paid in USDC on Solana.
+Real hardware, rented in five-minute blocks, so small teams can build physical solutions without buying or installing the hardware. Developers and their AI agents use it, and it's paid in USDC on Solana. Today there is one shell, El Tucu, built by us on devnet; the marketplace below is the design.
 
 ## Thesis
 
@@ -16,23 +16,35 @@ Goal: **Colosseum** submission (text in [`docs/colosseum.md`](docs/colosseum.md)
 
 An agent lives in software. When it needs to do something in the physical world, it rents a "shell": a robotic body available on the platform. It pays on its own, programs it with what it needs to do, uses it for the paid time and gives it back.
 
-- **Shells**: robots published by their owners (arm, rover, drone, mobile camera, etc.) with their capabilities described in a format an agent can read.
+- **Shells**: robots published with their capabilities described in a format an agent can read. Today one shell (El Tucu, a 4-axis arm), built by us; the catalog is open to makers and labs (arm, rover, drone, mobile camera, etc.).
 - **Agents**: look for a shell that fits what they need, pay for usage time and send it instructions or a program.
 - **People**: can rent too, paying with a Solana Pay QR.
-- **Forgers**: build, publish and maintain the shells in the catalog. They get paid per minute of use straight to their wallet and can offer customizations. Cost of owning versus renting in [`docs/costs.md`](docs/costs.md).
+- **Forgers**: build, publish and maintain the shells in the catalog. They set the price per 5-minute block and get paid per block: with x402, paid upfront; with Solana Pay, held in escrow and settled 90/10 when the session ends. They can offer customizations. Cost of owning versus renting in [`docs/costs.md`](docs/costs.md).
 
 ## Flow
 
-1. The agent receives a task that needs a physical body.
-2. It reads the gateway's `llms.txt` or MCP and picks a shell by capability, location and price.
-3. It pays autonomously with x402 (USDC on Solana; the facilitator pays the fee, the agent needs no SOL).
-4. The gateway settles the payment and **assigns it the shell** for the paid time window.
-5. The agent programs the shell (commands) and gets feedback: camera, state, measured angles.
-6. When time runs out the robot returns to HOME and is released. The payment goes straight to the owner's wallet.
+```
+agent  ─> llms.txt / MCP ─> x402 (USDC, gasless) ─┐
+                                                  ├─> gateway ─> robot ─> HOME ─> released
+person ─> Solana Pay QR ─> escrow deposit ────────┘                         └─> settle 90/10
+                                                                                (shell down: refund)
+```
+
+An agent reads the gateway's `llms.txt` or MCP, picks a shell by capability, location and price, and pays a block with x402 (the facilitator pays the fee, so the agent needs no SOL). A person scans a Solana Pay QR and the USDC is held in the escrow program until the session ends, then 90 % goes to the Forger and 10 % to the platform; if the shell goes offline mid-session the deposit is refunded. In both branches the gateway assigns the shell for the paid window, the renter sends commands and reads camera, state and measured angles, and when time runs out the robot returns to HOME and is released.
 
 ## Demo case
 
 Robotics software testing: the agent tests its own code on real hardware. It pays for a block, runs a motion sequence, measures whether each joint reached the requested position and returns a report with the tx (`apps/buyer`).
+
+## What is real today vs roadmap
+
+| Real today | Roadmap |
+|---|---|
+| Escrow program on devnet: [`5459LTpropgaL1a7Ct4nRUN6BULGvJs3STMcreh2gf4X`](https://solscan.io/account/5459LTpropgaL1a7Ct4nRUN6BULGvJs3STMcreh2gf4X?cluster=devnet) (upgrade authority `GUBSsjpKTLwUMBnAncG4AK34xFNwaNuEu1PCYW4PN3JP`) | First real payment with Phantom from the site; mainnet |
+| Deposit and settle on devnet (2026-10-13): [deposit](https://solscan.io/tx/KT4VvLxGmEmVCXo5Usxa92N7YCT5vYF5M54S9fWFsMps1u8w5euzJHY5g2oauKT1Q4JtwYivZ9YUsuzj5LxaMSQ?cluster=devnet) · [settle 90/10](https://solscan.io/tx/3np5YVMjHubxesDbNKifHNVwVTJ75BUzuBW2z9au54NcfsZnbdBADj5KEqkU9d5QXD1pfhvbqHUHJwRWjRQsB9ye?cluster=devnet) | `reclaim` after `expires_at` + 1 h exists in the program; there is no client for it yet |
+| Gateway with sessions, queue, return to HOME, rate limit, MCP, `llms.txt`; hub catalog; x402 402 on devnet | x402 payments settling through the escrow (today they pay the Forger upfront) |
+| One shell, El Tucu (ESP32, 4 servos), built by us. Firmware in [`francoperez03/el-tucu`](https://github.com/francoperez03/el-tucu): joint limits, HOME, INA219 driver. Separate repo because it is an ESP-IDF project with its own toolchain and release cycle | Open to makers and labs: more Forgers, more shells (rover, mobile camera, sensor benches) |
+| Measured angles per joint, camera frames | Current in mA: the INA219 driver and mock are ready, the sensor is not soldered on El Tucu yet and the console does not show current |
 
 ## Pieces
 
@@ -41,17 +53,17 @@ Robotics software testing: the agent tests its own code on real hardware. It pay
 | Forger gateway (sessions, queue, return to HOME, MCP, `llms.txt`, customization requests) | `apps/gateway` |
 | Marketplace hub (Forger catalog, health, `llms.txt`, MCP) | `apps/hub` |
 | Solana payment rails (`solana-x402`, `solana-pay` with escrow) | `packages/rails/solana` |
-| Escrow program (Anchor, 90/10 split and refund) | `programs/programs/shell-escrow` |
+| Escrow program (Anchor, 90/10 split and refund), devnet id `5459LTpropgaL1a7Ct4nRUN6BULGvJs3STMcreh2gf4X` | `programs/programs/shell-escrow` |
 | Website (landing, QR checkout, console, agent guide) | `apps/web` |
 | Example buyer agent | `apps/buyer` |
-| Robot: El Tucu (ESP32, 4 servos) | `robot-a` repo (firmware and mock) |
+| Robot: El Tucu (ESP32, 4 servos) | [`francoperez03/el-tucu`](https://github.com/francoperez03/el-tucu) (firmware and mock) |
 
 ## Run
 
 ```bash
 pnpm install
 pnpm check-solana          # facilitator and USDC mint on devnet
-pnpm mock                  # simulated El Tucu (port 8080)
+pnpm mock                  # simulated El Tucu (port 8080); ROBOT_A_DIR points at the el-tucu checkout
 pnpm gateway               # port 8787, config in apps/gateway/.env.local
 pnpm hub                   # port 8790, Forger catalog (apps/hub/.env.local)
 pnpm web                   # port 5175

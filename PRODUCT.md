@@ -8,11 +8,11 @@ brand (landing, shell, agents, 404) · product (checkout, session console)
 
 1. Small hardware teams (2 to 5 people, often bootstrapped) building a physical product with AI help. Context: they have code and no equipment; they want to test today, not in two weeks.
 2. Their AI agents (Claude Code and others) running tests autonomously via `llms.txt`, x402 and MCP.
-3. Forgers: makers and labs that publish idle hardware and get paid per minute.
+3. Forgers: makers and labs that publish idle hardware and get paid per 5-minute block (today one shell, built by us).
 
 ## Purpose
 
-Turn "we can't test on real hardware" into a one-dollar, five-minute action. Every screen should make the measurement visible: real angles, current in mA, camera, cost. Trust comes from showing the data, never from claiming it.
+Turn "we can't test on real hardware" into a five-cent, five-minute action. Every screen should make the measurement visible: real angles, camera, cost (current in mA once the sensor is on the shell). Trust comes from showing the data, never from claiming it.
 
 ## Brand personality
 
