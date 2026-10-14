@@ -94,6 +94,9 @@ export default function CheckoutPage() {
               <Link to="/agents" className="mt-3 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">
                 Agent guide
               </Link>
+              <p className="mt-6 border-t border-rule pt-4 text-small text-ink-2">
+                By paying you accept the <Link to="/terms" className="text-signal-deep underline-offset-4 hover:underline">terms</Link>.
+              </p>
             </aside>
           </section>
         ) : (
