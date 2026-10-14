@@ -13,6 +13,8 @@ declare_id!("5459LTpropgaL1a7Ct4nRUN6BULGvJs3STMcreh2gf4X");
 
 pub const RECLAIM_GRACE_SECS: i64 = 3600;
 pub const MAX_FEE_BPS: u16 = 10_000;
+/// Only this key can initialize the config (spec 10): the devnet upgrade authority. Changes only with an upgrade.
+pub const ADMIN: Pubkey = pubkey!("GUBSsjpKTLwUMBnAncG4AK34xFNwaNuEu1PCYW4PN3JP");
 
 #[program]
 pub mod shell_escrow {
@@ -185,7 +187,7 @@ pub struct Escrow {
 
 #[derive(Accounts)]
 pub struct InitConfig<'info> {
-    #[account(mut)]
+    #[account(mut, constraint = admin.key() == ADMIN @ EscrowError::WrongAdmin)]
     pub admin: Signer<'info>,
     #[account(init, payer = admin, space = 8 + Config::INIT_SPACE, seeds = [b"config"], bump)]
     pub config: Box<Account<'info, Config>>,
