@@ -126,7 +126,7 @@ function Ticket({ view, rail, onRetry, onClose }: { view: IntentView; rail: Rail
             {intent.amount} <span className="text-mono text-ink-3">{intent.asset}</span>
           </p>
           {url ? <Qr url={url} /> : <p className="mt-6 max-w-[28ch] text-body text-ink-2">{ins.kind === 'approval' ? ins.note : 'This method is for agents. See /agents.'}</p>}
-          {url && <WalletButtons url={url} network={network} chain={chainFor(rail?.wallet?.chains[0]?.id)} onError={setWalletError} />}
+          {url && <WalletButtons url={url} network={network} chain={chainFor(network)} onError={setWalletError} />}
           <div className="mt-6 flex w-full items-center justify-between gap-4 border-t border-rule pt-4 font-mono text-mono-xs uppercase">
             <p role="status" className="flex items-center gap-2 text-ink">
               <span aria-hidden className="h-1.5 w-1.5 animate-status-pulse rounded-full bg-signal" />
@@ -191,8 +191,8 @@ function standardWallets(): StdWallet[] {
   return found.filter((w) => w.features['solana:signAndSendTransaction'] && w.features['standard:connect']);
 }
 
-/** Wallet Standard chain id for the rail's CAIP-2 network (genesis hash) → 'solana:devnet' | 'solana:mainnet'. */
-const chainFor = (caip2?: string) => (caip2 === 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp' ? 'solana:mainnet' : 'solana:devnet');
+/** Wallet Standard chain id from the rail's network label ("Solana Devnet" | "Solana"); the genesis hash stays in packages/rails. */
+const chainFor = (label?: string) => (/devnet/i.test(label ?? '') ? 'solana:devnet' : 'solana:mainnet');
 
 /** Solana Pay transaction request done by hand: POST the account, get the escrow transaction, let the wallet sign and send on `chain`. */
 async function payWithWallet(wallet: StdWallet, txUrl: string, chain: string) {
