@@ -43,7 +43,7 @@ export default function ShellPage({ id, gw }: { id: string; gw?: string }) {
       <Layout>
         <h1 className="wide-106 text-h1">{isError ? 'The gateway did not answer.' : 'That shell does not exist.'}</h1>
         <p className="mt-4 max-w-prose text-body text-ink-2">{isError ? 'Try again in a few seconds. If it keeps failing, the Forger may be offline.' : 'Go back home to see the published shells.'}</p>
-        <Button as="link" href="/#shells" variant="secondary" label="See shells" className="mt-8" />
+        <Button as="link" href="/" variant="secondary" label="See shells" className="mt-8" />
       </Layout>
     );
 

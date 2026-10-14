@@ -1,22 +1,19 @@
 'use client';
-import { useRef, useState } from 'react';
-import Link from 'next/link';
+import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import type { Payment, Shell } from '@ras/shell-spec';
+import type { Shell } from '@ras/shell-spec';
 import { LiveVideo } from '@/components/LiveVideo';
 import { Button } from '@/components/Button';
 import { Readout } from '@/components/Readout';
 import { SectionIndex } from '@/components/SectionIndex';
 import { StatusDot } from '@/components/StatusDot';
-import { Panel } from '@/components/Panel';
 import { Footer } from '@/components/Footer';
 import { INSTALL } from '@/content/install';
-import { fmtClock, shellHref, toMs, useEvents, useNow, useQueue, useShells, useShellState } from '@/lib/api';
+import { shellHref, useShells, useShellState } from '@/lib/api';
 import { useReveal } from '@/lib/useReveal';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { CountUp } from '@/components/CountUp';
 import { JOINTS, JOINT_LABEL } from '@/lib/joints';
-import { cn } from '@/lib/cn';
 
 const STEPS = [
   { n: '01', title: 'Rent', body: 'Pick a shell and how much time you need, from five minutes up. You see the camera, the ranges and the queue before paying.' },
@@ -27,7 +24,7 @@ const STEPS = [
 
 /** Landing: brand register. Paper, one signal band, measurements as the hero image. */
 export default function Landing({ origin }: { origin: string }) {
-  const { data: shells, isError } = useShells();
+  const { data: shells } = useShells();
   const tucu = shells?.[0];
 
   return (
@@ -36,8 +33,6 @@ export default function Landing({ origin }: { origin: string }) {
       <Numbers shell={tucu} />
       <HowItWorks />
       <Audiences shell={tucu} origin={origin} />
-      <Shells shells={shells} error={isError} />
-      <LiveNumbers shell={tucu} />
       <Closing shell={tucu} />
     </main>
   );
@@ -213,130 +208,6 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
   );
 }
 
-function Shells({ shells, error }: { shells: Shell[] | undefined; error: boolean }) {
-  const reveal = useReveal();
-  const online = shells?.filter((s) => s.status !== 'offline').length ?? 0;
-  return (
-    <section id="shells" className="scroll-mt-16 border-t border-rule py-section">
-      <div className="mx-auto w-full max-w-container px-4 md:px-6">
-        <SectionIndex
-          index="03"
-          title="Shells"
-          anim={reveal()}
-          aside={shells && <Readout label="Online now" value={online} unit={`/ ${shells.length}`} />}
-        />
-        <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-[repeat(auto-fit,minmax(20rem,36rem))]">
-          {error && shells === undefined && (
-            <p className="text-body text-ink-2">The catalog is not answering right now. Retrying every 10 seconds.</p>
-          )}
-          {!error && shells === undefined && (
-            <>
-              <div className="skeleton h-56" aria-hidden />
-              <div className="skeleton h-56" aria-hidden />
-            </>
-          )}
-          {shells?.length === 0 && <p className="text-body text-ink-2">No shells are published right now. Forgers add them from their own gateway.</p>}
-          {shells?.map((s, i) => (
-            <motion.div key={s.id} {...reveal(0.08 * i)}>
-              <ShellCard shell={s} />
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ShellCard({ shell }: { shell: Shell }) {
-  const { data: state } = useShellState(shell.id, 3_000);
-  const angles = state?.angles;
-  return (
-    <Link href={shellHref(shell)} className="group block border border-rule bg-paper transition-colors duration-base hover:border-ink">
-      <div className="flex items-center justify-between border-b border-rule px-5 py-3">
-        <p className="font-mono text-mono-xs uppercase text-ink-3">{shell.kind} · {shell.location}</p>
-        <StatusDot status={shell.status} />
-      </div>
-      <div className="px-5 py-5">
-        <h3 className="wide-106 text-h2">{shell.name}</h3>
-        <p className="mt-1 font-mono text-mono-xs uppercase text-ink-3">Forger {shell.forger.name}</p>
-        <dl className="mt-6 grid grid-cols-2 gap-3 border-t border-rule pt-4 sm:grid-cols-4">
-          {JOINTS.map((j) => (
-            <Readout key={j} label={JOINT_LABEL[j]} value={angles ? Math.round(angles[j]) : '—'} unit="°" />
-          ))}
-        </dl>
-      </div>
-      <div className="flex items-end justify-between border-t border-rule px-5 py-4">
-        <p className="tabular font-mono text-mono text-ink">
-          ${shell.pricing.usd} <span className="text-ink-3">/ {shell.pricing.block_minutes} min</span>
-        </p>
-        <span className="roll-parent font-mono text-mono uppercase text-signal-deep">
-          Open <span className="arrow">→</span>
-        </span>
-      </div>
-    </Link>
-  );
-}
-
-function LiveNumbers({ shell }: { shell: Shell | undefined }) {
-  const reveal = useReveal();
-  const now = useNow();
-  const { data: queue } = useQueue(shell?.id);
-  const [sessions, setSessions] = useState(0);
-  const [lastPay, setLastPay] = useState<Pick<Payment, 'rail' | 'tx' | 'explorerUrl'> & { at: number } | null>(null);
-  // the landing shows shell #1's gateway events; its gateway comes from the catalog
-  const connected = useEvents((e) => {
-    if (e.type === 'session_started') setSessions((n) => n + 1);
-    if (e.type === 'payment_seen') setLastPay({ rail: e.rail, tx: e.tx, explorerUrl: e.explorerUrl, at: Date.now() });
-  }, shell?.gateway ?? '');
-
-  const active = queue?.active;
-  const rows = [
-    { label: 'Current session', value: active ? `${fmtClock(toMs(active.expires_at) - now)} left` : 'Free' },
-    { label: 'In queue', value: queue ? String(queue.waiting) : '—' },
-    { label: 'Sessions since you arrived', value: String(sessions) },
-    {
-      label: 'Last payment',
-      value: lastPay ? (
-        lastPay.explorerUrl ? (
-          <a href={lastPay.explorerUrl} target="_blank" rel="noopener" className="text-signal underline-offset-4 hover:underline">
-            {lastPay.tx ? `${lastPay.tx.slice(0, 8)}…` : lastPay.rail} ↗
-          </a>
-        ) : (
-          lastPay.rail
-        )
-      ) : (
-        '—'
-      ),
-    },
-  ];
-
-  return (
-    <section id="live" className="on-bench dot-grid-bench border-t border-bench-rule bg-bench py-section text-bench-ink">
-      <div className="mx-auto grid w-full max-w-container grid-cols-1 items-start gap-10 px-4 md:px-6 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
-        <SectionIndex
-          index="04"
-          title="What the gateway is doing right now."
-          body="Every session and every payment arrives as an event. If someone is moving the arm, you see it here."
-          surface="bench"
-          anim={reveal()}
-        />
-        <motion.div {...reveal(0.1)}>
-          <Panel
-            label="Gateway · events"
-            aside={<span className={cn('font-mono text-mono-xs uppercase', connected ? 'text-bench-ink-2' : 'text-warn')}>{connected ? 'connected' : 'reconnecting'}</span>}
-            live={connected}
-            rows={rows}
-          >
-            <div className="flex items-center justify-between">
-              <StatusDot status={shell?.status} surface="bench" />
-              <Link href="/agents" className="font-mono text-mono-xs uppercase text-bench-ink-2 hover:text-bench-ink hover:underline">Subscribe via /api/events</Link>
-            </div>
-          </Panel>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
 
 function Closing({ shell }: { shell: Shell | undefined }) {
   const reveal = useReveal();
