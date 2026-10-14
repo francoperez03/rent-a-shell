@@ -40,7 +40,7 @@ export default function SessionPage() {
           <Readout label="Session" value="— —" surface="bench" className="items-center" />
           <h1 className="wide-106 mt-6 text-h1 text-bench-ink">There is no active session in this tab.</h1>
           <p className="mt-4 text-body text-bench-ink-2">Rent some time from a shell page and the console opens here.</p>
-          <Button as="link" href="/#shells" label="Pick a shell" className="mt-8" />
+          <Button as="link" href="/" label="Pick a shell" className="mt-8" />
         </div>
       </main>
     );
