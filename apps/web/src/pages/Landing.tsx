@@ -145,8 +145,9 @@ function Audiences({ shell }: { shell: Shell | undefined }) {
   const reveal = useReveal();
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const sentence = `Go to ${origin}, pick the shell, pay for 5 minutes, open the gripper and then ask me what to do next.`;
+  const price = shell ? `USD ${shell.pricing.usd} per ${shell.pricing.block_minutes}-minute block` : 'from USD 0.05 per block';
   const human = [
-    'Open the shell page and pick how long: five minutes cost five cents.',
+    `Open the shell page and pick how long: ${price}.`,
     'Pay with Phantom or Solflare. The money sits in escrow until your session ends.',
     'Drive the arm from the console while the camera shows you every move.',
   ];
@@ -342,7 +343,7 @@ function Closing({ shell }: { shell: Shell | undefined }) {
           Five minutes is enough to know if your code moves something real.
         </motion.h2>
         <motion.p {...reveal(0.08)} className="mt-6 max-w-prose text-lead text-ink-2">
-          Five minutes cost ${shell?.pricing.usd ?? '0.05'}: one cent per minute, paid in USDC on Solana. When time runs out, {shell?.name ?? 'El Tucu'} returns to HOME on its own.
+          {shell ? `A ${shell.pricing.block_minutes}-minute block costs USD ${shell.pricing.usd}` : 'Blocks start from USD 0.05'}, paid in USDC on Solana; each Forger sets the price of their shell. When time runs out, {shell?.name ?? 'El Tucu'} returns to HOME on its own.
         </motion.p>
         <motion.div {...reveal(0.16)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Button as="link" to={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
