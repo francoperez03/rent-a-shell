@@ -16,11 +16,15 @@ How an agent discovers a shell, pays for it and controls it with no human help.
 | Tool | Input | Output |
 |---|---|---|
 | `list_shells` | | specs with status and price |
-| `rent_shell` | `{shell, blocks}` | returns how to pay with x402 (MCP clients don't sign payments); the agent pays over HTTP (R1) and passes the token |
+| `rent_shell` | `{shell, blocks}` | creates the x402 intent (the escrow for that session, `14-x402-escrow.md`) and returns the bound URL to pay (MCP clients don't sign payments); the agent pays over HTTP (R1) and passes the token |
 | `send_command` | `{token, cmd, args}` | ESP32 response (angles, `clamped`) |
 | `get_frame` | `{shell}` | current JPEG image |
 | `get_state` | `{shell}` | angles, whether it's moving and `current_ma` |
 | `end_session` | `{token}` | `{ok}` and robot at HOME |
+
+## Paying with x402 in two steps
+
+When the gateway has an operator key, agent payments go through the escrow (`14-x402-escrow.md`): `POST /api/sessions/intent {shell, blocks, rail: "solana-x402"}` opens the session's escrow and returns `instructions.url` (`/api/sessions/x402?shell&blocks&intent=<id>`); the agent pays that URL with `@x402/fetch` as before. A payment to the bare URL answers 402 `{error: "intent_required"}`. Without an operator key the bare URL still works and pays the Forger directly. `rent.mjs`, `apps/buyer` and the MCP `rent_shell` tool do the two steps on their own.
 
 ## Example buyer agent (`apps/buyer`)
 
