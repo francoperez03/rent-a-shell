@@ -16,7 +16,7 @@ What runs on the Mac is done by Claude Code. What runs next to the robot, on the
 | F5 | Real El Tucu + camera + tunnel | Mac + ESP32 | to do | `evidence/f5/` |
 | F6 | MCP, `llms.txt`, agent card | Mac | code done; testing with a fresh Claude Code session against devnet is pending | `apps/gateway/src/{mcp,discovery}.ts` |
 | F7 | Demo rehearsal, video and submission | all | to do | `evidence/f7/` |
-| F8 | Marketplace: Forger hub | Mac | done (2026-10-12): registration, catalog, health, `llms.txt`, MCP; tested with two gateways and one down | `apps/hub`, `docs/specs/09-hub.md` |
+| F8 | Marketplace: Forger hub | Mac | done (2026-10-12): registration, catalog, health, `llms.txt`, MCP; tested with two gateways and one down. Merged into the Next.js site on 2026-10-14 (`apps/web/src/server/hub.ts`, registry in Upstash Redis) | `apps/hub`, `docs/specs/09-hub.md` |
 | F9 | 90/10 escrow with refund | Mac + devnet | program and rail done (2026-10-12): `anchor test` 7/7 and e2e on a local validator (90/10, refund, idempotency); devnet deploy and a Phantom payment pending | `programs/`, `packages/rails/solana/src/pay-escrow.ts` |
 | F10 | Current sensor (INA219) | robot-a + Mac | firmware builds (`idf.py build`) and conversion test ok; mock, gateway, buyer and console show `current_ma`; soldering the chip pending | `robot-a/apps/firmware/main/ina219.c` |
 | F11 | Customization requests | Mac | done: endpoint, form on the spec page and reading with `FORGER_TOKEN` | `apps/gateway/src/app.ts` |
@@ -70,7 +70,7 @@ Steps (Franco, on the Mac next to the robot; the Forger skill covers it in detai
 2. ESP32 with El Tucu on the own router; `pnpm forger:find-esp32`.
 3. `.env.local` with `ESP32_URL`, `CAMERA` (from `pnpm forger:cameras`), `SOLANA_PAY_TO`, `HUB_URL`.
 4. `pnpm forger` (camera, tunnel, gateway and hub registration) and `pnpm forger:doctor`.
-5. Website on Vercel with `VITE_API_URL` (or `VITE_HUB_URL`).
+5. Website on Vercel (Next.js, root `apps/web`): the Forger registers with `HUB_URL=<site url>`; the registry lives in Upstash Redis (Marketplace).
 
 **Verification:** from a phone on mobile data (off the network), pay 1 block with the QR and move the arm while watching it on camera. Screen video in `evidence/f5/` (outside git).
 
@@ -104,7 +104,7 @@ Steps (Franco, on the Mac next to the robot; the Forger skill covers it in detai
    ```
 2. **Marketplace config**: `ESCROW_ADMIN_KEY=<base58 secret> ESCROW_TREASURY=<treasury address> pnpm --filter @ras/rails-solana init-escrow` (FEE_BPS defaults to 1000).
 3. **Gateway operator**: `pnpm --filter @ras/rails-solana -s operator-key` (writes `SOLANA_OPERATOR_KEY` to `apps/gateway/.env.local` and prints only the address) and fund it with devnet SOL. With it, Solana Pay switches to escrow; the QR needs an HTTPS `PUBLIC_URL` (tunnel).
-4. **Hub**: `cp apps/hub/.env.example apps/hub/.env.local`, `HUB_GATEWAYS=<gateway url>`, `pnpm hub`. On the website, `VITE_HUB_URL=<hub url>`.
+4. **Hub**: it is the site. Locally `cp apps/web/.env.example apps/web/.env.local` with `HUB_GATEWAYS=<gateway url>` and `pnpm web`; the gateway's `HUB_URL` is the site URL.
 5. **INA219**: solder it to the servos' 5 V bus with SDA on GPIO 21 and SCL on GPIO 22 (address 0x40), flash the robot-a firmware and check that `curl http://<ip>/state` shows `current_ma` rising while moving.
 
 Escrow e2e locally (no devnet):

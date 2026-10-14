@@ -32,7 +32,7 @@ Tests al cierre: `anchor test` 12/12, rails 8/8, gateway 10/10, hub 3/3, e2e del
 2. **Redeploy del programa a devnet** antes de cualquier prueba en vivo: la cuenta `Escrow` ganó `rent_to` y `shell` y el estado `Opened`; hay instrucciones nuevas (`open`, `set_payer`, `register_shell`). Los escrows viejos de devnet no deserializan con el IDL nuevo. Pasos: `cd programs && npm run build`, `anchor deploy --provider.cluster devnet`, copiar el IDL a `packages/rails/solana/src/idl/`, `pnpm --filter @ras/rails-solana register-shell`.
 3. **Pago x402 real** con el facilitator (`pnpm buyer` con USDC de devnet) y el refund en Solscan.
 4. **Hueco conocido**: un escrow `Opened` que nunca se paga retiene ~0.0035 SOL del operador sin forma de cerrarlo; `POST /api/sessions/intent` con `rail: solana-x402` puede drenar el SOL del operador. Hace falta `close_opened` + limpieza al vencer el intent, o rate limit. Va antes de exponer un gateway con operador.
-5. **Túnel del gateway**: el `llms.txt` publicado apunta a `eat-poll-clients-gates.trycloudflare.com` y no responde. Levantar `pnpm forger` con `TUNNEL=cloudflared`; si la URL cambia, actualizar `VITE_API_URL` en Vercel y redeployar.
+5. **Túnel del gateway**: el `llms.txt` del sitio ahora se arma en vivo desde el catálogo (ya no hay URL fija). Para que el shell aparezca online hay que levantar `pnpm forger` con `TUNNEL=cloudflared` y `HUB_URL=https://rent-a-shell.vercel.app`; el gateway se registra solo.
 6. **HLS en vivo** sigue roto (redirect `cookieCheck` de MediaMTX en el proxy `/live/*`). Va antes de regrabar la demo.
 7. **Fuera del repo** (Franco): pitch de 2:00 con la estructura del informe, demo con Solscan y vuelta a HOME, formulario del capítulo, primer Forger externo, mainnet con Squads (runbook en el spec 15).
 
@@ -41,7 +41,7 @@ Tests al cierre: `anchor test` 12/12, rails 8/8, gateway 10/10, hub 3/3, e2e del
 - Anchor 0.32.1 en `/opt/homebrew/bin/anchor`; Solana 3.0.13 en `~/.local/share/solana/install/active_release/bin`.
 - `cargo-build-sbf` se rompe con su propio `rustup toolchain list -v`: correr `rustup toolchain uninstall 1.89.0-sbpf-solana-v1.52` justo antes de `npm run build` en `programs/`.
 - `anchor test` necesita `rm -rf programs/.anchor/test-ledger` y `COPYFILE_DISABLE=1` cuando macOS deja `._genesis.bin`.
-- Gamma de Polymarket no aplica acá; Vercel del sitio: proyecto `rent-a-shell`, `VITE_API_URL` cargada en Production y Preview.
+- Vercel del sitio: proyecto `rent-a-shell`, root `apps/web` (Next.js). Env: `HUB_ADMIN_TOKEN`, Upstash por Marketplace; ya no existe `VITE_API_URL`.
 
 ## Comandos útiles
 

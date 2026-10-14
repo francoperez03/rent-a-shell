@@ -4,7 +4,7 @@ At USD 0.05 per block and a 10 % fee the platform earns USD 0.001 per minute. El
 
 ## Rules
 
-- Each Forger sets `BLOCK_USD` and `BLOCK_MINUTES` for their gateway; the spec publishes them as `pricing`. The hub, `llms.txt`, MCP, the checkout and the rent client read the spec, never a global constant. `pnpm forger:doctor` warns when the price is the default.
+- Each Forger sets `BLOCK_USD` and `BLOCK_MINUTES` for their gateway; the spec publishes them as `pricing`. The site's catalog, `llms.txt`, MCP, the checkout and the rent client read the spec, never a global constant. `pnpm forger:doctor` warns when the price is the default.
 - Take rate: 10 % (`fee_bps = 1000` in the program config) on every escrow settle. With `14-x402-escrow.md`, agent payments settle through the escrow too, so the fee applies to both rails. Until then x402 pays the Forger 100 %, and `llms.txt` says so.
 - The site stops quoting a fixed "one cent per minute"; the landing reads the first shell's price from the catalog.
 

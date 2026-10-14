@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from 'react';
-import { Link, type LinkProps } from 'react-router-dom';
+import Link, { type LinkProps } from 'next/link';
 import { cn } from '@/lib/cn';
 import { Roll } from '@/motion-kit/split';
 
@@ -44,7 +44,7 @@ const base =
 
 type ButtonProps = CommonProps & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { as?: 'button' };
 type AnchorProps = CommonProps & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'children'> & { as: 'a'; href: string };
-type RouterProps = CommonProps & Omit<LinkProps, 'children'> & { as: 'link' };
+type RouterProps = CommonProps & Omit<LinkProps, 'children'> & { as: 'link'; href: string };
 
 export const Button = forwardRef<HTMLElement, ButtonProps | AnchorProps | RouterProps>(
   ({ variant = 'primary', surface = 'paper', size = 'md', label, roll = true, loading = false, className, ...rest }, ref) => {

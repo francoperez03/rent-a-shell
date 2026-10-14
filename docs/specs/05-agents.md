@@ -7,9 +7,9 @@ How an agent discovers a shell, pays for it and controls it with no human help.
 | Channel | What it is | Where |
 |---|---|---|
 | `llms.txt` | plain-text instructions: what Rent a Shell is, each shell's spec, how to pay with x402, how to send commands, examples with `curl` and `@x402/fetch` | gateway `/llms.txt`, generated from the shell spec; the hub's `/llms.txt` lists the whole catalog |
-| MCP | MCP server in the gateway (and a catalog MCP in the hub) | `https://<gateway-url>/mcp`, `<HUB_URL>/mcp` |
+| MCP | MCP server in the gateway (and a catalog MCP in the site) | `https://<gateway-url>/mcp`, `https://rent-a-shell.vercel.app/mcp` |
 | Agent card | JSON with services (web, MCP, x402, `llms.txt`) and active payment methods | `https://<gateway-url>/.well-known/agent.json` |
-| Claude Code skill | `skills/rent-a-shell`: rents, runs a plan, measures and reports, with a spending cap | `<HUB_URL>/skills/rent/SKILL.md` |
+| Claude Code skill | `skills/rent-a-shell`: rents, runs a plan, measures and reports, with a spending cap | `https://rent-a-shell.vercel.app/skills/rent/SKILL.md` |
 
 ## MCP tools
 

@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+'use client';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useReducedMotion as useReducedMotionFM } from 'framer-motion';
 
 /**
  * Reduced motion = system preference OR the user's manual override.
@@ -17,8 +17,23 @@ interface MotionPrefContextValue {
 
 const MotionPrefContext = createContext<MotionPrefContextValue | null>(null);
 
+const QUERY = '(prefers-reduced-motion: reduce)';
+
+/** System preference, read after mount so the first client render matches the server HTML (which cannot know it). */
+function useSystemReduced(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(QUERY);
+    const on = () => setReduced(mq.matches);
+    on();
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return reduced;
+}
+
 export function MotionPrefProvider({ children }: { children: ReactNode }) {
-  const systemReduced = useReducedMotionFM() ?? false;
+  const systemReduced = useSystemReduced();
   const [manualReduced, setManualReduced] = useState(false);
 
   const value = useMemo<MotionPrefContextValue>(
@@ -37,7 +52,7 @@ export function MotionPrefProvider({ children }: { children: ReactNode }) {
 export function useReducedMotion(): boolean {
   const ctx = useContext(MotionPrefContext);
   // Fallback when used outside the provider (e.g. tests).
-  const systemReduced = useReducedMotionFM() ?? false;
+  const systemReduced = useSystemReduced();
   return ctx ? ctx.reduced : systemReduced;
 }
 

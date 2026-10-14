@@ -47,15 +47,15 @@ pnpm gateway
 curl $PUBLIC_URL/api/shells     # your spec sheet
 ```
 
-## 2. Register in the hub
+## 2. Register in the catalog
 
 ```bash
-curl -X POST https://<hub>/api/forgers \
+curl -X POST https://rent-a-shell.vercel.app/api/forgers \
   -H 'content-type: application/json' \
   -d '{"gateway":"https://<your-gateway>"}'
 ```
 
-The hub fetches your `/api/shells`. If it responds, you're in the catalog (201); if not, 422. Every 30 s it checks that you're still online.
+The site fetches your `/api/shells`. If it responds, you're in the catalog (201); if not, 422. It re-checks every gateway whenever the catalog is requested (30 s cache); an unreachable gateway shows its shells as offline. `pnpm forger` does this registration for you with `HUB_URL`.
 
 ## 3. Getting paid
 
