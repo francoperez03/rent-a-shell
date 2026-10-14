@@ -23,3 +23,5 @@ The camera points at the robot and its work area only, from a fixed mount. A sig
 ## Verification
 
 `/terms` renders on the site build; checkout and the shell page show the sentence with the link; `pnpm forger` logs the URL; the skills mention the terms. `[to verify]` with a lawyer before mainnet: consumer law (Argentina Ley 24.240), image rights (CCyC art. 53) and whether the 10 % take rate on USDC payments falls under CNV RG 994/2024.
+
+**Verified (2026-10-14).** `docs/terms.md` and `apps/web/src/pages/Terms.tsx` (`/terms`, lazy route, same register as the agent guide); `corepack pnpm --filter web build` green and `tsc --noEmit` clean; the dev server answers 200 on `/terms` and the built chunk contains the page. Footer link, "By paying you accept the terms" on `/checkout` and under the Rent box on `/shells/:id`. `pnpm forger` prints `terms: <SITE_URL or https://rent-a-shell.vercel.app>/terms` in its startup line; the Forger skill asks the person to accept the terms (and to set `BLOCK_USD`) before publishing; the rent skill links the terms next to its real-money rule; the site's `llms.txt` carries a `Terms:` line. The lawyer review stays `[to verify]`.
