@@ -19,6 +19,7 @@ describe("shell-escrow", () => {
   const treasury = Keypair.generate().publicKey;
   let mint: PublicKey;
   let payerToken: PublicKey;
+  let strangerInit: unknown;
 
   const USDC = (n: number) => new BN(n * 1_000_000);
   const sid = () => Array.from(Keypair.generate().publicKey.toBytes());
@@ -76,7 +77,15 @@ describe("shell-escrow", () => {
     mint = await createMint(conn, admin, admin.publicKey, null, 6);
     payerToken = (await getOrCreateAssociatedTokenAccount(conn, admin, mint, payer.publicKey)).address;
     await mintTo(conn, admin, mint, payerToken, admin, 100_000_000);
+    // spec 10: init_config is bound to ADMIN (the provider wallet in this repo); the stranger must go first,
+    // once the config exists any init fails on "already in use" before reaching the admin check
+    strangerInit = await program.methods.initConfig(treasury, 1000, mint).accounts({ admin: stranger.publicKey }).signers([stranger]).rpc().catch((e: Error) => e);
     await program.methods.initConfig(treasury, 1000, mint).accounts({ admin: admin.publicKey }).rpc();
+  });
+
+  it("init_config is bound to ADMIN: a stranger fails with WrongAdmin", async () => {
+    expect(String((strangerInit as Error).message ?? strangerInit)).to.include("WrongAdmin");
+    expect((await program.account.config.fetch(PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId)[0])).admin.toBase58()).to.equal(admin.publicKey.toBase58());
   });
 
   it("settle splits 90/10 between Forger and treasury", async () => {

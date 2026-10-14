@@ -9,11 +9,27 @@ const { utils } = anchor;
 import { fromAtomic, toAtomic, type IntentOpts, type Money, type Outcome, type PaymentRail } from "@ras/rails-core";
 import type { Intent, Payment } from "@ras/shell-spec";
 import { USDC, payTo, rpcUrl, solNet } from "./config.ts";
-import { EscrowClient, escrowPda, sessionId } from "./escrow.ts";
+import { EscrowClient, escrowPda, sessionId, type EscrowAccount } from "./escrow.ts";
 import { newReference } from "./pay.ts";
 
 type Env = Record<string, string | undefined>;
 const TTL = 15 * 60_000;
+const DRIFT_SEC = 60;
+
+/**
+ * Spec 10: a deposit opens a session only if this gateway can settle it (operator), the split goes to this
+ * shell's Forger and expires_at is what the transaction request would have set (now + hold, minus the intent's
+ * 15 min of life, with a minute of clock drift each way). Pure, so it is unit-tested without a chain.
+ */
+export function acceptableDeposit(
+  e: Pick<EscrowAccount, "operator" | "forger" | "expiresAt">,
+  o: { operator: PublicKey; forger: PublicKey; now: number; holdSec: number },
+): boolean {
+  const exp = Number(e.expiresAt.toString());
+  const lo = o.now + o.holdSec - TTL / 1000 - DRIFT_SEC;
+  const hi = o.now + o.holdSec + DRIFT_SEC;
+  return e.operator.equals(o.operator) && e.forger.equals(o.forger) && exp >= lo && exp <= hi;
+}
 
 const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#000c29"/><path d="M18 44h28M24 44V28l8-8 8 8v16" stroke="#fff" stroke-width="4" fill="none"/></svg>`;
 
@@ -93,6 +109,7 @@ export function solanaPayEscrow(env: Env): PaymentRail {
       const e = await client.escrow(intent.id);
       const want = BigInt((intent.meta as { atomic: string }).atomic);
       if (!e || !e.state.funded || BigInt(e.amount.toString()) < want || !e.mint.equals(mint)) return null;
+      if (!acceptableDeposit(e, { operator: operator.publicKey, forger: forger(), now: Math.floor(Date.now() / 1000), holdSec })) return null;
       open.delete(intent.id);
       const [sig] = await connection.getSignaturesForAddress(escrowPda(sessionId(intent.id)), { limit: 1 });
       return {

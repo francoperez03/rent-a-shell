@@ -3,19 +3,23 @@
 //   pnpm --filter @ras/rails-solana e2e
 // Covers: QR (transaction request) → wallet signs deposit → check → finalize completed (90/10) and refund.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import anchor, { type Idl } from "@coral-xyz/anchor";
 // the package is CJS: values come from the default export
 const { AnchorProvider, Program, Wallet, utils } = anchor;
 import { Connection, Keypair, LAMPORTS_PER_SOL, Transaction } from "@solana/web3.js";
 import { createMint, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
 import idl from "./idl/shell_escrow.json" with { type: "json" };
-import { configPda } from "./escrow.ts";
+import { configPda, sessionId } from "./escrow.ts";
 import { solanaPayEscrow } from "./pay-escrow.ts";
 
 const RPC = process.env.SOLANA_RPC_URL ?? "http://127.0.0.1:8899";
 const c = new Connection(RPC, "confirmed");
-const [admin, operator, payer, forger, treasury] = Array.from({ length: 5 }, () => Keypair.generate());
-for (const k of [admin, operator, payer]) await c.confirmTransaction(await c.requestAirdrop(k.publicKey, 2 * LAMPORTS_PER_SOL));
+// init_config only accepts ADMIN (spec 10): the local solana keypair, same as `anchor test`
+const admin = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(process.env.ESCROW_ADMIN_KEYPAIR ?? `${homedir()}/.config/solana/id.json`, "utf8"))));
+const [operator, payer, forger, treasury, stranger] = Array.from({ length: 5 }, () => Keypair.generate());
+for (const k of [admin, operator, payer, stranger]) await c.confirmTransaction(await c.requestAirdrop(k.publicKey, 2 * LAMPORTS_PER_SOL));
 
 const mint = await createMint(c, admin, admin.publicKey, null, 6);
 const payerAta = await getOrCreateAssociatedTokenAccount(c, payer, mint, payer.publicKey);
@@ -69,4 +73,15 @@ assert.equal(await bal(payer), 3_000_000);
 await rail.finalize!(p2, "refund");
 assert.equal(await bal(payer), 4_000_000, "full refund if the shell drops");
 
-console.log(`escrow e2e ok · settle ${(r1 as { tx: string }).tx.slice(0, 16)}… · forger 0.9 · treasury 0.1 · refund ok`);
+// spec 10: the renter builds their own deposit for the intent (their key as operator, a past expires_at):
+// funded on-chain, but check() ignores it, so no session opens and the gateway never tries a settle it cannot sign
+const forged = await rail.createIntent!({ usd: "1.00" }, { id: "intent-forged" });
+await program.methods
+  .deposit(sessionId("intent-forged"), new anchor.BN(1_000_000), forger.publicKey, stranger.publicKey, new anchor.BN(Math.floor(Date.now() / 1000) - 7200))
+  .accountsPartial({ payer: payer.publicKey, mint, payerToken: payerAta.address, tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID })
+  .signers([payer])
+  .rpc();
+assert.equal(await bal(payer), 3_000_000, "the forged deposit did move funds");
+assert.equal(await rail.check!(forged), null, "a deposit with a foreign operator does not open a session");
+
+console.log(`escrow e2e ok · settle ${(r1 as { tx: string }).tx.slice(0, 16)}… · forger 0.9 · treasury 0.1 · refund ok · foreign-operator deposit ignored`);
