@@ -35,7 +35,7 @@ export function SectionIndex({ index, title, body, surface = 'paper', size = 'h2
         />
       )}
       <div className="grid grid-cols-1 gap-x-8 gap-y-3 md:grid-cols-[6rem_1fr_auto]">
-        <span className={cn('font-mono text-mono tabular', bench ? 'text-bench-ink-2' : 'text-ink-3')}>{index}</span>
+        <span className={cn('font-mono text-data tabular leading-none md:pt-1', bench ? 'text-bench-ink' : 'text-ink')}>{index}</span>
         <div className="max-w-prose">
           <h2 className={cn(size === 'h1' ? 'text-h1 wide-106' : 'text-h2', bench ? 'text-bench-ink' : 'text-ink')}>{title}</h2>
           {paragraphs.map((p, i) => (
