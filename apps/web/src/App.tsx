@@ -11,6 +11,7 @@ import AgentsPage from '@/pages/Agents';
 // Landing and Checkout (QR generator) load only on their route.
 const Landing = lazy(() => import('@/pages/Landing'));
 const CheckoutPage = lazy(() => import('@/pages/Checkout'));
+const TermsPage = lazy(() => import('@/pages/Terms'));
 
 /** On navigation: scroll to the anchor if there is a hash, otherwise to the top. */
 function ScrollManager() {
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/session" element={<SessionPage />} />
           <Route path="/agents" element={<AgentsPage />} />
+          <Route path="/terms" element={<TermsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

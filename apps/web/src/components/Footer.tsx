@@ -17,6 +17,7 @@ export function Footer({ surface = 'paper' }: { surface?: 'paper' | 'bench' }) {
           <a href="/llms.txt" className={link}>llms.txt</a>
           <a href="/.well-known/agent.json" className={link}>agent.json</a>
           <a href="https://github.com/francoperez03/rent-a-shell" className={link} rel="noopener">Source</a>
+          <Link to="/terms" className={link}>Terms</Link>
         </div>
       </div>
     </footer>

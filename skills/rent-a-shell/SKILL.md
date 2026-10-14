@@ -11,7 +11,7 @@ What each shell measures today: the real angle of each joint (and whether the re
 
 ## Rules
 
-- **Real money.** Before paying, show the person the shell, how many blocks and the total price, and wait for an explicit yes. That amount is `--max-usd`; never raise it without asking.
+- **Real money.** Before paying, show the person the shell, how many blocks and the total price, and wait for an explicit yes. That amount is `--max-usd`; never raise it without asking. Paying accepts the terms at https://rent-a-shell.vercel.app/terms (use within the spec's limits, no filming or identifying people, refunds only when the shell goes offline with escrow, devnet has no monetary value).
 - The agent's wallet lives in `~/.rent-a-shell/wallet.json`. **Never show or copy the secret**: only the address.
 - Plan within the spec's safe range. The gateway clamps whatever goes past it, but planning inside the range is better.
 - If a step fails or the shell goes offline, don't retry by paying again without asking. When the shell goes down, a Solana Pay payment with escrow is refunded automatically; with x402 the Forger has to be told.

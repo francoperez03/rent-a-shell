@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { LiveVideo } from '@/components/LiveVideo';
 import { PayModal } from '@/components/PayModal';
 import { Button } from '@/components/Button';
@@ -174,6 +174,9 @@ export default function ShellPage() {
             <PayModal shell={shell} blocks={blocks} open={paying} onClose={() => setPaying(false)} />
             <p className="mt-3 font-mono text-mono-xs uppercase text-ink-3">Queue · {queueText}</p>
             <p className="mt-3 border-t border-rule pt-3 font-mono text-mono-xs uppercase text-ink-3">Powered by Solana · USDC</p>
+            <p className="mt-2 text-small text-ink-2">
+              By paying you accept the <Link to="/terms" className="text-signal-deep underline-offset-4 hover:underline">terms</Link>.
+            </p>
             {offline && <p className="mt-3 text-small text-danger">{shell.name} is offline. Come back in a while.</p>}
           </fieldset>
         </aside>
