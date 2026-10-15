@@ -8,6 +8,7 @@
 //   CAMERA_SIZE   e.g. 1280x720 · CAMERA_FPS e.g. 30 (on Windows they are skipped unless set: native mode) · CAMERA_OUT_FPS 15 · CAMERA_KBPS 700 (stream out)
 //   TUNNEL        cloudflared (default when PUBLIC_URL is missing or localhost) | ngrok (fixed domain: set PUBLIC_URL to it) | none
 //   HUB_URL       if set, registers there (and re-registers when the tunnel URL changes)
+//   HUB_TOKEN     Forger token issued by the Rent a Shell admin; required by the hub to register
 //   MEDIAMTX_PATH, FFMPEG_PATH, CLOUDFLARED_PATH, NGROK_PATH  paths if they are not on the PATH
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -115,17 +116,19 @@ async function register() {
   mkdirSync(path.dirname(URL_FILE), { recursive: true });
   writeFileSync(URL_FILE, publicUrl);
   if (!env.HUB_URL || publicUrl.includes("localhost")) return;
+  if (!env.HUB_TOKEN) return log("hub", "HUB_TOKEN is missing: ask for a Forger token and put it in .env.local to be listed");
   for (let i = 0; i < 10; i++) {
     await new Promise((r) => setTimeout(r, 3000));
     try {
       const r = await fetch(`${env.HUB_URL.replace(/\/$/, "")}/api/forgers`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", authorization: `Bearer ${env.HUB_TOKEN}` },
         body: JSON.stringify({ gateway: publicUrl }),
         signal: AbortSignal.timeout(15_000),
       });
       const j = await r.json().catch(() => ({}));
       if (r.ok) return log("hub", `registered ${publicUrl} · shells ${(j.shells ?? []).join(", ")}`);
+      if (r.status === 401 || r.status === 409 || r.status === 429) return log("hub", `rejected (${r.status} ${j.error ?? ""}): ${j.message ?? "check HUB_TOKEN"}`);
       log("hub", `not yet (${r.status} ${j.error ?? ""}); retrying`);
     } catch (e) {
       log("hub", `no answer (${e.message}); retrying`);

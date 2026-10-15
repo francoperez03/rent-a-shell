@@ -76,10 +76,11 @@ if (env.PUBLIC_URL && !env.PUBLIC_URL.includes("localhost")) {
   p.status === 200 ? ok(`public URL answers: ${env.PUBLIC_URL}`) : ko(`public URL does not answer: ${env.PUBLIC_URL}`, "Check the tunnel and that PUBLIC_URL is the URL it printed.");
 } else ko("PUBLIC_URL is localhost", "Open a tunnel (pnpm forger does it) or set PUBLIC_URL to its URL.", false);
 
+if (env.HUB_URL && !env.HUB_TOKEN) ko("HUB_TOKEN is missing", "Ask the Rent a Shell admin for a Forger token and put it in apps/gateway/.env.local.", false);
 if (env.HUB_URL && env.PUBLIC_URL) {
   const f = await get(`${env.HUB_URL}/api/forgers`);
   const mine = Array.isArray(f.body) && f.body.find((g) => g.url === env.PUBLIC_URL.replace(/\/$/, ""));
-  mine ? (mine.online ? ok("registered on the hub and online") : ko("registered on the hub but offline", "The hub cannot reach your PUBLIC_URL: check the tunnel.")) : ko("not on the hub", `curl -X POST ${env.HUB_URL}/api/forgers -H 'content-type: application/json' -d '{"gateway":"${env.PUBLIC_URL}"}'`, false);
+  mine ? (mine.online ? ok("registered on the hub and online") : ko("registered on the hub but offline", "The hub cannot reach your PUBLIC_URL: check the tunnel.")) : ko("not on the hub", `curl -X POST ${env.HUB_URL}/api/forgers -H 'authorization: Bearer $HUB_TOKEN' -H 'content-type: application/json' -d '{"gateway":"${env.PUBLIC_URL}"}'`, false);
 }
 
 console.log(bad ? `\n${bad} critical problem(s)${warn ? ` and ${warn} warning(s)` : ""}.` : warn ? `\nWorking, with ${warn} warning(s) to review.` : "\nAll set: your shell is published.");

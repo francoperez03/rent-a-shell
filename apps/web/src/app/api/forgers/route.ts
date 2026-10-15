@@ -7,7 +7,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { status, body } = await register(await json(req));
+  const { status, body } = await register(await json(req), req.headers.get('authorization'));
   return Response.json(body, { status });
 }
 

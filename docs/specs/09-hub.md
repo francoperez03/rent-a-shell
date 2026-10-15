@@ -6,8 +6,10 @@ Each Forger runs their own gateway next to their robot: their wallet, their queu
 
 - Registered gateways live in Upstash Redis (Vercel Marketplace), one hash `ras:forgers` keyed by normalized URL: `{url, addedAt, online, lastSeen, shells}` (`src/server/store.ts`). Without `UPSTASH_REDIS_REST_*` / `KV_REST_API_*` the store is in memory (local dev and tests).
 - `HUB_GATEWAYS=url1,url2` seeds the catalog; a seed is persisted once it answers.
-- `POST /api/forgers {gateway}`: open registration. The site fetches `GET {gateway}/api/shells` (timeout `HUB_TIMEOUT_MS`, 3 s) and validates the shape of each spec (`id`, `name`, `pricing.usd`, `joints`). If it doesn't respond or the shape is invalid: 422. If it responds: 201 and it's listed.
-- Shell ids are unique in the catalog: if another live gateway already publishes the same id, 409 `shell_id_taken`. If that gateway is down (e.g. a quick tunnel from the same Forger changed URL), the new registration replaces it.
+- **Forger tokens** (hash `ras:forger-tokens`, token → `{label, createdAt}`): the admin issues them with `POST /api/forgers/tokens {label}` (`Authorization: Bearer $HUB_ADMIN_TOKEN`), lists them masked with `GET` and revokes with `DELETE {token}` (its gateways go with it). Tokens look like `rsf_…`.
+- `POST /api/forgers {gateway}` with `Authorization: Bearer <forger token>`: without it 401 `token_required`, unknown 401 `invalid_token`. The gateway URL must be public (`https://`, no loopback or private ranges in production; 400 `invalid_gateway`). At most 3 gateways per token (429 `too_many_gateways`). The site fetches `GET {gateway}/api/shells` (timeout `HUB_TIMEOUT_MS`, 3 s) and validates the shape of each spec (`id`, `name`, `pricing.usd`, `joints`). If it doesn't respond or the shape is invalid: 422. If it responds: 201 and it's listed with `owner` = the token.
+- Shell ids belong to the token that registered them: another owner's id is 409 `shell_id_taken` even if that gateway is down (no hijacking while a quick tunnel changes URL); the same owner's old URL, or an entry from before tokens, gets replaced. A gateway URL registered by one token cannot be re-registered by another (409 `gateway_taken`).
+- Why: open registration allowed flooding the catalog (every request fetches every gateway) and taking over a shell id whenever its tunnel dropped.
 - `DELETE /api/forgers {gateway}`: removal, with `Authorization: Bearer $HUB_ADMIN_TOKEN`.
 - `GET /api/forgers`: gateways with `online`, `lastSeen` and the ids of their shells.
 
