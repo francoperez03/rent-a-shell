@@ -48,3 +48,28 @@ export function cameraArgs(platform, e) {
   ];
 }
 
+
+const JOINTS = ["base", "shoulder", "elbow", "grip"];
+
+/** Validates a shell.json object (same rules as the gateway). Returns a list of problems, empty when the sheet is fine. */
+export function validateSheet(sheet) {
+  const bad = [];
+  const s = sheet ?? {};
+  if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(s.id ?? "")) bad.push("id: lowercase letters, digits and dashes (e.g. el-tucu)");
+  for (const k of ["name", "kind", "location"]) if (typeof s[k] !== "string" || !s[k].trim()) bad.push(`${k}: required`);
+  for (const j of JOINTS) {
+    const r = s.joints?.[j];
+    if (!Array.isArray(r) || r.length !== 2 || !r.every(Number.isFinite) || r[0] >= r[1]) bad.push(`joints.${j}: [min, max] in degrees, min below max`);
+    const h = s.home?.[j];
+    if (!Number.isFinite(h)) bad.push(`home.${j}: a number in degrees`);
+    else if (Array.isArray(r) && (h < r[0] || h > r[1])) bad.push(`home.${j}: ${h} is outside ${r[0]} to ${r[1]}`);
+  }
+  for (const k of ["routines", "sensors"]) if (!Array.isArray(s[k]) || !s[k].length || !s[k].every((x) => typeof x === "string" && x)) bad.push(`${k}: a non-empty list of names`);
+  if (!Number.isInteger(s.pricing?.block_minutes) || s.pricing.block_minutes <= 0) bad.push("pricing.block_minutes: a whole number of minutes");
+  if (!/^\d+(\.\d{1,2})?$/.test(String(s.pricing?.usd ?? ""))) bad.push('pricing.usd: USD per block as a string with up to two decimals, e.g. "0.05"');
+  if (typeof s.forger?.name !== "string" || !s.forger.name.trim()) bad.push("forger.name: required");
+  if (typeof s.forger?.customizations !== "boolean") bad.push("forger.customizations: true or false");
+  for (const k of ["parts_usd", "lead_days", "build_hours"]) if (!Number.isFinite(s.build?.[k]) || s.build[k] < 0) bad.push(`build.${k}: a number`);
+  if (s.image !== undefined && (typeof s.image !== "string" || !/\.(jpe?g|png|webp)$/i.test(s.image))) bad.push("image: a jpg, png or webp file name next to shell.json");
+  return bad;
+}

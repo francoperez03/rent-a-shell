@@ -27,7 +27,7 @@ export function llmsTxt(cfg: Config, shell: Shell, rails: PaymentRail[]): string
 - Price: USD ${shell.pricing.usd} per ${shell.pricing.block_minutes}-minute block, up to ${cfg.maxBlocks} blocks
 - Reputation (on-chain): ${shell.reputation ? `${shell.reputation.completed} completed, ${shell.reputation.refunded} refunded (${shell.reputation.explorer})` : "not registered yet"}
 - Platform fee: 10 % of each session, taken when the escrow settles (fee_bps in the shell_escrow config)${cfg.escrow ? "; the rest goes to the Forger" : ". This gateway runs without escrow: x402 pays the Forger directly and no fee applies"}
-- Camera: HLS ${shell.camera.hls ?? "(not published)"} · latest JPEG frame ${shell.camera.frame}
+- Camera: HLS ${shell.camera.hls ?? "(not published)"} · latest JPEG frame ${shell.camera.frame}${shell.image ? `\n- Photo: ${shell.image}` : ""}
 - Forger (who builds and maintains it): ${shell.forger.name}${shell.forger.contact ? `, contact ${shell.forger.contact}` : ""}${shell.forger.customizations ? ". Takes customization requests." : ""}
 - Owning one: about USD ${shell.build.parts_usd} in parts, ${shell.build.lead_days} days of waiting and ${shell.build.build_hours} h of assembly. Here: USD ${shell.pricing.usd} per ${shell.pricing.block_minutes} min, starting now.
 

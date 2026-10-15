@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { readEnvFile } from "./lib.mjs";
+import { readEnvFile, validateSheet } from "./lib.mjs";
 
 // .env.local (CRLF tolerant) + the URL the launcher saved if the tunnel assigned it on the fly
 const envFile = readEnvFile(fileURLToPath(new URL("../../apps/gateway/.env.local", import.meta.url)));
@@ -32,6 +32,14 @@ const get = async (url, ms = 4000) => {
   }
 };
 const has = (cmd) => spawnSync(cmd, ["-version"], { stdio: "ignore" }).status === 0 || spawnSync(cmd, ["--version"], { stdio: "ignore" }).status === 0;
+
+try {
+  const sheet = JSON.parse(readFileSync(new URL("../../apps/gateway/shell.json", import.meta.url), "utf8"));
+  const problems = validateSheet(sheet);
+  problems.length ? ko(`shell.json has ${problems.length} problem(s)`, `pnpm forger:spec lists them`) : ok(`shell.json: ${sheet.name} (${sheet.id})${sheet.image ? " with photo" : ", no photo"}`);
+} catch {
+  ko("no apps/gateway/shell.json", "cp apps/gateway/shell.example.json apps/gateway/shell.json and fill it in (the Forger skill guides it); without it the gateway publishes El Tucu's sheet", false);
+}
 
 const [major] = process.versions.node.split(".").map(Number);
 major >= 22 ? ok(`Node ${process.versions.node}`) : ko(`Node ${process.versions.node}`, "Install Node 22 or newer.");

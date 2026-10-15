@@ -23,9 +23,14 @@ export interface Shell {
   forger: { name: string; contact?: string; customizations: boolean };
   /** What owning one costs, to compare against renting (Forger estimate). */
   build: { parts_usd: number; lead_days: number; build_hours: number };
+  /** Public URL of the shell's photo, served by its gateway. */
+  image?: string;
   /** On-chain record of this shell (spec 15): sessions settled and refunded, counted by the escrow program. */
   reputation?: Reputation;
 }
+
+/** What a Forger writes in shell.json: the spec sheet; `image` is a file name next to the json. */
+export type ShellSheet = Omit<Shell, "status" | "camera" | "gateway" | "reputation" | "image"> & { image?: string };
 
 export interface Reputation {
   completed: number;

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
@@ -50,6 +51,7 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     status,
     camera: { hls: cfg.liveUrl, frame: `${cfg.publicUrl}/api/shells/${cfg.shell.id}/frame` },
     gateway: cfg.publicUrl,
+    ...(cfg.imageFile && { image: `${cfg.publicUrl}/api/shells/${cfg.shell.id}/image` }),
     ...(reputation && { reputation }),
   });
   const price = (blocks: number) => ({ usd: mulUsd(cfg.shell.pricing.usd, blocks) });
@@ -183,6 +185,13 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
       active: a ? { sid: a.sid, rail: a.rail, expires_at: a.expires_at } : null,
       waiting: sessions.waiting(cfg.shell.id).length,
     });
+  });
+  // the Forger's photo of the shell (shell.json `image`)
+  app.get("/api/shells/:id/image", (c) => {
+    if (!cfg.imageFile) return c.json({ error: "no_image" }, 404);
+    const f = cfg.imageFile.toLowerCase();
+    const type = f.endsWith(".png") ? "image/png" : f.endsWith(".webp") ? "image/webp" : "image/jpeg";
+    return c.body(readFileSync(cfg.imageFile), 200, { "content-type": type, "cache-control": "public, max-age=3600" });
   });
   app.get("/api/shells/:id/frame", async (c) => {
     const f = await frames.latest();
