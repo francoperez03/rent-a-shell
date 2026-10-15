@@ -34,7 +34,7 @@ Cross-cutting rule: every connection to Solana, mints and facilitators lives in 
 
 - `[INPUT]`: a piece of data or a decision from Franco is missing.
 - `[to verify]`: must be tested live before building on top of it. They're all gathered in phase F0 of the plan.
-- What runs on the Mac is done by Claude Code. What runs on the Legion, the ESP32 or requires wallets is done by Franco with the exact commands in the plan.
+- Each phase in the plan says where it runs (Mac, Legion, ESP32, wallet).
 
 ## Reused sources
 

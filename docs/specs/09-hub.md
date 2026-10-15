@@ -23,7 +23,7 @@ Each Forger runs their own gateway next to their robot: their wallet, their queu
 - `GET /llms.txt`: site intro, a `Gateway: <url>` line with the first online shell's gateway (`rent.mjs` resolves the site URL through it), `MCP:` and `Terms:` lines, the quick start for agents, then every shell with its Forger, sensors, price, reputation, its gateway's `llms.txt` and the x402 endpoint where it's paid, and the other entry points (catalog, MCP, registration, skills).
 - `GET /.well-known/agent.json`: site-level agent card (services: web, catalog, MCP, llms.txt) with every shell and its gateway's `llms`, `x402` and `mcp`.
 - `/mcp` (Streamable HTTP, stateless): `list_shells` (full catalog) and `get_shell {id}` (spec + `how_to_rent`).
-- `GET /skills/rent/SKILL.md`, `/skills/rent/rent.mjs` and `/skills/forger/SKILL.md`: the Claude Code skills, read from the repo's `skills/` folder (allowlist; anything else is 404; shipped to Vercel through `outputFileTracingIncludes`).
+- `GET /skills/rent/SKILL.md`, `/skills/rent/rent.mjs` and `/skills/forger/SKILL.md`: the agent skills, read from the repo's `skills/` folder (allowlist; anything else is 404; shipped to Vercel through `outputFileTracingIncludes`).
 - Payment and control always go to the Forger's gateway, never to the site.
 
 ## Website

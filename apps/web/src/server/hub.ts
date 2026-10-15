@@ -149,7 +149,7 @@ node rent.mjs rent --gateway ${site} --blocks 1 --max-usd 0.05
 node rent.mjs cmd --joint grip --angle 175             # one command at a time; prints the real angle and peak mA
 node rent.mjs frame --out after.jpg · node rent.mjs state · node rent.mjs end
 \`\`\`
-Skill for Claude Code: ${site}/skills/rent/SKILL.md
+Agent skill (any agent that reads SKILL.md): ${site}/skills/rent/SKILL.md
 `;
 
 /** What an agent reads when handed the site URL: intro, the live gateway line (rent.mjs parses it), quick start, the catalog. */
@@ -176,9 +176,9 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
 - Catalog JSON: ${site}/api/catalog
 - MCP (Streamable HTTP): ${site}/mcp, tools list_shells and get_shell
 - Add your hardware as a Forger: POST ${site}/api/forgers {"gateway":"https://your-gateway"}
-- Claude Code skill to rent and test code on real hardware:
+- Agent skill to rent and test code on real hardware:
   npx skills add francoperez03/rent-a-shell --skill rent-a-shell (or read ${site}/skills/rent/SKILL.md)
-- Claude Code skill for Forgers (installs and configures the gateway, camera and tunnel):
+- Agent skill for Forgers (installs and configures the gateway, camera and tunnel):
   npx skills add francoperez03/rent-a-shell --skill rent-a-shell-forger (or read ${site}/skills/forger/SKILL.md)
 `;
 }
@@ -230,7 +230,7 @@ export async function mcp(req: Request): Promise<Response> {
   return t.handleRequest(req);
 }
 
-// Claude Code skills (skills/ folder in the repo): forger = publish hardware, rent = rent it.
+// Agent skills (skills/ folder in the repo): forger = publish hardware, rent = rent it.
 const SKILLS: Record<string, { dir: string; files: Record<string, string> }> = {
   forger: { dir: 'rent-a-shell-forger', files: { 'SKILL.md': 'text/markdown; charset=utf-8' } },
   rent: { dir: 'rent-a-shell', files: { 'SKILL.md': 'text/markdown; charset=utf-8', 'rent.mjs': 'text/javascript; charset=utf-8' } },

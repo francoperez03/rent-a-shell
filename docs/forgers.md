@@ -1,14 +1,14 @@
 # Forgers · how to publish your hardware
 
-## With Claude Code (recommended)
+## With an agent (recommended)
 
-The `rent-a-shell-forger` skill walks Claude Code through the whole setup: requirements, ESP32, camera (MediaMTX + ffmpeg), configuration, escrow, tunnel and hub registration, and finishes with `pnpm forger:doctor`.
+The `rent-a-shell-forger` skill walks your agent through the whole setup: requirements, ESP32, camera (MediaMTX + ffmpeg), configuration, escrow, tunnel and hub registration, and finishes with `pnpm forger:doctor`.
 
 ```bash
 npx skills add francoperez03/rent-a-shell --skill rent-a-shell-forger
 ```
 
-Then, in Claude Code: "I want to publish my robot on Rent a Shell". The skill is also in the repo, at `skills/rent-a-shell-forger/`.
+Then tell your agent: "I want to publish my robot on Rent a Shell". The skill is also in the repo, at `skills/rent-a-shell-forger/`.
 
 The Forger's computer will most likely be a **Mac**: the skill is written for macOS first (Homebrew, Terminal camera and local network permissions, `caffeinate`, start via Login Items) and includes a section with the differences for Windows and Linux.
 
