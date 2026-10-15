@@ -163,7 +163,7 @@ function SolanaPay({ ins, network }: { ins: SolanaPayIns; network?: string }) {
   );
 }
 
-export function CopyButton({ text, label }: { text: string; label: string }) {
+export function CopyButton({ text, label, surface = 'paper' }: { text: string; label: string; surface?: 'paper' | 'bench' }) {
   const [done, setDone] = useState(false);
   return (
     <button
@@ -172,7 +172,7 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
         setDone(true);
         setTimeout(() => setDone(false), 1500);
       })}
-      className="font-mono text-mono-xs uppercase text-signal-deep underline-offset-4 hover:underline"
+      className={cn('font-mono text-mono-xs uppercase underline-offset-4 hover:underline', surface === 'bench' ? 'text-bench-ink-2 hover:text-bench-ink' : 'text-signal-deep')}
     >
       {done ? 'Copied' : label}
     </button>
