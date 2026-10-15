@@ -4,7 +4,8 @@ import { cn } from '@/lib/cn';
 const LABEL: Record<ShellStatus, string> = { online: 'Online', busy: 'In use', offline: 'Offline' };
 
 /** Shell status as an indicator lamp: ok pulses when online, signal when in use, dim when offline. */
-export function StatusDot({ status, surface = 'paper', className }: { status: ShellStatus | undefined; surface?: 'paper' | 'bench'; className?: string }) {
+/** `label` prefixes the state with whose it is (the nav shows shell #1: "El Tucu · Offline"). */
+export function StatusDot({ status, label, surface = 'paper', className }: { status: ShellStatus | undefined; label?: string; surface?: 'paper' | 'bench'; className?: string }) {
   const s = status ?? 'offline';
   const bench = surface === 'bench';
   return (
@@ -18,7 +19,7 @@ export function StatusDot({ status, surface = 'paper', className }: { status: Sh
           s === 'offline' && (bench ? 'bg-bench-rule' : 'bg-rule-2')
         )}
       />
-      {LABEL[s]}
+      {label ? `${label} · ${LABEL[s]}` : LABEL[s]}
     </span>
   );
 }
