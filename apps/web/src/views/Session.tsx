@@ -115,7 +115,7 @@ function Console({ grant }: { grant: SessionGrant }) {
         else if (code.startsWith('session_')) setEnded((code.slice(8) as Ended) || 'ended');
         else if (status === 401 || status === 403) setEnded('revoked');
         else if (status === 409) setNote('A routine is running. Wait for it to finish or press STOP.');
-        else if (status === 429) setNote('Slow down: the robot takes one command at a time.');
+        else if (status === 429) setNote('Slow down: up to 10 commands per second.');
         else setNote(`The command did not go through: ${(err as Error).message}`);
       }
     },
@@ -388,7 +388,7 @@ function EndedOverlay({ shell, reason }: { shell: Shell | undefined; reason: End
         <h1 id="ended-title" className="wide-106 mt-4 text-h1 text-bench-ink">
           Session ended. {name} returns to HOME.
         </h1>
-        {reason === 'offline' && <p className="mt-4 text-body text-bench-ink-2">Paid with escrow? The gateway refunds this session on its own.</p>}
+        {reason === 'offline' && <p className="mt-4 text-body text-bench-ink-2">Robot dropped mid-session? Write to the Forger. Automatic escrow refunds are coming.</p>}
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button as="link" href={`/shells/${shell?.id ?? 'el-tucu'}`} label="Rent more time" />
           <Button as="link" href="/" variant="secondary" surface="bench" label="Back to home" />

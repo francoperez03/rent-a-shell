@@ -1,6 +1,6 @@
 ---
 name: rent-a-shell
-description: Rents real hardware (Rent a Shell robots, called shells) by the minute to test robotics code in the physical world. Pays in USDC on Solana with x402, runs a motion plan, measures real angles and current, takes photos and returns a report. Use when the person says "test this on a real robot", "validate these angles on hardware", "how much current does this move draw", "rent an arm", "Rent a Shell", "probá esto en un robot real", "alquilá un brazo", or wants to compare a simulation against hardware.
+description: Rents real hardware (Rent a Shell robots, called shells) by the minute to test robotics code in the physical world. Pays in USDC on Solana with x402, runs a motion plan, reads the real angles, takes photos and returns a report. Use when the person says "test this on a real robot", "validate these angles on hardware", "how much current does this move draw", "rent an arm", "Rent a Shell", "probá esto en un robot real", "alquilá un brazo", or wants to compare a simulation against hardware.
 ---
 
 # Rent a Shell · renting real hardware

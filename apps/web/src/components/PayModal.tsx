@@ -135,7 +135,7 @@ function Ticket({ view, rail, onRetry, onClose }: { view: IntentView; rail: Rail
             </p>
             <p className={cn('tabular', left < 60_000 ? 'text-danger' : 'text-ink-3')}>{fmtClock(left)}</p>
           </div>
-          <p className="mt-3 w-full text-left text-small text-ink-3">Held in escrow until your session ends. If the robot drops, it comes back to your wallet.</p>
+          <p className="mt-3 w-full text-left text-small text-ink-3">Devnet USDC, test money. Automatic refunds if the robot drops are coming with escrow.</p>
         </motion.div>
       )}
     </AnimatePresence>

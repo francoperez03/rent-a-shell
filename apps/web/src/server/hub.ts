@@ -221,7 +221,7 @@ echo '{"private":true}' > package.json && npm i @x402/fetch@2.27.0 @x402/core@2.
 node rent.mjs wallet                                   # agent wallet; fund it with USDC on the shell's network (devnet: faucet.circle.com), no SOL needed
 node rent.mjs info --gateway ${site}             # spec, price, queue (show the price and ask the person before paying)
 node rent.mjs rent --gateway ${site} --blocks 1 --max-usd 0.05
-node rent.mjs cmd --joint grip --angle 175             # one command at a time; prints the real angle and peak mA
+node rent.mjs cmd --joint grip --angle 175             # one command at a time; prints the real angle
 node rent.mjs frame --out after.jpg · node rent.mjs state · node rent.mjs end
 \`\`\`
 Agent skill (any agent that reads SKILL.md): ${site}/skills/rent/SKILL.md
@@ -233,7 +233,7 @@ export async function llms(site: string): Promise<string> {
   const first = live.find((s) => s.status !== 'offline') ?? live[0];
   return `# Rent a Shell
 
-> Real hardware by the minute. Each shell is built and maintained by a Forger, who runs their own gateway. Pick a shell, read its gateway's llms.txt and pay there (x402 in USDC on Solana).
+> Real hardware by the minute. Each shell is built and maintained by a Forger, who runs their own gateway. Pick a shell, read its gateway's llms.txt and pay there (x402 in USDC on Solana devnet; test money for now).
 
 Gateway: ${first?.gateway ?? '-'}
 MCP: ${site}/mcp
@@ -242,7 +242,7 @@ Terms: ${site}/terms
 ${QUICK_START(site)}
 ## Shells
 
-Each shell has its own price, set by its Forger. Platform fee: 10 % of each session, taken when the escrow settles; the rest goes to the Forger. Gateways with escrow bind each x402 payment to an intent (POST <gateway>/api/sessions/intent first): their llms.txt has the steps.
+Each shell's price is set by its Forger. Payments are USDC on Solana devnet. Escrow (refunds, and a 10 % platform fee on settle) is built and not live yet; the gateway's llms.txt has the current steps.
 
 ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}, ${s.status}. USD ${s.pricing.usd} per ${s.pricing.block_minutes} min. Sensors: ${(s.sensors ?? []).join(', ') || 'angles'}. Forger: ${s.forger?.name ?? '?'}.${s.reputation ? ` Reputation (on-chain): ${s.reputation.completed} completed, ${s.reputation.refunded} refunded (${s.reputation.explorer}).` : ''} Gateway: ${s.gateway} · instructions ${s.gateway}/llms.txt · payment POST ${s.gateway}/api/sessions/x402?shell=${s.id}&blocks=1${s.image ? ` · photo ${s.image}` : ''}`).join('\n') : '- No shells registered yet.'}
 
@@ -250,7 +250,7 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
 
 - Catalog JSON: ${site}/api/catalog
 - MCP (Streamable HTTP): ${site}/mcp, tools list_shells and get_shell
-- Add your hardware as a Forger: POST ${site}/api/forgers {"gateway":"https://your-gateway"}
+- Add your hardware as a Forger: ask for a Forger token, then POST ${site}/api/forgers with Authorization: Bearer <token> and {"gateway":"https://your-gateway"}
 - Agent skill to rent and test code on real hardware:
   npx skills add francoperez03/rent-a-shell --skill rent-a-shell (or read ${site}/skills/rent/SKILL.md)
 - Agent skill for Forgers (installs and configures the gateway, camera and tunnel):
