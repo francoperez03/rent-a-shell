@@ -5,8 +5,8 @@ import { useReducedMotion } from '@/lib/useReducedMotion';
 import { dur, easeOut } from '@/lib/motion';
 
 interface SectionIndexProps {
-  /** Datasheet section number, e.g. "01". */
-  index: string;
+  /** Datasheet section number, e.g. "01". Omit for an unnumbered section. */
+  index?: string;
   title: string;
   body?: string | string[];
   surface?: 'paper' | 'bench';
@@ -34,8 +34,8 @@ export function SectionIndex({ index, title, body, surface = 'paper', size = 'h2
           transition={{ duration: dur.medium * 2, ease: easeOut }}
         />
       )}
-      <div className="grid grid-cols-1 gap-x-8 gap-y-3 md:grid-cols-[6rem_1fr_auto]">
-        <span className={cn('font-mono text-data tabular leading-none md:pt-1', bench ? 'text-bench-ink' : 'text-ink')}>{index}</span>
+      <div className={cn('grid grid-cols-1 gap-x-8 gap-y-3', index ? 'md:grid-cols-[6rem_1fr_auto]' : 'md:grid-cols-[1fr_auto]')}>
+        {index && <span className={cn('font-mono text-data tabular leading-none md:pt-1', bench ? 'text-bench-ink' : 'text-ink')}>{index}</span>}
         <div className="max-w-prose">
           <h2 className={cn(size === 'h1' ? 'text-h1 wide-106' : 'text-h2', bench ? 'text-bench-ink' : 'text-ink')}>{title}</h2>
           {paragraphs.map((p, i) => (
