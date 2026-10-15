@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Shell } from '@ras/shell-spec';
-import { Button } from '@/components/Button';
+import Link from 'next/link';
 import { Footer } from '@/components/Footer';
 import { Readout } from '@/components/Readout';
 import { SectionIndex } from '@/components/SectionIndex';
@@ -42,16 +42,17 @@ export default function ShellsView({ shells }: { shells: Shell[] }) {
           aside={<Readout label="Online now" value={online} unit={`/ ${n}`} />}
         />
 
-        <div className="relative mt-12 grid grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_1.6fr_1fr] lg:gap-8">
-          <Side shell={prev} className="order-2 lg:order-1" />
-          <div className="order-1 min-w-0 lg:order-2">
+        {/* the wheel: the centre card in front, the sides tucked behind it and turned inwards (perspective on the row) */}
+        <div className="relative mt-12 grid grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_1.5fr_1fr] lg:gap-0 lg:[perspective:1400px]">
+          <Side shell={prev} className="order-2 lg:order-1 lg:z-0 lg:[transform:translateX(16%)_rotateY(26deg)_scale(.88)]" />
+          <div className="order-1 min-w-0 lg:order-2 lg:z-10">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div key={current?.id ?? 'none'} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={slide}>
                 {current ? <ShellCard shell={current} /> : <Empty />}
               </motion.div>
             </AnimatePresence>
           </div>
-          <Side shell={next} className="order-3" />
+          <Side shell={next} className="order-3 lg:z-0 lg:[transform:translateX(-16%)_rotateY(-26deg)_scale(.88)]" />
 
           {n > 1 && (
             <div className="order-4 flex justify-center gap-3 lg:absolute lg:-top-14 lg:right-0">
@@ -74,14 +75,14 @@ export default function ShellsView({ shells }: { shells: Shell[] }) {
 function ShellCard({ shell }: { shell: Shell }) {
   const photo = SHELL_IMAGES[shell.id];
   return (
-    <article className="border border-rule bg-paper transition-colors duration-base hover:border-ink">
+    <Link href={shellHref(shell)} className="group block border border-rule bg-paper shadow-[0_24px_60px_-30px_rgba(21,17,13,.45)] transition-[transform,border-color] duration-medium ease-out hover:scale-[1.03] hover:border-ink">
       <div className="flex items-center justify-between border-b border-rule px-5 py-3">
         <p className="font-mono text-mono-xs uppercase text-ink-3">{shell.kind} · {shell.location}</p>
         <StatusDot status={shell.status} />
       </div>
       <div className="relative aspect-square w-full overflow-hidden bg-bench">
         {photo ? (
-          <Image src={photo} alt={`${shell.name}, ${shell.kind} built by ${shell.forger.name}`} fill priority sizes="(min-width: 1024px) 560px, 100vw" className="object-cover" />
+          <Image src={photo} alt={`${shell.name}, ${shell.kind} built by ${shell.forger.name}`} fill priority sizes="(min-width: 1024px) 560px, 100vw" className="object-cover transition-transform duration-medium ease-out group-hover:scale-105" />
         ) : (
           <div className="dot-grid-bench grid h-full place-items-center font-mono text-mono uppercase text-bench-ink-2">{shell.name}</div>
         )}
@@ -90,20 +91,22 @@ function ShellCard({ shell }: { shell: Shell }) {
         <div>
           <h2 className="wide-106 text-h2">{shell.name}</h2>
           <p className="mt-1 font-mono text-mono-xs uppercase text-ink-3">Forger {shell.forger.name}</p>
-          <p className="tabular mt-3 font-mono text-mono text-ink">
-            ${shell.pricing.usd} <span className="text-ink-3">/ {shell.pricing.block_minutes} min</span>
-          </p>
         </div>
-        <Button as="link" href={shellHref(shell)} label={`Open ${shell.name}`} />
+        <p className="tabular font-mono text-mono text-ink">
+          ${shell.pricing.usd} <span className="text-ink-3">/ {shell.pricing.block_minutes} min</span>
+          <span className="roll-parent ml-4 uppercase text-signal-deep">
+            Open <span className="arrow">→</span>
+          </span>
+        </p>
       </div>
-    </article>
+    </Link>
   );
 }
 
 /** A side slot: a neighbour shell, small, or the "coming soon" well. */
 function Side({ shell, className }: { shell?: Shell; className?: string }) {
   return (
-    <div className={cn('lg:scale-[.85] lg:opacity-70', className)}>
+    <div className={cn('lg:opacity-70', className)}>
       {shell ? (
         <article className="border border-rule bg-paper">
           <div className="relative aspect-square w-full overflow-hidden bg-bench">
