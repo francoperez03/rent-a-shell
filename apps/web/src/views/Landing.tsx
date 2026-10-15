@@ -8,7 +8,7 @@ import { Readout } from '@/components/Readout';
 import { SectionIndex } from '@/components/SectionIndex';
 import { StatusDot } from '@/components/StatusDot';
 import { Footer } from '@/components/Footer';
-import { INSTALL } from '@/content/install';
+import { INSTALL, WALLET_SENTENCE } from '@/content/install';
 import { shellHref, useShells } from '@/lib/api';
 import { useReveal } from '@/lib/useReveal';
 import { useReducedMotion } from '@/lib/useReducedMotion';
@@ -157,14 +157,13 @@ function HowItWorks() {
   );
 }
 
-// Two paths. Hovering one commits to it: its rule draws, its steps step forward one by one, the other path dims.
+// Two paths. Hovering one commits to it: its rule draws and the other path dims.
 const PATH = {
-  rest: { opacity: 1, y: 0, transition: { staggerChildren: 0.04, staggerDirection: -1 } },
-  hover: { opacity: 1, y: -4, transition: { duration: dur.base, ease: easeOut, staggerChildren: 0.07, delayChildren: 0.05 } },
-  dim: { opacity: 0.5, y: 0, transition: { duration: dur.base, ease: easeOut } },
+  rest: { opacity: 1 },
+  hover: { opacity: 1, transition: { duration: dur.base, ease: easeOut } },
+  dim: { opacity: 0.5, transition: { duration: dur.base, ease: easeOut } },
 };
 const PATH_RULE = { rest: { scaleX: 0 }, hover: { scaleX: 1, transition: { duration: dur.medium, ease: easeOut } }, dim: { scaleX: 0 } };
-const PATH_STEP = { rest: { x: 0 }, hover: { x: 8, transition: { duration: dur.base, ease: easeOut } }, dim: { x: 0 } };
 
 function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string }) {
   const reveal = useReveal();
@@ -189,6 +188,18 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
           <pre className="whitespace-pre-wrap break-words p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
             <code>{INSTALL}</code>
           </pre>
+        </div>
+      ),
+    },
+    {
+      text: 'Ask it for its wallet and send USDC on Solana to that address. No SOL needed: the x402 facilitator pays the fee (devnet: faucet.circle.com).',
+      after: (
+        <div className="mt-3 border border-ink bg-paper-2">
+          <div className="flex items-center justify-between border-b border-rule px-4 py-2 font-mono text-mono-xs uppercase text-ink-3">
+            <span>Say this</span>
+            <CopyButton text={WALLET_SENTENCE} label="Copy" />
+          </div>
+          <blockquote className="p-4 text-body text-ink">“{WALLET_SENTENCE}”</blockquote>
         </div>
       ),
     },
@@ -309,13 +320,13 @@ function Steps({ items }: { items: (string | Step)[] }) {
       {items.map((it, i) => {
         const s = typeof it === 'string' ? { text: it } : it;
         return (
-          <motion.li key={i} variants={PATH_STEP} className="grid grid-cols-[1.75rem_1fr] gap-3 text-body text-ink-2">
+          <li key={i} className="grid grid-cols-[1.75rem_1fr] gap-3 text-body text-ink-2">
             <span className="tabular font-mono text-mono text-ink transition-colors duration-base group-hover:text-signal-deep">{i + 1}.</span>
             <div className="min-w-0">
               <span className="max-w-[44ch]">{s.text}</span>
               {s.after}
             </div>
-          </motion.li>
+          </li>
         );
       })}
     </ol>

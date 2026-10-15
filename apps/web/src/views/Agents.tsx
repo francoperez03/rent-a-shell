@@ -8,7 +8,7 @@ import { SectionIndex } from '@/components/SectionIndex';
 // The example is copyable text: imported raw, so the site does not depend on the payment client.
 import { useReveal, useRows } from '@/lib/useReveal';
 import { X402_EXAMPLE } from '@/content/x402-fetch.example';
-import { INSTALL } from '@/content/install';
+import { INSTALL, WALLET_CMD } from '@/content/install';
 
 const ENDPOINTS: { method: string; path: string; what: string; auth?: boolean }[] = [
   { method: 'GET', path: '/api/shells', what: 'Shell specs: ranges, HOME, routines, sensors, price, camera and status.' },
@@ -63,12 +63,13 @@ export default function AgentsPage({ origin, gateway }: { origin: string; gatewa
           <div>
             <h2 className="text-h2">Give your agent this</h2>
             <p className="mt-3 max-w-prose text-body text-ink-2">
-              One sentence is enough. The site publishes <code className="font-mono text-[0.9em]">llms.txt</code> with the live gateway and a client that pays once, then takes one command at a time.
+              One sentence is enough. The site publishes <code className="font-mono text-[0.9em]">llms.txt</code> with the live gateway and a client that pays once, then takes one command at a time. The agent's wallet only needs USDC on Solana: no SOL, the x402 facilitator pays the fee.
             </p>
           </div>
           <div className="min-w-0">
             <Code label="1 · Install the skill once" wrap>{INSTALL}</Code>
-            <Code label="2 · Say this to your agent" wrap className="mt-6">{`Go to ${origin}, pick the shell, pay for 5 minutes, open the gripper and then ask me what to do next.`}</Code>
+            <Code label="2 · Create its wallet, then fund the address with USDC (devnet: faucet.circle.com)" wrap className="mt-6">{WALLET_CMD}</Code>
+            <Code label="3 · Say this to your agent" wrap className="mt-6">{`Go to ${origin}, pick the shell, pay for 5 minutes, open the gripper and then ask me what to do next.`}</Code>
           </div>
         </motion.section>
 
@@ -104,6 +105,7 @@ export default function AgentsPage({ origin, gateway }: { origin: string; gatewa
           <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[22rem_1fr]">
             <ol className="flex list-none flex-col gap-4">
               {[
+                'Have a Solana wallet with USDC on the shell\'s network (devnet: faucet.circle.com). No SOL: the facilitator pays the fee.',
                 'POST to /api/sessions/x402 with the shell and the time you want (blocks of five minutes). The response is a 402 with the payment requirement.',
                 'Your client signs the USDC payment and retries with the header. No gas: the facilitator pays it.',
                 'You get token, starts_at and expires_at. If the robot is busy, your time starts when the previous session ends.',
