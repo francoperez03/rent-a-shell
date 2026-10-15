@@ -26,7 +26,22 @@ before(async () => {
   hub = await import('./hub.ts'); // no Redis env: in-memory store
 });
 after(() => servers.forEach((s) => s.close()));
-const post = (gateway: string) => hub.register({ gateway });
+let token = '';
+let other = '';
+const post = (gateway: string, t = token) => hub.register({ gateway }, `Bearer ${t}`);
+
+test('tokens: issued by the admin, required to register', async () => {
+  assert.equal((await hub.issueToken({ label: 'x' }, undefined)).status, 401);
+  const a = await hub.issueToken({ label: 'Franco' }, 'Bearer adm');
+  assert.equal(a.status, 201);
+  token = (a.body as { token: string }).token;
+  other = ((await hub.issueToken({ label: 'Someone else' }, 'Bearer adm')).body as { token: string }).token;
+  assert.equal((await hub.register({ gateway: urls[1] })).status, 401);
+  assert.equal((await hub.register({ gateway: urls[1] }, 'Bearer rsf_nope')).status, 401);
+  const list = (await hub.listTokens('Bearer adm')).body as { label: string; token: string }[];
+  assert.deepEqual(list.map((t) => t.label).sort(), ['Franco', 'Someone else']);
+  assert.ok(!list.some((t) => t.token === token)); // masked
+});
 
 test('aggregates gateways, marks the dead one offline and registers a new one', async () => {
   await hub.refresh();
@@ -38,17 +53,26 @@ test('aggregates gateways, marks the dead one offline and registers a new one', 
 
   assert.equal((await post(urls[1])).status, 201);
   assert.equal((await post('http://localhost:1')).status, 422);
-  assert.equal((await hub.register({ gateway: 'ftp://x' })).status, 400);
   cat = await hub.catalog();
   assert.equal(cat.length, 2);
 
-  // same id from another live gateway: conflict; once the original drops, the new one replaces it
+  // same id from another owner: conflict, alive or not (no hijacking while a tunnel changes URL);
+  // the same owner's new URL replaces its old one once that one drops
   const dup = await fakeGateway('tucu-b');
-  assert.equal((await post(dup)).status, 409);
+  assert.equal((await post(dup, other)).status, 409);
   servers[1].close();
+  assert.equal((await post(dup, other)).status, 409);
   assert.equal((await post(dup)).status, 201);
   cat = await hub.catalog();
   assert.equal(cat.find((s) => s.id === 'tucu-b')?.gateway, dup);
+  // a gateway URL registered by one token cannot be re-registered by another
+  assert.equal((await post(dup, other)).status, 409);
+  // at most three gateways per token
+  const extra = [await fakeGateway('tucu-c'), await fakeGateway('tucu-d'), await fakeGateway('tucu-e')];
+  assert.equal((await post(extra[0])).status, 201); // dup, tucu-c
+  assert.equal((await post(extra[1])).status, 201); // dup, tucu-c, tucu-d
+  assert.equal((await post(extra[2])).status, 429);
+  assert.equal((await hub.register({ gateway: 'ftp://x' }, `Bearer ${token}`)).status, 400);
 
   const llms = await hub.llms('http://site');
   assert.match(llms, /tucu-b/);
@@ -57,11 +81,14 @@ test('aggregates gateways, marks the dead one offline and registers a new one', 
   assert.match(llms, /http:\/\/site\/skills\/rent\/rent\.mjs/);
   const card = await hub.agentCard('http://site');
   assert.equal(card.services.find((s) => s.name === 'MCP')?.endpoint, 'http://site/mcp');
-  assert.equal(card.shells.length, 2);
+  assert.equal(card.shells.length, 4); // tucu-a, tucu-b, tucu-c, tucu-d
 
   // removal needs the admin token; when a gateway goes down its shell shows offline
   assert.equal((await hub.remove({ gateway: urls[1] }, undefined)).status, 401);
   assert.equal((await hub.remove({ gateway: urls[1] }, 'Bearer adm')).status, 200);
+  // revoking a token drops its gateways
+  assert.equal((await hub.revokeToken({ token: other }, 'Bearer adm')).status, 200);
+  assert.equal((await post(extra[2], other)).status, 401);
   servers[0].close();
   await hub.refresh();
   cat = await hub.catalog();

@@ -49,13 +49,16 @@ curl $PUBLIC_URL/api/shells     # your spec sheet
 
 ## 2. Register in the catalog
 
+Registration needs a **Forger token**. Ask for one (contact in the site's footer or open an issue on the repo); you get a `rsf_…` string, one per Forger, good for up to three gateways. Put it in `apps/gateway/.env.local` as `HUB_TOKEN` and `pnpm forger` registers for you. By hand:
+
 ```bash
 curl -X POST https://rent-a-shell.vercel.app/api/forgers \
+  -H "authorization: Bearer $HUB_TOKEN" \
   -H 'content-type: application/json' \
   -d '{"gateway":"https://<your-gateway>"}'
 ```
 
-The site fetches your `/api/shells`. If it responds, you're in the catalog (201); if not, 422. It re-checks every gateway whenever the catalog is requested (30 s cache); an unreachable gateway shows its shells as offline. `pnpm forger` does this registration for you with `HUB_URL`.
+The site fetches your `/api/shells`. If it responds, you're in the catalog (201); if not, 422. Without a token, 401; with a shell id another Forger already publishes, 409 (ids belong to the token that registered them, so nobody can take yours over while your tunnel changes URL); the gateway URL must be public https. It re-checks every gateway whenever the catalog is requested (30 s cache); an unreachable gateway shows its shells as offline.
 
 ## 3. Getting paid
 

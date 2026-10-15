@@ -1,6 +1,7 @@
 // Marketplace hub: indexes the Forgers' gateways into a single catalog, served by the site itself.
 // Each Forger runs its gateway next to its robot (its wallet, queue and payments); the hub only
 // discovers, checks health and publishes the catalog for the website and for agents (API, llms.txt, MCP).
+import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -15,7 +16,17 @@ export interface GatewayEntry {
   online: boolean;
   lastSeen: number | null;
   shells: Shell[];
+  /** The Forger token that registered it. Entries from before tokens have none and can be claimed. */
+  owner?: string;
 }
+
+/** A Forger token: issued by the admin, required to register a gateway. */
+export interface TokenEntry {
+  label: string;
+  createdAt: number;
+}
+
+const MAX_GATEWAYS_PER_TOKEN = 3;
 
 type Result = { status: number; body: object };
 
@@ -23,7 +34,36 @@ const env = () => ({
   seeds: (process.env.HUB_GATEWAYS ?? '').split(',').map(norm).filter(Boolean),
   adminToken: process.env.HUB_ADMIN_TOKEN || null,
   timeoutMs: Number(process.env.HUB_TIMEOUT_MS ?? 3000),
+  // production only lists public https gateways; locally (and in tests) http://localhost is fine
+  strict: process.env.NODE_ENV === 'production',
 });
+
+const isAdmin = (authorization: string | null | undefined) => {
+  const { adminToken } = env();
+  return !!adminToken && authorization === `Bearer ${adminToken}`;
+};
+
+const bearer = (authorization: string | null | undefined) => authorization?.match(/^Bearer (\S+)$/)?.[1] ?? null;
+
+/** Only public gateways reach the catalog: no loopback, no private ranges, https in production. */
+function isPublicGateway(url: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return false;
+  }
+  const host = u.hostname.toLowerCase();
+  if (!env().strict) return u.protocol === 'http:' || u.protocol === 'https:';
+  if (u.protocol !== 'https:') return false;
+  if (host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')) return false;
+  if (/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.test(host)) {
+    const [a, b] = host.split('.').map(Number);
+    if (a === 10 || a === 127 || a === 0 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31) || (a === 169 && b === 254)) return false;
+  }
+  if (host.includes(':')) return false; // ipv6 literals
+  return true;
+}
 
 const norm = (u: string) => u.trim().replace(/\/$/, '');
 
@@ -102,35 +142,70 @@ export async function forgers() {
   return (await entries()).map(({ url, online, lastSeen, shells }) => ({ url, online, lastSeen, shells: shells.map((s) => s.id) }));
 }
 
-/** Open sign-up: the hub checks that the gateway answers with valid shells before listing it. */
-export async function register(body: unknown): Promise<Result> {
+/**
+ * Sign-up with a Forger token (issued by the admin). The hub checks that the gateway answers with valid
+ * shells before listing it; a shell id belongs to the token that registered it.
+ */
+export async function register(body: unknown, authorization?: string | null): Promise<Result> {
+  const token = bearer(authorization);
+  if (!token) return { status: 401, body: { error: 'token_required', message: 'Ask for a Forger token and send it as Authorization: Bearer <token>.' } };
+  if (!(token in (await store.tokens()))) return { status: 401, body: { error: 'invalid_token' } };
   const b = (body ?? {}) as { gateway?: unknown };
-  if (typeof b.gateway !== 'string' || !/^https?:\/\//.test(b.gateway)) return { status: 400, body: { error: 'invalid_gateway' } };
+  if (typeof b.gateway !== 'string' || !isPublicGateway(b.gateway)) return { status: 400, body: { error: 'invalid_gateway', message: 'A public https URL is required.' } };
   const { timeoutMs } = env();
   const url = norm(b.gateway);
+  const known = await gateways();
+  const mine = known.filter((g) => g.owner === token && g.url !== url);
+  if (mine.length >= MAX_GATEWAYS_PER_TOKEN) return { status: 429, body: { error: 'too_many_gateways', message: `This token already has ${MAX_GATEWAYS_PER_TOKEN} gateways.` } };
   let shells: Shell[];
   try {
     shells = await fetchShells(url, timeoutMs);
   } catch (e) {
     return { status: 422, body: { error: 'gateway_unreachable', message: (e as Error).message } };
   }
-  // unique ids in the catalog: if another live gateway publishes the same id, conflict; if it is down
-  // (e.g. the same Forger's quick tunnel changed URL), it gets replaced
-  const known = await gateways();
+  // unique ids in the catalog: another owner's shell id is a conflict even if that gateway is down (no hijacking
+  // while a quick tunnel changes URL); the same owner's old URL, or an entry from before tokens, gets replaced
   for (const g of known) {
     if (g.url === url || !g.shells.some((s) => shells.some((n) => n.id === s.id))) continue;
-    const alive = await fetchShells(g.url, timeoutMs).then(() => true, () => false);
-    if (alive) return { status: 409, body: { error: 'shell_id_taken', message: `${g.url} already publishes this id. Pick another SHELL_ID.` } };
+    if (g.owner && g.owner !== token) return { status: 409, body: { error: 'shell_id_taken', message: `${g.url} already publishes this id. Pick another SHELL_ID.` } };
     await store.del(g.url);
   }
-  await store.set({ url, addedAt: known.find((g) => g.url === url)?.addedAt ?? Date.now(), online: true, lastSeen: Date.now(), shells });
+  const existing = known.find((g) => g.url === url);
+  if (existing?.owner && existing.owner !== token) return { status: 409, body: { error: 'gateway_taken', message: 'This gateway URL was registered with another token.' } };
+  await store.set({ url, addedAt: existing?.addedAt ?? Date.now(), online: true, lastSeen: Date.now(), shells, owner: token });
   invalidate();
   return { status: 201, body: { ok: true, url, shells: shells.map((s) => s.id) } };
 }
 
+/** Forger tokens: the admin issues one per Forger (label = who), lists them masked, revokes them. */
+export async function issueToken(body: unknown, authorization?: string | null): Promise<Result> {
+  if (!isAdmin(authorization)) return { status: 401, body: { error: 'unauthorized' } };
+  const label = String((body as { label?: unknown })?.label ?? '').trim();
+  if (!label) return { status: 400, body: { error: 'label_required' } };
+  const token = `rsf_${randomBytes(18).toString('hex')}`;
+  await store.setToken(token, { label, createdAt: Date.now() });
+  return { status: 201, body: { ok: true, token, label } };
+}
+
+export async function listTokens(authorization?: string | null): Promise<Result> {
+  if (!isAdmin(authorization)) return { status: 401, body: { error: 'unauthorized' } };
+  const [tokens, known] = await Promise.all([store.tokens(), gateways()]);
+  const list = Object.entries(tokens).map(([t, e]) => ({ token: `${t.slice(0, 8)}…${t.slice(-4)}`, label: e.label, createdAt: e.createdAt, gateways: known.filter((g) => g.owner === t).map((g) => g.url) }));
+  return { status: 200, body: list };
+}
+
+export async function revokeToken(body: unknown, authorization?: string | null): Promise<Result> {
+  if (!isAdmin(authorization)) return { status: 401, body: { error: 'unauthorized' } };
+  const token = String((body as { token?: unknown })?.token ?? '');
+  const ok = await store.delToken(token);
+  // its gateways go with it
+  for (const g of await store.all()) if (g.owner === token) await store.del(g.url);
+  invalidate();
+  return { status: 200, body: { ok } };
+}
+
 export async function remove(body: unknown, authorization: string | null | undefined): Promise<Result> {
-  const { adminToken } = env();
-  if (!adminToken || authorization !== `Bearer ${adminToken}`) return { status: 401, body: { error: 'unauthorized' } };
+  if (!isAdmin(authorization)) return { status: 401, body: { error: 'unauthorized' } };
   const b = (body ?? {}) as { gateway?: string };
   const ok = await store.del(norm(b.gateway ?? ''));
   invalidate();

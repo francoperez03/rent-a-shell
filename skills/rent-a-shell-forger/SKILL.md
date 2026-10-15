@@ -82,6 +82,7 @@ ESP32_URL=<step 3>
 CAMERA=<step 3>
 RAILS=solana-x402,solana-pay
 HUB_URL=https://rent-a-shell.vercel.app   # the site is the catalog: pnpm forger registers your gateway there
+HUB_TOKEN=<Forger token>                   # ask the Rent a Shell admin for one (see docs/forgers.md); without it the gateway is not listed
 ```
 Don't set `PUBLIC_URL`: the tunnel assigns it on each start.
 
