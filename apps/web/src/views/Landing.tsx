@@ -221,37 +221,42 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
     <section id="who-its-for" className="dot-grid border-t border-rule bg-paper-2 py-section">
       <div className="mx-auto w-full max-w-container px-4 md:px-6">
         <SectionIndex title="Two ways to use it" body="By hand, with a wallet. Or through your agent, with one sentence." anim={reveal()} />
-        <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-12">
-          <motion.div {...reveal()} className="lg:col-span-6 lg:h-full">
-            <motion.article {...path(0)} className="group relative flex h-full flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-ink md:p-8">
+        {/* one path under the other, each card split: who and the call on the left, the steps on the right */}
+        <div className="mt-12 flex flex-col gap-6">
+          <motion.div {...reveal()}>
+            <motion.article {...path(0)} className="group relative grid grid-cols-1 gap-x-12 gap-y-6 border border-rule bg-paper p-6 transition-colors duration-base hover:border-ink md:p-8 lg:grid-cols-[2fr_3fr]">
               <motion.span aria-hidden variants={PATH_RULE} className="absolute inset-x-0 top-0 h-0.5 origin-left bg-ink" />
-              <p className="flex items-center gap-2 font-mono text-mono-xs uppercase text-ink-3">
-                You <span className="arrow text-ink">→</span>
-              </p>
-              <h3 className="wide-106 mt-3 text-h2">Rent it from this page and drive it yourself.</h3>
-              <Steps items={human} />
-              <div className="mt-8 lg:mt-auto lg:pt-8">
-                <Button as="link" href={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
+              <div className="flex flex-col">
+                <p className="flex items-center gap-2 font-mono text-mono-xs uppercase text-ink-3">
+                  You <span className="arrow text-ink">→</span>
+                </p>
+                <h3 className="wide-106 mt-3 text-h2">Rent it from this page and drive it yourself.</h3>
+                <div className="mt-8 lg:mt-auto lg:pt-8">
+                  <Button as="link" href={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
+                </div>
               </div>
+              <Steps items={human} />
             </motion.article>
           </motion.div>
 
-          <motion.div {...reveal(0.08)} className="min-w-0 lg:col-span-6 lg:h-full">
-            <motion.article {...path(1)} className="group relative flex h-full min-w-0 flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-signal md:p-8">
+          <motion.div {...reveal(0.08)} className="min-w-0">
+            <motion.article {...path(1)} className="group relative grid min-w-0 grid-cols-1 gap-x-12 gap-y-6 border border-rule bg-paper p-6 transition-colors duration-base hover:border-signal md:p-8 lg:grid-cols-[2fr_3fr]">
               <motion.span aria-hidden variants={PATH_RULE} className="absolute inset-x-0 top-0 h-0.5 origin-left bg-signal" />
-              <p className="flex items-center gap-2 font-mono text-mono-xs uppercase text-signal-deep">
-                Your agent <span className="arrow">→</span>
-              </p>
-              <h3 className="wide-106 mt-3 text-h2">Tell your agent one sentence. It pays and drives it for you.</h3>
-              <Steps items={agent} />
-              <div className="mt-8 lg:mt-auto lg:pt-8">
-                <Button as="link" href="/agents" variant="secondary" label="Agent guide" />
+              <div className="flex flex-col">
+                <p className="flex items-center gap-2 font-mono text-mono-xs uppercase text-signal-deep">
+                  Your agent <span className="arrow">→</span>
+                </p>
+                <h3 className="wide-106 mt-3 text-h2">Tell your agent one sentence. It pays and drives it for you.</h3>
+                <div className="mt-8 lg:mt-auto lg:pt-8">
+                  <Button as="link" href="/agents" variant="secondary" label="Agent guide" />
+                </div>
               </div>
+              <Steps items={agent} />
             </motion.article>
           </motion.div>
 
           {/* Forgers as a full-width band, same grammar as SectionIndex: eyebrow, text, numbers to the right */}
-          <motion.article {...reveal(0.16)} className="grid grid-cols-1 gap-x-8 gap-y-6 border-t border-rule pt-6 lg:col-span-12 lg:grid-cols-[6rem_1fr_auto]">
+          <motion.article {...reveal(0.16)} className="mt-6 grid grid-cols-1 gap-x-8 gap-y-6 border-t border-rule pt-6 lg:grid-cols-[6rem_1fr_auto]">
             <p className="font-mono text-mono-xs uppercase text-ink-3">Forgers</p>
             <div>
               <h3 className="text-h3">Have a robot sitting idle? Publish it.</h3>
@@ -300,7 +305,7 @@ type Step = { text: string; after?: React.ReactNode };
 /** Numbered steps; a step can carry a block right under its text (a command, a sentence to copy). */
 function Steps({ items }: { items: (string | Step)[] }) {
   return (
-    <ol className="mt-5 flex flex-col gap-3">
+    <ol className="flex min-w-0 flex-col gap-3">
       {items.map((it, i) => {
         const s = typeof it === 'string' ? { text: it } : it;
         return (
