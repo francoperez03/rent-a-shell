@@ -171,7 +171,7 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
             <h3 className="wide-106 mt-3 text-h2">Tell your agent one sentence. It pays and drives it for you.</h3>
             <Steps items={agent} />
             <figure className="mt-6">
-              <figcaption className="font-mono text-mono-xs uppercase text-ink-3">Say this to Claude Code</figcaption>
+              <figcaption className="font-mono text-mono-xs uppercase text-ink-3">Say this to your agent</figcaption>
               <blockquote className="mt-2 border border-ink bg-paper p-4 text-body text-ink">“{sentence}”</blockquote>
             </figure>
             <pre className="on-bench mt-4 whitespace-pre-wrap break-words border border-bench-rule bg-bench p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">

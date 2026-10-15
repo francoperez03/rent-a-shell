@@ -2,7 +2,7 @@
 
 Start: 2026-10-11. Switch to Solana only: 2026-10-12 (the Celo version stayed in a separate backup, commit `5f83196`). Submission text in [`../colosseum.md`](../colosseum.md).
 
-What runs on the Mac is done by Claude Code. What runs next to the robot, on the ESP32 or requires wallets is done by Franco with each phase's commands; Claude Code prepares, reviews the output and records it in `evidence/<phase>/`.
+Each phase says where it runs. What runs next to the robot, on the ESP32 or requires wallets is done by hand with each phase's commands; the output is recorded in `evidence/<phase>/`.
 
 ## Status
 
@@ -14,13 +14,13 @@ What runs on the Mac is done by Claude Code. What runs next to the robot, on the
 | F3 | Person payment with Solana Pay | Mac + Phantom | code done; intent with `solana:` link and QR verified; a real payment by scanning is pending | `packages/rails/solana/src/pay.ts` |
 | F4 | Website: landing, checkout, console | Mac | done: QR checkout, `/agents` with SVM example, build green | `evidence/f4/` |
 | F5 | Real El Tucu + camera + tunnel | Mac + ESP32 | to do | `evidence/f5/` |
-| F6 | MCP, `llms.txt`, agent card | Mac | code done; testing with a fresh Claude Code session against devnet is pending | `apps/gateway/src/{mcp,discovery}.ts` |
+| F6 | MCP, `llms.txt`, agent card | Mac | code done; testing with a fresh agent session against devnet is pending | `apps/gateway/src/{mcp,discovery}.ts` |
 | F7 | Demo rehearsal, video and submission | all | to do | `evidence/f7/` |
 | F8 | Marketplace: Forger hub | Mac | done (2026-10-12): registration, catalog, health, `llms.txt`, MCP; tested with two gateways and one down. Merged into the Next.js site on 2026-10-14 (`apps/web/src/server/hub.ts`, registry in Upstash Redis) | `apps/hub`, `docs/specs/09-hub.md` |
 | F9 | 90/10 escrow with refund | Mac + devnet | program and rail done (2026-10-12): `anchor test` 7/7 and e2e on a local validator (90/10, refund, idempotency); devnet deploy and a Phantom payment pending | `programs/`, `packages/rails/solana/src/pay-escrow.ts` |
 | F10 | Current sensor (INA219) | robot-a + Mac | firmware builds (`idf.py build`) and conversion test ok; mock, gateway, buyer and console show `current_ma`; soldering the chip pending | `robot-a/apps/firmware/main/ina219.c` |
 | F11 | Customization requests | Mac | done: endpoint, form on the spec page and reading with `FORGER_TOKEN` | `apps/gateway/src/app.ts` |
-| F12 | Claude Code skills and Forger launcher | Mac | done: rent skill + `rent.mjs` (spending cap, report), Forger skill + `pnpm forger` / `forger:doctor` / `forger:find-esp32` | `skills/`, `scripts/forger/` |
+| F12 | Agent skills and Forger launcher | Mac | done: rent skill + `rent.mjs` (spending cap, report), Forger skill + `pnpm forger` / `forger:doctor` / `forger:find-esp32` | `skills/`, `scripts/forger/` |
 
 Critical path: F2 (real devnet payment) → F5 → F7.
 
@@ -39,7 +39,7 @@ Submission tagged `colosseum-submission` (`e8a5989`). Only the `/llms.txt` fix w
 
 Follow-ups found while building (2026-10-14): an `Opened` escrow that never gets paid keeps about 0.0035 SOL of operator rent with no close path, so `POST /api/sessions/intent` with `rail: solana-x402` can drain the operator's SOL; needs a `close_opened` instruction plus rail cleanup on intent expiry, or a rate limit on intents. The devnet program is behind the branch (`Escrow` gained `rent_to` and `shell`, state `Opened`, instructions `open`, `set_payer`, `register_shell`): `anchor deploy --provider.cluster devnet` before any live test. Toolchain on this Mac: `cargo-build-sbf` 3.0.13 breaks on its own `rustup toolchain list -v` output, so run `rustup toolchain uninstall 1.89.0-sbpf-solana-v1.52` right before `npm run build`; `anchor test` needs `rm -rf programs/.anchor/test-ledger` and `COPYFILE_DISABLE=1` when macOS leaves `._genesis.bin` behind.
 
-Before re-recording the demo: live HLS through the gateway proxy (`/live/*`, MediaMTX `cookieCheck` redirect), still open from the 2026-10-12 handoff.
+Before re-recording the demo: live HLS through the gateway proxy (`/live/*`, MediaMTX `cookieCheck` redirect), still open since 2026-10-12.
 
 Outside the repo (Franco, this week): 2:00 pitch with the review's structure and subtitles; demo that runs the block out to HOME and opens deposit and settle on Solscan labelled devnet; chapter form fields (one-liner, stack, go-to-market, repo, videos, Colosseum link); first external Forger and first renters with numbers; firmware repo pinned on GitHub, LinkedIn and X linked.
 
@@ -78,7 +78,7 @@ Steps (Franco, on the Mac next to the robot; the Forger skill covers it in detai
 
 `/mcp` in the gateway, `/llms.txt`, agent card at `/.well-known/agent.json`.
 
-**Verification:** a fresh Claude Code session, with no help (or with the `rent-a-shell` skill), reads `llms.txt`, pays with x402 on devnet and runs the demo test routine (`05-agents.md`). Transcript in `evidence/f6/`.
+**Verification:** a fresh agent session, with no help (or with the `rent-a-shell` skill), reads `llms.txt`, pays with x402 on devnet and runs the demo test routine (`05-agents.md`). Transcript in `evidence/f6/`.
 
 ## F7 · Rehearsal, video and submission
 

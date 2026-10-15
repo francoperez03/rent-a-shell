@@ -94,7 +94,7 @@ rent-a-shell/
     shell-spec/ shared types: shell spec, commands, session
     rails/      core (interface), solana (08-rail-adapter.md)
   programs/     Anchor escrow program (shell_escrow)
-  skills/       Claude Code skills (rent and Forger)
+  skills/       agent skills (rent and Forger)
   docs/
 ```
 

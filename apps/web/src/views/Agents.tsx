@@ -53,7 +53,7 @@ export default function AgentsPage({ origin }: { origin: string }) {
             <Spec k="Payment" v="x402 · USDC on Solana" />
             <Spec k="Gas" v="none, facilitator pays" />
             <Spec k="Rate limit" v="10 commands / s" />
-            <Spec k="Skill" v={<a href="https://github.com/francoperez03/rent-a-shell/tree/main/skills/rent-a-shell" className="text-signal-deep underline-offset-4 hover:underline" rel="noopener">rent-a-shell for Claude Code</a>} />
+            <Spec k="Skill" v={<a href="https://github.com/francoperez03/rent-a-shell/tree/main/skills/rent-a-shell" className="text-signal-deep underline-offset-4 hover:underline" rel="noopener">rent-a-shell (SKILL.md)</a>} />
           </dl>
         </motion.header>
 
@@ -128,7 +128,7 @@ export default function AgentsPage({ origin }: { origin: string }) {
                 <motion.li key={t} {...row(i)} className="border border-rule-2 px-3 py-1.5 font-mono text-mono text-ink">{t}</motion.li>
               ))}
             </ul>
-            <Code label="Claude Code" wrap>{`claude mcp add --transport http rent-a-shell ${origin}/mcp`}</Code>
+            <Code label="MCP config" wrap>{`{ "mcpServers": { "rent-a-shell": { "type": "http", "url": "${origin}/mcp" } } }`}</Code>
           </div>
         </section>
       </main>
