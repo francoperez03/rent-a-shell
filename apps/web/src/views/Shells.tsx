@@ -42,9 +42,9 @@ export default function ShellsView({ shells }: { shells: Shell[] }) {
           aside={<Readout label="Online now" value={online} unit={`/ ${n}`} />}
         />
 
-        {/* the wheel: the centre card in front, the sides tucked behind it and turned inwards (perspective on the row) */}
-        <div className="relative mt-12 grid grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_1.5fr_1fr] lg:gap-0 lg:[perspective:1400px]">
-          <Side shell={prev} className="order-2 lg:order-1 lg:z-0 lg:[transform:translateX(16%)_rotateY(26deg)_scale(.88)]" />
+        {/* the wheel: the centre card in front, the sides tucked behind it */}
+        <div className="relative mt-12 grid grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_1.5fr_1fr] lg:gap-0">
+          <Side shell={prev} className="order-2 lg:order-1 lg:z-0 lg:[transform:translateX(16%)_scale(.88)]" />
           <div className="order-1 min-w-0 lg:order-2 lg:z-10">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div key={current?.id ?? 'none'} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={slide}>
@@ -52,7 +52,7 @@ export default function ShellsView({ shells }: { shells: Shell[] }) {
               </motion.div>
             </AnimatePresence>
           </div>
-          <Side shell={next} className="order-3 lg:z-0 lg:[transform:translateX(-16%)_rotateY(-26deg)_scale(.88)]" />
+          <Side shell={next} className="order-3 lg:z-0 lg:[transform:translateX(-16%)_scale(.88)]" />
 
           {n > 1 && (
             <div className="order-4 flex justify-center gap-3 lg:absolute lg:-top-14 lg:right-0">
@@ -108,7 +108,7 @@ function Side({ shell, className }: { shell?: Shell; className?: string }) {
   return (
     <div className={cn('lg:opacity-70', className)}>
       {shell ? (
-        <article className="border border-rule bg-paper">
+        <Link href={shellHref(shell)} className="group block border border-rule bg-paper transition-[transform,border-color] duration-medium ease-out hover:scale-[1.03] hover:border-ink">
           <div className="relative aspect-square w-full overflow-hidden bg-bench">
             {SHELL_IMAGES[shell.id] ? (
               <Image src={SHELL_IMAGES[shell.id]} alt="" fill sizes="(min-width: 1024px) 320px, 50vw" className="object-cover" />
@@ -120,19 +120,13 @@ function Side({ shell, className }: { shell?: Shell; className?: string }) {
             <p className="text-h3">{shell.name}</p>
             <p className="mt-1 font-mono text-mono-xs uppercase text-ink-3">{shell.location}</p>
           </div>
-        </article>
+        </Link>
       ) : (
-        <article className="on-bench border border-bench-rule bg-bench">
+        <a href={FORGERS_DOC} rel="noopener" title="Publish your robot as a Forger" className="on-bench group block border border-bench-rule bg-bench transition-[transform,border-color] duration-medium ease-out hover:scale-[1.03] hover:border-bench-ink">
           <div className="dot-grid-bench grid aspect-square w-full place-items-center">
-            <p className="font-mono text-mono uppercase text-bench-ink-2">Coming soon</p>
+            <p className="font-mono text-mono uppercase text-bench-ink-2 transition-colors duration-base group-hover:text-bench-ink">Coming soon</p>
           </div>
-          <div className="border-t border-bench-rule px-4 py-3">
-            <p className="text-small text-bench-ink-2">
-              Have a robot sitting idle?{' '}
-              <a href={FORGERS_DOC} rel="noopener" className="text-signal underline-offset-4 hover:underline">Publish it</a>.
-            </p>
-          </div>
-        </article>
+        </a>
       )}
     </div>
   );
