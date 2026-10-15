@@ -86,12 +86,13 @@ function Numbers({ shell }: { shell: Shell | undefined }) {
   const minutes = shell?.pricing.block_minutes ?? 5;
   const parts = shell?.build.parts_usd ?? 45;
   const days = shell?.build.lead_days ?? 14;
+  const online = !!shell && shell.status !== 'offline';
   return (
     <section aria-label="Key numbers" className="bg-signal text-ink">
       <dl className="mx-auto grid w-full max-w-container grid-cols-1 divide-y divide-ink/20 px-4 md:grid-cols-3 md:divide-x md:divide-y-0 md:px-6">
         <Band k="Five minutes" v={<CountUp prefix="$" value={price} />} u={`/ ${minutes} min`} note="Pay per use in USDC. Powered by Solana." />
         <Band k="Owning this arm" v={<CountUp prefix="$" value={parts} />} u="in parts" note={`Plus ${days} days of shipping and a day of assembly.`} />
-        <Band k="Waiting" v={<CountUp value={0} />} u="days" note="The robot is online now. First test in the next five minutes." />
+        <Band k="Waiting" v={<CountUp value={0} />} u="days" note={online ? 'The robot is online now. First test in the next five minutes.' : 'The robot is offline right now. No waiting list: come back in a while.'} />
       </dl>
     </section>
   );
@@ -205,30 +206,30 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
     <section id="who-its-for" className="dot-grid border-t border-rule bg-paper-2 py-section">
       <div className="mx-auto w-full max-w-container px-4 md:px-6">
         <SectionIndex title="Two ways to use it" body="By hand, with a wallet. Or through your agent, with one sentence." anim={reveal()} />
-        <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-12">
+        <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-12 lg:items-start">
           <motion.div {...reveal()} className="lg:col-span-6">
-            <motion.article {...path(0)} className="group relative flex h-full flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-ink md:p-8">
+            <motion.article {...path(0)} className="group relative flex flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-ink md:p-8">
               <motion.span aria-hidden variants={PATH_RULE} className="absolute inset-x-0 top-0 h-0.5 origin-left bg-ink" />
               <p className="flex items-center gap-2 font-mono text-mono-xs uppercase text-ink-3">
                 You <span className="arrow text-ink">→</span>
               </p>
               <h3 className="wide-106 mt-3 text-h2">Rent it from this page and drive it yourself.</h3>
               <Steps items={human} />
-              <div className="mt-6 lg:mt-auto lg:pt-6">
+              <div className="mt-8">
                 <Button as="link" href={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
               </div>
             </motion.article>
           </motion.div>
 
           <motion.div {...reveal(0.08)} className="min-w-0 lg:col-span-6">
-            <motion.article {...path(1)} className="group relative flex h-full min-w-0 flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-signal md:p-8">
+            <motion.article {...path(1)} className="group relative flex min-w-0 flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-signal md:p-8">
               <motion.span aria-hidden variants={PATH_RULE} className="absolute inset-x-0 top-0 h-0.5 origin-left bg-signal" />
               <p className="flex items-center gap-2 font-mono text-mono-xs uppercase text-signal-deep">
                 Your agent <span className="arrow">→</span>
               </p>
               <h3 className="wide-106 mt-3 text-h2">Tell your agent one sentence. It pays and drives it for you.</h3>
               <Steps items={agent} />
-              <div className="mt-6 lg:mt-auto lg:pt-6">
+              <div className="mt-8">
                 <Button as="link" href="/agents" variant="secondary" label="Agent guide" />
               </div>
             </motion.article>
@@ -261,20 +262,20 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
 function Closing({ shell }: { shell: Shell | undefined }) {
   const reveal = useReveal();
   return (
-    <section id="closing" className="border-t border-rule">
+    <section id="closing" className="on-bench dot-grid-bench border-t border-bench-rule bg-bench text-bench-ink">
       <div className="mx-auto w-full max-w-container px-4 py-section md:px-6">
-        <motion.h2 {...reveal()} className="wide-112 max-w-[18ch] text-display">
+        <motion.h2 {...reveal()} className="wide-112 max-w-[18ch] text-display text-bench-ink">
           Five minutes is enough to know if your code moves something real.
         </motion.h2>
-        <motion.p {...reveal(0.08)} className="mt-6 max-w-prose text-lead text-ink-2">
+        <motion.p {...reveal(0.08)} className="mt-6 max-w-prose text-lead text-bench-ink-2">
           {shell ? `A ${shell.pricing.block_minutes}-minute block costs USD ${shell.pricing.usd}` : 'Blocks start from USD 0.05'}, paid in USDC on Solana; each Forger sets the price of their shell. When time runs out, {shell?.name ?? 'El Tucu'} returns to HOME on its own.
         </motion.p>
         <motion.div {...reveal(0.16)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Button as="link" href={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
-          <Button as="a" href="/llms.txt" variant="secondary" label="Read llms.txt" />
+          <Button as="a" href="/llms.txt" variant="secondary" surface="bench" label="Read llms.txt" />
         </motion.div>
       </div>
-      <Footer />
+      <Footer surface="bench" />
     </section>
   );
 }
