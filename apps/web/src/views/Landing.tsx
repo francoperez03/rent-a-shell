@@ -103,7 +103,7 @@ function Band({ k, v, u, note }: { k: string; v: React.ReactNode; u: string; not
   return (
     <div className="py-6 md:px-6 md:first:pl-0 md:last:pr-0">
       <dt className="font-mono text-mono-xs uppercase text-ink/70">{k}</dt>
-      <dd className="mt-1">
+      <dd className="mt-3">
         <span className="tabular font-mono text-data-lg">{v}</span>
         <span className="ml-2 font-mono text-mono text-ink/70">{u}</span>
       </dd>
