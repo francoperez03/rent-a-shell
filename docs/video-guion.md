@@ -2,7 +2,7 @@
 
 Format: you on camera for the open and close, screen capture for both demos, the real arm visible in a corner (the site's live camera already shows it). Written to be spoken: full sentences, present tense, questions that the demo answers. Brackets are actions, everything else is spoken. About 330 words: a minute and a half at a calm pace.
 
-Before recording: `pnpm forger` running with the tunnel and that URL deployed to Vercel; Phantom on devnet with USDC and a little SOL; the agent wallet (`node rent.mjs wallet`) holding at least 0.05 USDC; Claude Code open in an empty folder; the arm at HOME.
+Before recording: `pnpm forger` running with the tunnel and that URL deployed to Vercel; Phantom on devnet with USDC and a little SOL; the agent wallet (`node rent.mjs wallet`) holding at least 0.05 USDC; the agent's terminal open in an empty folder; the arm at HOME.
 
 ---
 
@@ -32,7 +32,7 @@ Who keeps the money? A program on Solana. If the robot fails, the money comes ba
 
 Paid. This is the transaction, and this is the real robot moving. The numbers show where the servo really is.
 
-## 3. Through an agent (0:50 to 1:20) · screen, Claude Code
+## 3. Through an agent (0:50 to 1:20) · screen, the agent
 
 Now, can an agent do all of this by itself? Let's see. I tell it:
 

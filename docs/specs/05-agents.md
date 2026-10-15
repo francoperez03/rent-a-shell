@@ -9,7 +9,7 @@ How an agent discovers a shell, pays for it and controls it with no human help.
 | `llms.txt` | plain-text instructions: what Rent a Shell is, each shell's spec, how to pay with x402, how to send commands, examples with `curl` and `@x402/fetch` | gateway `/llms.txt`, generated from the shell spec; the hub's `/llms.txt` lists the whole catalog |
 | MCP | MCP server in the gateway (and a catalog MCP in the site) | `https://<gateway-url>/mcp`, `https://rent-a-shell.vercel.app/mcp` |
 | Agent card | JSON with services (web, MCP, x402, `llms.txt`) and active payment methods | `https://<gateway-url>/.well-known/agent.json` |
-| Claude Code skill | `skills/rent-a-shell`: rents, runs a plan, measures and reports, with a spending cap | `https://rent-a-shell.vercel.app/skills/rent/SKILL.md` |
+| Agent skill | `skills/rent-a-shell`: rents, runs a plan, measures and reports, with a spending cap | `https://rent-a-shell.vercel.app/skills/rent/SKILL.md` |
 
 ## MCP tools
 
@@ -40,7 +40,7 @@ Node script for the demo and for end-to-end testing:
 The one with the most support in the Colosseum evaluation: **an agent tests its robotics code on real hardware**.
 
 90-second script:
-1. In Claude Code: "test this motion sequence on a real arm and tell me if it reaches the position".
+1. Tell your agent: "test this motion sequence on a real arm and tell me if it reaches the position".
 2. The agent reads `llms.txt`, pays USD 0.05 in USDC with x402 (the tx shows on Solscan).
 3. The arm moves on the website camera; the HUD shows "SESSION · AGENT · 04:59".
 4. The agent returns the report with frames.

@@ -48,7 +48,7 @@ node rent.mjs info --gateway https://rent-a-shell.vercel.app
 ```
 `--gateway` takes the website URL or a gateway URL (the site's `/llms.txt` names the live gateway). `info` returns the spec (joints and safe range, HOME, routines, sensors, price, Forger), the queue and the current state. If it's `busy`, the rental is queued and starts when the shell frees up (the client waits on its own). `node rent.mjs catalog --hub https://rent-a-shell.vercel.app` lists every shell and its gateway (the site is the catalog).
 
-Without the client: the site and each gateway expose `llms.txt` and MCP (`claude mcp add --transport http rent-a-shell <gateway>/mcp`) to explore the catalog. Payment still goes through this client.
+Without the client: the site and each gateway expose `llms.txt` and MCP (add `<gateway>/mcp` as a Streamable HTTP MCP server in your agent) to explore the catalog. Payment still goes through this client.
 
 ## 3b. Interactive session (the person steers, one command at a time)
 

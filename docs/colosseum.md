@@ -62,7 +62,7 @@ In parallel, a person scans the QR with Phantom and takes control from the web c
 - Marketplace hub: Forgers register their gateway, the hub builds the catalog, checks health and publishes it via `llms.txt` and MCP.
 - Customization requests: the customer writes to the Forger from the spec page; the Forger reads them with their token.
 - Current sensor (INA219): driver in El Tucu's firmware ([`el-tucu`](https://github.com/francoperez03/el-tucu)) and in the mock, `current_ma` in `/state`. Roadmap: the sensor is not soldered on El Tucu yet and the console does not show current.
-- Claude Code skills: one to rent and test code on a shell (with a spending cap) and one to turn a computer into a Forger (`pnpm forger`).
+- Agent skills: one to rent and test code on a shell (with a spending cap) and one to turn a computer into a Forger (`pnpm forger`).
 - Website: landing, catalog, QR checkout, console with camera and agent guide.
 - Robot: El Tucu (ESP32 + 4 servos) running at events; the ESP32 stays on the local network behind the gateway.
 

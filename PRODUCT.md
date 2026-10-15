@@ -7,7 +7,7 @@ brand (landing, shell, agents, 404) · product (checkout, session console)
 ## Users
 
 1. Small hardware teams (2 to 5 people, often bootstrapped) building a physical product with AI help. Context: they have code and no equipment; they want to test today, not in two weeks.
-2. Their AI agents (Claude Code and others) running tests autonomously via `llms.txt`, x402 and MCP.
+2. Their AI agents (coding agents with MCP or skills support) running tests autonomously via `llms.txt`, x402 and MCP.
 3. Forgers: makers and labs that publish idle hardware and get paid per 5-minute block (today one shell, built by us).
 
 ## Purpose
