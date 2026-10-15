@@ -9,19 +9,18 @@ import { SectionIndex } from '@/components/SectionIndex';
 import { StatusDot } from '@/components/StatusDot';
 import { Footer } from '@/components/Footer';
 import { INSTALL } from '@/content/install';
-import { shellHref, useShells, useShellState } from '@/lib/api';
+import { shellHref, useShells } from '@/lib/api';
 import { useReveal } from '@/lib/useReveal';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { CountUp } from '@/components/CountUp';
 import { dur, easeOut } from '@/lib/motion';
 import { cn } from '@/lib/cn';
-import { JOINTS, JOINT_LABEL } from '@/lib/joints';
 
 const STEPS = [
   { n: '01', title: 'Rent', body: 'Pick a shell and how much time you need, from five minutes up. You see the camera, the ranges and the queue before paying.' },
   { n: '02', title: 'Pay', body: 'Powered by Solana: a Solana Pay QR for people, x402 for agents. USDC, settled in seconds, no account. With escrow, a dropped robot refunds you on its own.' },
   { n: '03', title: 'Run', body: 'Move each joint from the console, run a routine, or let your agent send the commands over HTTP or MCP.' },
-  { n: '04', title: 'Measure', body: 'Read the real angles and the frames. Then fix the code and run it again.' },
+  { n: '04', title: 'Watch', body: 'See the arm do it on camera. Then fix the code and run it again.' },
 ];
 
 /** Landing: brand register. Paper, one signal band, measurements as the hero image. */
@@ -43,7 +42,6 @@ export default function Landing({ origin }: { origin: string }) {
 function Hero({ shell }: { shell: Shell | undefined }) {
   const reveal = useReveal();
   const reduced = useReducedMotion();
-  const { data: state } = useShellState(shell?.id, 2_000);
   const city = shell?.location.split(',')[0] ?? 'Tucumán';
   // The live window drifts a little slower than the page (Crisol video panels): 0 to 40px over the hero scroll.
   const ref = useRef<HTMLElement>(null);
@@ -62,7 +60,7 @@ function Hero({ shell }: { shell: Shell | undefined }) {
             Test your code on real hardware. Today.
           </motion.h1>
           <motion.p {...reveal(0.1, 'mount')} className="mt-6 max-w-[44ch] text-lead text-ink-2">
-            {shell?.name ?? 'El Tucu'} is a four-axis arm in {city}, Argentina. Rent it in five-minute blocks, run your code against it, read the real angles, and watch it on camera.
+            {shell?.name ?? 'El Tucu'} is a four-axis arm in {city}, Argentina. Rent it in five-minute blocks, run your code against it and watch it on camera.
           </motion.p>
           <motion.div {...reveal(0.15, 'mount')} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button as="link" href={shell ? shellHref(shell) : '/shells/el-tucu'} label={`Rent ${shell?.name ?? 'El Tucu'}`} />
@@ -76,13 +74,6 @@ function Hero({ shell }: { shell: Shell | undefined }) {
               {shell?.location ?? 'Tucumán, AR'}
             </span>
           </LiveVideo>
-          <dl className="grid grid-cols-2 gap-px border border-t-0 border-bench-rule bg-bench-rule sm:grid-cols-4">
-            {JOINTS.map((j) => (
-              <div key={j} className="bg-bench px-2 py-2 sm:px-3">
-                <Readout label={JOINT_LABEL[j]} value={state ? Math.round(state.angles[j]) : '—'} unit="°" surface="bench" />
-              </div>
-            ))}
-          </dl>
         </motion.div>
       </div>
     </section>

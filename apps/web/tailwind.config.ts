@@ -39,7 +39,7 @@ const config: Config = {
         lead: ['1.25rem', { lineHeight: '1.5' }],
         body: ['1.0625rem', { lineHeight: '1.6' }],
         small: ['0.9375rem', { lineHeight: '1.5' }],
-        'data-lg': ['clamp(2.5rem, 5vw, 4rem)', { lineHeight: '1', fontWeight: '500' }],
+        'data-lg': ['clamp(2.5rem, 5vw, 4rem)', { lineHeight: '1.15', fontWeight: '500' }],
         data: ['1.5rem', { lineHeight: '1.1', fontWeight: '500' }],
         mono: ['0.8125rem', { lineHeight: '1.5', letterSpacing: '0.02em' }],
         'mono-xs': ['0.6875rem', { lineHeight: '1.4', letterSpacing: '0.04em' }],
