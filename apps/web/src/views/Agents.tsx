@@ -67,8 +67,8 @@ export default function AgentsPage({ origin, gateway }: { origin: string; gatewa
             </p>
           </div>
           <div className="min-w-0">
-            <Code label="Say" wrap>{`Go to ${origin}, pick the shell, pay for 5 minutes, open the gripper and then ask me what to do next.`}</Code>
-            <Code label="Install the skill once" wrap className="mt-6">{INSTALL}</Code>
+            <Code label="1 · Install the skill once" wrap>{INSTALL}</Code>
+            <Code label="2 · Say this to your agent" wrap className="mt-6">{`Go to ${origin}, pick the shell, pay for 5 minutes, open the gripper and then ask me what to do next.`}</Code>
           </div>
         </motion.section>
 

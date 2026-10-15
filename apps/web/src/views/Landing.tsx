@@ -164,10 +164,21 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
     'Pay with Phantom or Solflare. The money sits in escrow until your session ends.',
     'Drive the arm from the console while the camera shows you every move.',
   ];
-  const agent = [
-    'Install the skill once (one command, below).',
-    'Tell your agent the sentence. It reads llms.txt, shows you the price and asks before paying.',
-    'It pays with x402, runs your commands and asks you what to do next.',
+  const code = 'mt-3 whitespace-pre-wrap break-words border border-bench-rule bg-bench-2 p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink';
+  const agent: Step[] = [
+    {
+      text: 'Install the skill once.',
+      after: (
+        <pre className={code}>
+          <code>{INSTALL}</code>
+        </pre>
+      ),
+    },
+    {
+      text: 'Tell your agent the sentence. It reads llms.txt, shows you the price and asks before paying.',
+      after: <blockquote className={cn(code, 'font-sans text-body')}>“{sentence}”</blockquote>,
+    },
+    { text: 'It pays with x402, runs your commands and asks you what to do next.' },
   ];
 
   return (
@@ -188,16 +199,6 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
             <p className="font-mono text-mono-xs uppercase text-signal">Your agent</p>
             <h3 className="wide-106 mt-3 text-h2 text-bench-ink">Tell your agent one sentence. It pays and drives it for you.</h3>
             <Steps items={agent} />
-            <figure className="mt-6">
-              <figcaption className="font-mono text-mono-xs uppercase text-bench-ink-2">Say this to your agent</figcaption>
-              <blockquote className="mt-2 border border-bench-ink bg-bench-2 p-4 text-body text-bench-ink">“{sentence}”</blockquote>
-            </figure>
-            <pre className="mt-4 whitespace-pre-wrap break-words border border-bench-rule bg-bench-2 p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
-              <code>
-                <span className="text-bench-ink-2"># install the skill once{'\n'}</span>
-                {INSTALL}
-              </code>
-            </pre>
             <div className="mt-6 lg:mt-auto lg:pt-6">
               <Button as="link" href="/agents" variant="secondary" surface="bench" label="Agent guide" />
             </div>
@@ -248,15 +249,24 @@ function Closing({ shell }: { shell: Shell | undefined }) {
   );
 }
 
-function Steps({ items }: { items: string[] }) {
+type Step = { text: string; after?: React.ReactNode };
+
+/** Numbered steps; a step can carry a block right under its text (a command, a sentence to copy). */
+function Steps({ items }: { items: (string | Step)[] }) {
   return (
     <ol className="mt-5 flex flex-col gap-3">
-      {items.map((t, i) => (
-        <li key={i} className="grid grid-cols-[1.75rem_1fr] gap-3 text-body text-bench-ink-2">
-          <span className="tabular font-mono text-mono text-bench-ink">{i + 1}.</span>
-          <span className="max-w-[44ch]">{t}</span>
-        </li>
-      ))}
+      {items.map((it, i) => {
+        const s = typeof it === 'string' ? { text: it } : it;
+        return (
+          <li key={i} className="grid grid-cols-[1.75rem_1fr] gap-3 text-body text-bench-ink-2">
+            <span className="tabular font-mono text-mono text-bench-ink">{i + 1}.</span>
+            <div className="min-w-0">
+              <span className="max-w-[44ch]">{s.text}</span>
+              {s.after}
+            </div>
+          </li>
+        );
+      })}
     </ol>
   );
 }
