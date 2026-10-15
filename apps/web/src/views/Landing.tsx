@@ -155,8 +155,19 @@ function HowItWorks() {
   );
 }
 
+// Two paths. Hovering one commits to it: its rule draws, its steps step forward one by one, the other path dims.
+const PATH = {
+  rest: { opacity: 1, y: 0, transition: { staggerChildren: 0.04, staggerDirection: -1 } },
+  hover: { opacity: 1, y: -4, transition: { duration: dur.base, ease: easeOut, staggerChildren: 0.07, delayChildren: 0.05 } },
+  dim: { opacity: 0.5, y: 0, transition: { duration: dur.base, ease: easeOut } },
+};
+const PATH_RULE = { rest: { scaleX: 0 }, hover: { scaleX: 1, transition: { duration: dur.medium, ease: easeOut } }, dim: { scaleX: 0 } };
+const PATH_STEP = { rest: { x: 0 }, hover: { x: 8, transition: { duration: dur.base, ease: easeOut } }, dim: { x: 0 } };
+
 function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string }) {
   const reveal = useReveal();
+  const reduced = useReducedMotion();
+  const [chosen, setChosen] = useState<number | null>(null);
   const sentence = `Go to ${origin}, pick the shell, pay for 5 minutes, open the gripper and then ask me what to do next.`;
   const price = shell ? `USD ${shell.pricing.usd} per ${shell.pricing.block_minutes}-minute block` : 'from USD 0.05 per block';
   const human = [
@@ -164,61 +175,80 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
     'Pay with Phantom or Solflare. The money sits in escrow until your session ends.',
     'Drive the arm from the console while the camera shows you every move.',
   ];
-  const code = 'mt-3 whitespace-pre-wrap break-words border border-bench-rule bg-bench-2 p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink';
   const agent: Step[] = [
     {
       text: 'Install the skill once.',
       after: (
-        <pre className={code}>
+        <pre className="on-bench mt-3 whitespace-pre-wrap break-words border border-bench-rule bg-bench p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
           <code>{INSTALL}</code>
         </pre>
       ),
     },
     {
       text: 'Tell your agent the sentence. It reads llms.txt, shows you the price and asks before paying.',
-      after: <blockquote className={cn(code, 'font-sans text-body')}>“{sentence}”</blockquote>,
+      after: <blockquote className="mt-3 border border-ink bg-paper-2 p-4 text-body text-ink">“{sentence}”</blockquote>,
     },
     { text: 'It pays with x402, runs your commands and asks you what to do next.' },
   ];
+  const state = (i: number) => (reduced ? 'rest' : chosen === null ? 'rest' : chosen === i ? 'hover' : 'dim');
+  const path = (i: number) => ({
+    initial: 'rest',
+    animate: state(i),
+    variants: PATH,
+    onHoverStart: () => setChosen(i),
+    onHoverEnd: () => setChosen(null),
+    onFocusCapture: () => setChosen(i),
+    onBlurCapture: () => setChosen(null),
+  });
 
   return (
-    <section id="who-its-for" className="on-bench dot-grid-bench border-t border-bench-rule bg-bench py-section text-bench-ink">
+    <section id="who-its-for" className="dot-grid border-t border-rule bg-paper-2 py-section">
       <div className="mx-auto w-full max-w-container px-4 md:px-6">
-        <SectionIndex title="Two ways to use it" body="By hand, with a wallet. Or through your agent, with one sentence." surface="bench" anim={reveal()} />
-        <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-12 lg:grid-cols-12">
-          <motion.article {...reveal()} className="flex flex-col border-t-2 border-bench-ink pt-5 lg:col-span-6">
-            <p className="font-mono text-mono-xs uppercase text-bench-ink-2">You</p>
-            <h3 className="wide-106 mt-3 text-h2 text-bench-ink">Rent it from this page and drive it yourself.</h3>
-            <Steps items={human} />
-            <div className="mt-6 lg:mt-auto lg:pt-6">
-              <Button as="link" href={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
-            </div>
-          </motion.article>
+        <SectionIndex title="Two ways to use it" body="By hand, with a wallet. Or through your agent, with one sentence." anim={reveal()} />
+        <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-12">
+          <motion.div {...reveal()} className="lg:col-span-6">
+            <motion.article {...path(0)} className="group relative flex h-full flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-ink md:p-8">
+              <motion.span aria-hidden variants={PATH_RULE} className="absolute inset-x-0 top-0 h-0.5 origin-left bg-ink" />
+              <p className="flex items-center gap-2 font-mono text-mono-xs uppercase text-ink-3">
+                You <span className="arrow text-ink">→</span>
+              </p>
+              <h3 className="wide-106 mt-3 text-h2">Rent it from this page and drive it yourself.</h3>
+              <Steps items={human} />
+              <div className="mt-6 lg:mt-auto lg:pt-6">
+                <Button as="link" href={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
+              </div>
+            </motion.article>
+          </motion.div>
 
-          <motion.article {...reveal(0.08)} className="flex min-w-0 flex-col border-t-2 border-signal pt-5 lg:col-span-6">
-            <p className="font-mono text-mono-xs uppercase text-signal">Your agent</p>
-            <h3 className="wide-106 mt-3 text-h2 text-bench-ink">Tell your agent one sentence. It pays and drives it for you.</h3>
-            <Steps items={agent} />
-            <div className="mt-6 lg:mt-auto lg:pt-6">
-              <Button as="link" href="/agents" variant="secondary" surface="bench" label="Agent guide" />
-            </div>
-          </motion.article>
+          <motion.div {...reveal(0.08)} className="min-w-0 lg:col-span-6">
+            <motion.article {...path(1)} className="group relative flex h-full min-w-0 flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-signal md:p-8">
+              <motion.span aria-hidden variants={PATH_RULE} className="absolute inset-x-0 top-0 h-0.5 origin-left bg-signal" />
+              <p className="flex items-center gap-2 font-mono text-mono-xs uppercase text-signal-deep">
+                Your agent <span className="arrow">→</span>
+              </p>
+              <h3 className="wide-106 mt-3 text-h2">Tell your agent one sentence. It pays and drives it for you.</h3>
+              <Steps items={agent} />
+              <div className="mt-6 lg:mt-auto lg:pt-6">
+                <Button as="link" href="/agents" variant="secondary" label="Agent guide" />
+              </div>
+            </motion.article>
+          </motion.div>
 
           {/* Forgers as a full-width band, same grammar as SectionIndex: eyebrow, text, numbers to the right */}
-          <motion.article {...reveal(0.16)} className="grid grid-cols-1 gap-x-8 gap-y-6 border-t border-bench-rule pt-6 lg:col-span-12 lg:grid-cols-[6rem_1fr_auto]">
-            <p className="font-mono text-mono-xs uppercase text-bench-ink-2">Forgers</p>
+          <motion.article {...reveal(0.16)} className="grid grid-cols-1 gap-x-8 gap-y-6 border-t border-rule pt-6 lg:col-span-12 lg:grid-cols-[6rem_1fr_auto]">
+            <p className="font-mono text-mono-xs uppercase text-ink-3">Forgers</p>
             <div>
-              <h3 className="text-h3 text-bench-ink">Have a robot sitting idle? Publish it.</h3>
-              <p className="mt-3 max-w-prose text-body text-bench-ink-2">
+              <h3 className="text-h3">Have a robot sitting idle? Publish it.</h3>
+              <p className="mt-3 max-w-prose text-body text-ink-2">
                 Run the gateway next to your hardware, set the price per block, get paid in your own wallet: upfront with x402, from the escrow when the session ends with Solana Pay. Customization requests come to you.
               </p>
             </div>
             <div className="lg:justify-self-end lg:text-right">
               <dl className="grid grid-cols-2 gap-8">
-                <Readout label="Your cut" value={<CountUp value={90} />} unit="%" surface="bench" />
-                <Readout label="Setup" value="1" unit="command" surface="bench" />
+                <Readout label="Your cut" value={<CountUp value={90} />} unit="%" />
+                <Readout label="Setup" value="1" unit="command" />
               </dl>
-              <a href="https://github.com/francoperez03/rent-a-shell/blob/main/docs/forgers.md" rel="noopener" className="mt-4 inline-block font-mono text-mono uppercase text-signal underline-offset-4 hover:underline">Become a Forger</a>
+              <a href="https://github.com/francoperez03/rent-a-shell/blob/main/docs/forgers.md" rel="noopener" className="mt-4 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">Become a Forger</a>
             </div>
           </motion.article>
         </div>
@@ -258,13 +288,13 @@ function Steps({ items }: { items: (string | Step)[] }) {
       {items.map((it, i) => {
         const s = typeof it === 'string' ? { text: it } : it;
         return (
-          <li key={i} className="grid grid-cols-[1.75rem_1fr] gap-3 text-body text-bench-ink-2">
-            <span className="tabular font-mono text-mono text-bench-ink">{i + 1}.</span>
+          <motion.li key={i} variants={PATH_STEP} className="grid grid-cols-[1.75rem_1fr] gap-3 text-body text-ink-2">
+            <span className="tabular font-mono text-mono text-ink transition-colors duration-base group-hover:text-signal-deep">{i + 1}.</span>
             <div className="min-w-0">
               <span className="max-w-[44ch]">{s.text}</span>
               {s.after}
             </div>
-          </li>
+          </motion.li>
         );
       })}
     </ol>
