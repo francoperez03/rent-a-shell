@@ -19,7 +19,7 @@ import { cn } from '@/lib/cn';
 
 const STEPS = [
   { n: '01', title: 'Rent', body: 'Pick a shell and how much time you need, from five minutes up. You see the camera, the ranges and the queue before paying.' },
-  { n: '02', title: 'Pay', body: 'Powered by Solana: a Solana Pay QR for people, x402 for agents. USDC, settled in seconds, no account. With escrow, a dropped robot refunds you on its own.' },
+  { n: '02', title: 'Pay', body: 'Powered by Solana: a Solana Pay QR for people, x402 for agents. USDC on devnet for now, settled in seconds, no account. Escrow refunds when a robot drops are coming.' },
   { n: '03', title: 'Run', body: 'Move each joint from the console, run a routine, or let your agent send the commands over HTTP or MCP.' },
   { n: '04', title: 'Watch', body: 'See the arm do it on camera. Then fix the code and run it again.' },
 ];
@@ -58,10 +58,10 @@ function Hero({ shell }: { shell: Shell | undefined }) {
             <span>{shell?.name ?? 'El Tucu'} · {city}</span>
           </motion.p>
           <motion.h1 {...reveal(0.05, 'mount')} className="wide-112 mt-5 max-w-[16ch] text-display">
-            Test your code on real hardware. Today.
+            Drive real hardware from your code. Today.
           </motion.h1>
           <motion.p {...reveal(0.1, 'mount')} className="mt-6 max-w-[44ch] text-lead text-ink-2">
-            {shell?.name ?? 'El Tucu'} is a four-axis arm in {city}, Argentina. Rent it in five-minute blocks, run your code against it and watch it on camera.
+            {shell?.name ?? 'El Tucu'} is a four-axis arm in {city}, Argentina. Rent it in five-minute blocks, send it commands from the console or your code, and watch it on camera.
           </motion.p>
           <motion.div {...reveal(0.15, 'mount')} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button as="link" href={shell ? shellHref(shell) : '/shells/el-tucu'} label={`Rent ${shell?.name ?? 'El Tucu'}`} />
@@ -91,7 +91,7 @@ function Numbers({ shell }: { shell: Shell | undefined }) {
   return (
     <section aria-label="Key numbers" className="bg-signal text-ink">
       <dl className="mx-auto grid w-full max-w-container grid-cols-1 divide-y divide-ink/20 px-4 md:grid-cols-3 md:divide-x md:divide-y-0 md:px-6">
-        <Band k="Five minutes" v={<CountUp prefix="$" value={price} />} u={`/ ${minutes} min`} note="Pay per use in USDC. Powered by Solana." />
+        <Band k="Five minutes" v={<CountUp prefix="$" value={price} />} u={`/ ${minutes} min`} note="Pay per use in USDC on Solana devnet. Test money for now." />
         <Band k="Owning this arm" v={<CountUp prefix="$" value={parts} />} u="in parts" note={`Plus ${days} days of shipping and a day of assembly.`} />
         <Band k="Waiting" v={<CountUp value={0} />} u="days" note={online ? 'The robot is online now. First test in the next five minutes.' : 'The robot is offline right now. No waiting list: come back in a while.'} />
       </dl>
@@ -173,7 +173,7 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
   const price = shell ? `USD ${shell.pricing.usd} per ${shell.pricing.block_minutes}-minute block` : 'from USD 0.05 per block';
   const human = [
     `Open the shell page and pick how long: ${price}.`,
-    'Pay with Phantom or Solflare. The money sits in escrow until your session ends.',
+    'Pay with Phantom or Solflare on devnet. Test USDC, no real money yet.',
     'Drive the arm from the console while the camera shows you every move.',
   ];
   const agent: Step[] = [
@@ -246,13 +246,13 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
             <div>
               <h3 className="text-h3">Have a robot sitting idle? Publish it.</h3>
               <p className="mt-3 max-w-prose text-body text-ink-2">
-                Run the gateway next to your hardware, set the price per block, get paid in your own wallet: upfront with x402, from the escrow when the session ends with Solana Pay. Customization requests come to you.
+                Get a Forger token, run the gateway next to your hardware, set the price per block and get paid in USDC to your own wallet (devnet today). Customization requests come to you.
               </p>
             </div>
             <div className="lg:justify-self-end lg:text-right">
               <dl className="grid grid-cols-2 gap-8">
-                <Readout label="Your cut" value={<CountUp value={90} />} unit="%" />
-                <Readout label="Setup" value="1" unit="command" />
+                <Readout label="Your cut, on settle" value={<CountUp value={90} />} unit="%" />
+                <Readout label="Setup" value="1" unit="skill" />
               </dl>
               <a href="https://github.com/francoperez03/rent-a-shell/blob/main/docs/forgers.md" rel="noopener" className="mt-4 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">Become a Forger</a>
             </div>
@@ -273,7 +273,7 @@ function Closing({ shell }: { shell: Shell | undefined }) {
           Five minutes is enough to know if your code moves something real.
         </motion.h2>
         <motion.p {...reveal(0.08)} className="mt-6 max-w-prose text-lead text-bench-ink-2">
-          {shell ? `A ${shell.pricing.block_minutes}-minute block costs USD ${shell.pricing.usd}` : 'Blocks start from USD 0.05'}, paid in USDC on Solana; each Forger sets the price of their shell. When time runs out, {shell?.name ?? 'El Tucu'} returns to HOME on its own.
+          {shell ? `A ${shell.pricing.block_minutes}-minute block costs USD ${shell.pricing.usd}` : 'Blocks start from USD 0.05'}, paid in USDC on Solana devnet; the Forger sets the price. When time runs out, {shell?.name ?? 'El Tucu'} returns to HOME on its own.
         </motion.p>
         <motion.div {...reveal(0.16)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Button as="link" href={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />

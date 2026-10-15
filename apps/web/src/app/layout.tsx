@@ -15,12 +15,12 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://rent-a-shell.vercel.app'),
-  title: 'Rent a Shell · Test your code on real hardware',
+  title: 'Rent a Shell · Drive real hardware from your code',
   description:
-    'Real hardware by the minute. Rent El Tucu, a real robot arm in Tucumán, Argentina, in five-minute blocks: test your code and watch it on camera. Pay in USDC on Solana with Solana Pay or x402.',
+    'Real hardware by the minute. Rent El Tucu, a real robot arm in Tucumán, Argentina, in five-minute blocks: send it commands and watch it on camera. Pay in USDC on Solana devnet with Solana Pay or x402.',
   openGraph: {
-    title: 'Rent a Shell · Test your code on real hardware',
-    description: 'Real robots rented by the minute for small hardware teams and their AI agents. USD 1 per five-minute block.',
+    title: 'Rent a Shell · Drive real hardware from your code',
+    description: 'A real robot arm rented by the minute for small hardware teams and their AI agents. USD 0.05 per five-minute block, on devnet.',
     type: 'website',
     images: ['/og.png'],
   },

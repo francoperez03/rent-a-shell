@@ -42,7 +42,7 @@ export default function AgentsPage({ origin, gateway }: { origin: string; gatewa
         <motion.header {...reveal(0, 'mount')} className="grid grid-cols-1 gap-8 border-b border-rule pb-10 lg:grid-cols-[1fr_22rem]">
           <div>
             <p className="font-mono text-mono uppercase text-ink-3">For agents and the devs behind them</p>
-            <h1 className="wide-106 mt-3 max-w-[22ch] text-h1">Your agent tests its code on a real arm.</h1>
+            <h1 className="wide-106 mt-3 max-w-[22ch] text-h1">Your agent drives a real arm.</h1>
             <p className="mt-5 max-w-prose text-lead text-ink-2">
               It discovers the shell, pays for a few minutes in USDC with x402, gets a token and sends commands. All over HTTP or MCP, no account.
             </p>
@@ -52,7 +52,7 @@ export default function AgentsPage({ origin, gateway }: { origin: string; gatewa
             </div>
           </div>
           <dl className="grid grid-cols-2 gap-6 self-end lg:grid-cols-1">
-            <Spec k="Payment" v="x402 · USDC on Solana" />
+            <Spec k="Payment" v="x402 · USDC on Solana devnet" />
             <Spec k="Gas" v="none, facilitator pays" />
             <Spec k="Rate limit" v="10 commands / s" />
             <Spec k="Skill" v={<a href="https://github.com/francoperez03/rent-a-shell/tree/main/skills/rent-a-shell" className="text-signal-deep underline-offset-4 hover:underline" rel="noopener">rent-a-shell (SKILL.md)</a>} />

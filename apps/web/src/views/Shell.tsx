@@ -182,7 +182,7 @@ export default function ShellPage({ id, gw }: { id: string; gw?: string }) {
             <Button label="Go to payment" className="mt-5 w-full" disabled={offline} onClick={() => setPaying(true)} />
             <PayModal shell={shell} blocks={blocks} open={paying} onClose={() => setPaying(false)} />
             <p className="mt-3 font-mono text-mono-xs uppercase text-ink-3">Queue · {queueText}</p>
-            <p className="mt-3 border-t border-rule pt-3 font-mono text-mono-xs uppercase text-ink-3">Powered by Solana · USDC</p>
+            <p className="mt-3 border-t border-rule pt-3 font-mono text-mono-xs uppercase text-ink-3">Powered by Solana · USDC on devnet</p>
             <p className="mt-2 text-small text-ink-2">
               By paying you accept the <Link href="/terms" className="text-signal-deep underline-offset-4 hover:underline">terms</Link>.
             </p>

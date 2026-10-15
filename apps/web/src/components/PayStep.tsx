@@ -97,7 +97,7 @@ export function PayStep({ view: first, rail, onRestart }: { view: IntentView; ra
           </button>
         )}
         <p className="mt-auto text-small text-ink-3">
-          With escrow, the money stays locked until your session ends. If the robot drops, it comes back to your wallet.
+          Devnet USDC, test money. Automatic refunds if the robot drops are coming with escrow.
         </p>
       </aside>
     </section>
