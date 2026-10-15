@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { Readout } from '@/components/Readout';
 import { fmtClock, getIntent, saveGrant, useEvents, useNow } from '@/lib/api';
 import { cn } from '@/lib/cn';
+import { Check, Clipboard } from '@phosphor-icons/react';
 
 /** Intent lifecycle shared by the checkout and the modal: polls until paid or expired, listens to SSE, saves the grant when paid (and opens the console with `autoOpen`). */
 export function usePayment(first: IntentView, { autoOpen = true }: { autoOpen?: boolean } = {}) {
@@ -163,18 +164,25 @@ function SolanaPay({ ins, network }: { ins: SolanaPayIns; network?: string }) {
   );
 }
 
-export function CopyButton({ text, label, surface = 'paper' }: { text: string; label: string; surface?: 'paper' | 'bench' }) {
+export function CopyButton({ text, label, surface = 'paper', icon = false }: { text: string; label: string; surface?: 'paper' | 'bench'; icon?: boolean }) {
   const [done, setDone] = useState(false);
   return (
     <button
       type="button"
+      aria-label={done ? 'Copied' : label}
+      title={done ? 'Copied' : label}
       onClick={() => navigator.clipboard?.writeText(text).then(() => {
         setDone(true);
         setTimeout(() => setDone(false), 1500);
       })}
-      className={cn('font-mono text-mono-xs uppercase underline-offset-4 hover:underline', surface === 'bench' ? 'text-bench-ink-2 hover:text-bench-ink' : 'text-signal-deep')}
+      className={cn(
+        'font-mono text-mono-xs uppercase underline-offset-4 transition-colors duration-fast',
+        icon ? '-my-1 -mr-1 inline-flex h-7 w-7 items-center justify-center' : 'hover:underline',
+        surface === 'bench' ? 'text-bench-ink-2 hover:text-bench-ink' : 'text-signal-deep',
+        icon && done && 'text-signal'
+      )}
     >
-      {done ? 'Copied' : label}
+      {icon ? (done ? <Check size={16} weight="bold" /> : <Clipboard size={16} />) : done ? 'Copied' : label}
     </button>
   );
 }

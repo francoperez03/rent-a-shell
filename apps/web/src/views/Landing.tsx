@@ -179,41 +179,15 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
   const agent: Step[] = [
     {
       text: 'Install the skill once.',
-      after: (
-        <div className="on-bench mt-3 border border-bench-rule bg-bench">
-          <div className="flex items-center justify-between border-b border-bench-rule px-4 py-2 font-mono text-mono-xs uppercase text-bench-ink-2">
-            <span>Terminal</span>
-            <CopyButton text={INSTALL} label="Copy" surface="bench" />
-          </div>
-          <pre className="whitespace-pre-wrap break-words p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
-            <code>{INSTALL}</code>
-          </pre>
-        </div>
-      ),
+      after: <Terminal label="Terminal" text={INSTALL} mono />,
     },
     {
       text: 'Ask it for its wallet and send USDC on Solana to that address. No SOL needed: the x402 facilitator pays the fee (devnet: faucet.circle.com).',
-      after: (
-        <div className="mt-3 border border-ink bg-paper-2">
-          <div className="flex items-center justify-between border-b border-rule px-4 py-2 font-mono text-mono-xs uppercase text-ink-3">
-            <span>Say this</span>
-            <CopyButton text={WALLET_SENTENCE} label="Copy" />
-          </div>
-          <blockquote className="p-4 text-body text-ink">“{WALLET_SENTENCE}”</blockquote>
-        </div>
-      ),
+      after: <Terminal label="Say this" text={WALLET_SENTENCE} />,
     },
     {
       text: 'Tell your agent the sentence. It reads llms.txt, shows you the price and asks before paying.',
-      after: (
-        <div className="mt-3 border border-ink bg-paper-2">
-          <div className="flex items-center justify-between border-b border-rule px-4 py-2 font-mono text-mono-xs uppercase text-ink-3">
-            <span>Say this</span>
-            <CopyButton text={sentence} label="Copy" />
-          </div>
-          <blockquote className="p-4 text-body text-ink">“{sentence}”</blockquote>
-        </div>
-      ),
+      after: <Terminal label="Say this" text={sentence} />,
     },
     { text: 'It pays with x402, runs your commands and asks you what to do next.' },
   ];
@@ -312,6 +286,25 @@ function Closing({ shell }: { shell: Shell | undefined }) {
 }
 
 type Step = { text: string; after?: React.ReactNode };
+
+/** A bench-coloured block with a label and a clipboard button: a command (mono) or a sentence to say (sans). */
+function Terminal({ label, text, mono = false }: { label: string; text: string; mono?: boolean }) {
+  return (
+    <div className="on-bench mt-3 border border-bench-rule bg-bench">
+      <div className="flex items-center justify-between border-b border-bench-rule px-4 py-2 font-mono text-mono-xs uppercase text-bench-ink-2">
+        <span>{label}</span>
+        <CopyButton text={text} label="Copy to clipboard" surface="bench" icon />
+      </div>
+      {mono ? (
+        <pre className="whitespace-pre-wrap break-words p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
+          <code>{text}</code>
+        </pre>
+      ) : (
+        <p className="p-4 text-body text-bench-ink">“{text}”</p>
+      )}
+    </div>
+  );
+}
 
 /** Numbered steps; a step can carry a block right under its text (a command, a sentence to copy). */
 function Steps({ items }: { items: (string | Step)[] }) {

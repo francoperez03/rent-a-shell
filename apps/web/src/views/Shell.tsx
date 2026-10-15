@@ -41,9 +41,13 @@ export default function ShellPage({ id, gw }: { id: string; gw?: string }) {
   if (isError || !shell)
     return (
       <Layout>
-        <h1 className="wide-106 text-h1">{isError ? 'The gateway did not answer.' : 'That shell does not exist.'}</h1>
-        <p className="mt-4 max-w-prose text-body text-ink-2">{isError ? 'Try again in a few seconds. If it keeps failing, the Forger may be offline.' : 'Go back home to see the published shells.'}</p>
-        <Button as="link" href="/" variant="secondary" label="See shells" className="mt-8" />
+        <h1 className="wide-106 text-h1">{isError ? 'The catalog did not answer.' : 'This shell is not published right now.'}</h1>
+        <p className="mt-4 max-w-prose text-body text-ink-2">
+          {isError
+            ? 'Try again in a few seconds.'
+            : `Its Forger's gateway is offline or not registered yet; the catalog re-checks it every 30 seconds. Come back in a while or pick another shell on the home page.`}
+        </p>
+        <Button as="link" href="/" variant="secondary" label="Back to home" className="mt-8" />
       </Layout>
     );
 
