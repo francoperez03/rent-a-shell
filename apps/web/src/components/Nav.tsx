@@ -35,7 +35,7 @@ export function Nav() {
           <ul className="flex items-center gap-5 md:gap-6">
             {[...(first ? [{ to: shellHref(first), label: first.name }] : []), ...LINKS].map((l) => (
               <li key={l.to}>
-                <Link href={l.to} className={cn('roll-parent font-mono text-mono uppercase transition-colors duration-base', bench ? 'text-bench-ink-2 hover:text-bench-ink' : 'text-ink-2 hover:text-ink')}>
+                <Link href={l.to} className={cn('roll-parent inline-flex leading-none font-mono text-mono uppercase transition-colors duration-base', bench ? 'text-bench-ink-2 hover:text-bench-ink' : 'text-ink-2 hover:text-ink')}>
                   <Roll text={l.label} />
                 </Link>
               </li>
