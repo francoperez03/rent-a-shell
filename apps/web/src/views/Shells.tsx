@@ -33,9 +33,8 @@ export default function ShellsView({ shells }: { shells: Shell[] }) {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-container px-4 pb-24 pt-24 md:px-6 md:pt-28">
+      <main className="mx-auto w-full max-w-container px-4 pb-16 pt-24 md:px-6 md:pt-24">
         <SectionIndex
-          size="h1"
           title="Shells"
           body="Real hardware, published by the Forger who built it. One today, more on the way."
           anim={reveal(0, 'mount')}
@@ -43,7 +42,7 @@ export default function ShellsView({ shells }: { shells: Shell[] }) {
         />
 
         {/* the wheel: the centre card in front, the sides tucked behind it */}
-        <div className="relative mt-12 grid grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_1.5fr_1fr] lg:gap-0">
+        <div className="relative mx-auto mt-8 grid max-w-[64rem] grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_1.45fr_1fr] lg:gap-0">
           <Side shell={prev} className="order-2 lg:order-1 lg:z-0 lg:[transform:translateX(16%)_scale(.88)]" />
           <div className="order-1 min-w-0 lg:order-2 lg:z-10">
             <AnimatePresence mode="wait" initial={false}>
@@ -123,8 +122,13 @@ function Side({ shell, className }: { shell?: Shell; className?: string }) {
         </Link>
       ) : (
         <a href={FORGERS_DOC} rel="noopener" title="Publish your robot as a Forger" className="on-bench group block border border-bench-rule bg-bench transition-[transform,border-color] duration-medium ease-out hover:scale-[1.03] hover:border-bench-ink">
-          <div className="dot-grid-bench grid aspect-square w-full place-items-center">
-            <p className="font-mono text-mono uppercase text-bench-ink-2 transition-colors duration-base group-hover:text-bench-ink">Coming soon</p>
+          <div className="dot-grid-bench grid aspect-square w-full place-items-center px-6 text-center">
+            <div>
+              <p className="font-mono text-mono uppercase text-bench-ink-2 transition-colors duration-base group-hover:text-bench-ink">Coming soon</p>
+              <p className="roll-parent mt-3 font-mono text-mono-xs uppercase text-signal">
+                Become a Forger <span className="arrow">→</span>
+              </p>
+            </div>
           </div>
         </a>
       )}

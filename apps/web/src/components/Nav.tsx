@@ -34,7 +34,7 @@ export function Nav() {
           Rent a Shell
         </Link>
         <div className="flex items-center gap-6 leading-none md:gap-8">
-          {first && <StatusDot status={first.status} surface={bench ? 'bench' : 'paper'} className="hidden leading-none sm:inline-flex" />}
+          {first && <StatusDot status={first.status} label={first.name} surface={bench ? 'bench' : 'paper'} className="hidden leading-none sm:inline-flex" />}
           <ul className="flex items-center gap-5 md:gap-6">
             {LINKS.map((l) => (
               <li key={l.to}>
