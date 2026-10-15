@@ -28,6 +28,7 @@ Motion-kit: copied from Crisol's `packages/motion-kit/src` into `apps/web/src/mo
 | Route | For whom | What it has |
 |---|---|---|
 | `/` | everyone | hero with the robot live, how it works, for people, for agents, close (the shell list and the live events block were removed on 2026-10-14; the nav links to shell #1 from the catalog) |
+| `/shells` | everyone | the catalog as a wheel: the current shell large at the centre (photo from `public/shells/<id>.jpg`), neighbours or "coming soon" at the sides, arrows when there is more than one |
 | `/shells/:id` | people | spec, video, queue, pick blocks, cost of owning versus renting, Forger and customization request |
 | `/checkout` | people | payment with Solana Pay QR, live status until `paid` |
 | `/session` | whoever paid | control console |

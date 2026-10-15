@@ -47,7 +47,7 @@ export default function ShellPage({ id, gw }: { id: string; gw?: string }) {
             ? 'Try again in a few seconds.'
             : `Its Forger's gateway is offline or not registered yet; the catalog re-checks it every 30 seconds. Come back in a while or pick another shell on the home page.`}
         </p>
-        <Button as="link" href="/" variant="secondary" label="Back to home" className="mt-8" />
+        <Button as="link" href="/shells" variant="secondary" label="See shells" className="mt-8" />
       </Layout>
     );
 
