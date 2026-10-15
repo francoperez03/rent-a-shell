@@ -1,5 +1,5 @@
 'use client';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import type { Shell } from '@ras/shell-spec';
 import { LiveVideo } from '@/components/LiveVideo';
@@ -13,6 +13,8 @@ import { shellHref, useShells, useShellState } from '@/lib/api';
 import { useReveal } from '@/lib/useReveal';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { CountUp } from '@/components/CountUp';
+import { dur, easeOut } from '@/lib/motion';
+import { cn } from '@/lib/cn';
 import { JOINTS, JOINT_LABEL } from '@/lib/joints';
 
 const STEPS = [
@@ -117,20 +119,45 @@ function Band({ k, v, u, note }: { k: string; v: React.ReactNode; u: string; not
   );
 }
 
+const STEP_MS = 2800;
+
+/** The bench test runs on its own: the active step advances every few seconds, hovering a step pins it. */
 function HowItWorks() {
   const reveal = useReveal();
+  const reduced = useReducedMotion();
+  const [active, setActive] = useState(0);
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    if (reduced || pinned) return;
+    const id = setInterval(() => setActive((a) => (a + 1) % STEPS.length), STEP_MS);
+    return () => clearInterval(id);
+  }, [reduced, pinned]);
   return (
     <section id="how-it-works" className="py-section">
       <div className="mx-auto w-full max-w-container px-4 md:px-6">
-        <SectionIndex index="01" title="How it works" body="Four steps, like a bench test." anim={reveal()} />
-        <ol className="mt-12 grid grid-cols-1 gap-px bg-rule md:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map((s, i) => (
-            <motion.li key={s.n} {...reveal(0.08 * i)} className="bg-paper py-6 md:px-8 md:first:pl-0 md:last:pr-0">
-              <p className="tabular font-mono text-mono text-signal-deep">{s.n}</p>
-              <h3 className="wide-106 mt-3 text-h2">{s.title}</h3>
-              <p className="mt-3 max-w-[36ch] text-body text-ink-2">{s.body}</p>
-            </motion.li>
-          ))}
+        <SectionIndex title="How it works" body="Four steps, like a bench test." anim={reveal()} />
+        <ol className="mt-12 grid grid-cols-1 gap-px bg-rule md:grid-cols-2 lg:grid-cols-4" onMouseLeave={() => setPinned(false)}>
+          {STEPS.map((s, i) => {
+            const on = i === active;
+            return (
+              <motion.li
+                key={s.n}
+                {...reveal(0.08 * i)}
+                onMouseEnter={() => {
+                  setActive(i);
+                  setPinned(true);
+                }}
+                className="relative bg-paper py-6 md:px-8 md:first:pl-0 md:last:pr-0"
+              >
+                {on && !reduced && (
+                  <motion.span layoutId="step-rule" aria-hidden className="absolute inset-x-0 top-0 h-0.5 bg-signal" transition={{ duration: dur.medium, ease: easeOut }} />
+                )}
+                <p className={cn('tabular font-mono text-mono transition-colors duration-medium', on ? 'text-signal-deep' : 'text-ink-3')}>{s.n}</p>
+                <h3 className={cn('wide-106 mt-3 text-h2 transition-colors duration-medium', on ? 'text-ink' : 'text-ink-3')}>{s.title}</h3>
+                <p className={cn('mt-3 max-w-[36ch] text-body transition-colors duration-medium', on ? 'text-ink-2' : 'text-ink-3')}>{s.body}</p>
+              </motion.li>
+            );
+          })}
         </ol>
       </div>
     </section>
@@ -153,13 +180,13 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
   ];
 
   return (
-    <section id="who-its-for" className="border-t border-rule bg-paper-2 py-section">
+    <section id="who-its-for" className="on-bench dot-grid-bench border-t border-bench-rule bg-bench py-section text-bench-ink">
       <div className="mx-auto w-full max-w-container px-4 md:px-6">
-        <SectionIndex index="02" title="Two ways to use it" body="By hand, with a wallet. Or through your agent, with one sentence." anim={reveal()} />
+        <SectionIndex title="Two ways to use it" body="By hand, with a wallet. Or through your agent, with one sentence." surface="bench" anim={reveal()} />
         <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-12 lg:grid-cols-12">
-          <motion.article {...reveal()} className="flex flex-col border-t-2 border-ink pt-5 lg:col-span-6">
-            <p className="font-mono text-mono-xs uppercase text-ink-3">1 · You</p>
-            <h3 className="wide-106 mt-3 text-h2">Rent it from this page and drive it yourself.</h3>
+          <motion.article {...reveal()} className="flex flex-col border-t-2 border-bench-ink pt-5 lg:col-span-6">
+            <p className="font-mono text-mono-xs uppercase text-bench-ink-2">You</p>
+            <h3 className="wide-106 mt-3 text-h2 text-bench-ink">Rent it from this page and drive it yourself.</h3>
             <Steps items={human} />
             <div className="mt-6 lg:mt-auto lg:pt-6">
               <Button as="link" href={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
@@ -167,39 +194,39 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
           </motion.article>
 
           <motion.article {...reveal(0.08)} className="flex min-w-0 flex-col border-t-2 border-signal pt-5 lg:col-span-6">
-            <p className="font-mono text-mono-xs uppercase text-signal-deep">2 · Your agent</p>
-            <h3 className="wide-106 mt-3 text-h2">Tell your agent one sentence. It pays and drives it for you.</h3>
+            <p className="font-mono text-mono-xs uppercase text-signal">Your agent</p>
+            <h3 className="wide-106 mt-3 text-h2 text-bench-ink">Tell your agent one sentence. It pays and drives it for you.</h3>
             <Steps items={agent} />
             <figure className="mt-6">
-              <figcaption className="font-mono text-mono-xs uppercase text-ink-3">Say this to your agent</figcaption>
-              <blockquote className="mt-2 border border-ink bg-paper p-4 text-body text-ink">“{sentence}”</blockquote>
+              <figcaption className="font-mono text-mono-xs uppercase text-bench-ink-2">Say this to your agent</figcaption>
+              <blockquote className="mt-2 border border-bench-ink bg-bench-2 p-4 text-body text-bench-ink">“{sentence}”</blockquote>
             </figure>
-            <pre className="on-bench mt-4 whitespace-pre-wrap break-words border border-bench-rule bg-bench p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
+            <pre className="mt-4 whitespace-pre-wrap break-words border border-bench-rule bg-bench-2 p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
               <code>
                 <span className="text-bench-ink-2"># install the skill once{'\n'}</span>
                 {INSTALL}
               </code>
             </pre>
             <div className="mt-6 lg:mt-auto lg:pt-6">
-              <Button as="link" href="/agents" variant="secondary" label="Agent guide" />
+              <Button as="link" href="/agents" variant="secondary" surface="bench" label="Agent guide" />
             </div>
           </motion.article>
 
           {/* Forgers as a full-width band, same grammar as SectionIndex: eyebrow, text, numbers to the right */}
-          <motion.article {...reveal(0.16)} className="grid grid-cols-1 gap-x-8 gap-y-6 border-t border-rule pt-6 lg:col-span-12 lg:grid-cols-[6rem_1fr_auto]">
-            <p className="font-mono text-mono-xs uppercase text-ink-3">Forgers</p>
+          <motion.article {...reveal(0.16)} className="grid grid-cols-1 gap-x-8 gap-y-6 border-t border-bench-rule pt-6 lg:col-span-12 lg:grid-cols-[6rem_1fr_auto]">
+            <p className="font-mono text-mono-xs uppercase text-bench-ink-2">Forgers</p>
             <div>
-              <h3 className="text-h3">Have a robot sitting idle? Publish it.</h3>
-              <p className="mt-3 max-w-prose text-body text-ink-2">
+              <h3 className="text-h3 text-bench-ink">Have a robot sitting idle? Publish it.</h3>
+              <p className="mt-3 max-w-prose text-body text-bench-ink-2">
                 Run the gateway next to your hardware, set the price per block, get paid in your own wallet: upfront with x402, from the escrow when the session ends with Solana Pay. Customization requests come to you.
               </p>
             </div>
             <div className="lg:justify-self-end lg:text-right">
               <dl className="grid grid-cols-2 gap-8">
-                <Readout label="Your cut" value={<CountUp value={90} />} unit="%" />
-                <Readout label="Setup" value="1" unit="command" />
+                <Readout label="Your cut" value={<CountUp value={90} />} unit="%" surface="bench" />
+                <Readout label="Setup" value="1" unit="command" surface="bench" />
               </dl>
-              <a href="https://github.com/francoperez03/rent-a-shell/blob/main/docs/forgers.md" rel="noopener" className="mt-4 inline-block font-mono text-mono uppercase text-signal-deep underline-offset-4 hover:underline">Become a Forger</a>
+              <a href="https://github.com/francoperez03/rent-a-shell/blob/main/docs/forgers.md" rel="noopener" className="mt-4 inline-block font-mono text-mono uppercase text-signal underline-offset-4 hover:underline">Become a Forger</a>
             </div>
           </motion.article>
         </div>
@@ -234,8 +261,8 @@ function Steps({ items }: { items: string[] }) {
   return (
     <ol className="mt-5 flex flex-col gap-3">
       {items.map((t, i) => (
-        <li key={i} className="grid grid-cols-[1.75rem_1fr] gap-3 text-body text-ink-2">
-          <span className="tabular font-mono text-mono text-ink">{i + 1}.</span>
+        <li key={i} className="grid grid-cols-[1.75rem_1fr] gap-3 text-body text-bench-ink-2">
+          <span className="tabular font-mono text-mono text-bench-ink">{i + 1}.</span>
           <span className="max-w-[44ch]">{t}</span>
         </li>
       ))}
