@@ -29,8 +29,10 @@ const COMMANDS = `{ "cmd": "joint", "args": { "joint": "base", "angle": 130 } }
 const MCP_TOOLS = ['list_shells', 'rent_shell', 'send_command', 'get_frame', 'get_state', 'end_session'];
 
 /** Agent guide as a technical datasheet: endpoints table, payment flow, MCP. */
-export default function AgentsPage({ origin }: { origin: string }) {
-  const example = X402_EXAMPLE.replace('{{ORIGIN}}', origin);
+/** `origin` is this site (catalog); `gateway` is a Forger's gateway, where payment and commands go. */
+export default function AgentsPage({ origin, gateway }: { origin: string; gateway?: string }) {
+  const gw = gateway ?? 'https://<gateway>';
+  const example = X402_EXAMPLE.replace('{{ORIGIN}}', gw);
   const reveal = useReveal();
   const row = useRows();
 
@@ -71,7 +73,7 @@ export default function AgentsPage({ origin }: { origin: string }) {
         </motion.section>
 
         <section className="mt-section">
-          <SectionIndex index="01" title="Endpoints" body="Every gateway exposes the same API. The hub lists the gateways." anim={reveal()} />
+          <SectionIndex index="01" title="Endpoints" body={`Every Forger runs a gateway next to their robot, and every gateway exposes the same API. This site only lists them: ${origin}/api/catalog gives each shell's gateway${gateway ? ` (today ${gateway})` : ''}.`} anim={reveal()} />
           <div className="mt-8">
             <table className="w-full border-collapse text-left">
               <thead className="hidden md:table-header-group">
@@ -121,14 +123,14 @@ export default function AgentsPage({ origin }: { origin: string }) {
         </section>
 
         <section className="mt-section">
-          <SectionIndex index="03" title="MCP" body={`The gateway exposes an MCP server at ${origin}/mcp.`} anim={reveal()} />
+          <SectionIndex index="03" title="MCP" body={`Two servers. The catalog at ${origin}/mcp (list_shells, get_shell) and each gateway's own at <gateway>/mcp, where renting and commands happen.`} anim={reveal()} />
           <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[22rem_1fr]">
             <ul className="flex flex-wrap gap-2 self-start">
               {MCP_TOOLS.map((t, i) => (
                 <motion.li key={t} {...row(i)} className="border border-rule-2 px-3 py-1.5 font-mono text-mono text-ink">{t}</motion.li>
               ))}
             </ul>
-            <Code label="MCP config" wrap>{`{ "mcpServers": { "rent-a-shell": { "type": "http", "url": "${origin}/mcp" } } }`}</Code>
+            <Code label="MCP config" wrap>{`{ "mcpServers": { "rent-a-shell": { "type": "http", "url": "${origin}/mcp" }, "el-tucu": { "type": "http", "url": "${gw}/mcp" } } }`}</Code>
           </div>
         </section>
       </main>
