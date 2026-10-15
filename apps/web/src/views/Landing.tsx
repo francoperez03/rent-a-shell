@@ -13,6 +13,7 @@ import { shellHref, useShells } from '@/lib/api';
 import { useReveal } from '@/lib/useReveal';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { CountUp } from '@/components/CountUp';
+import { CopyButton } from '@/components/PayStep';
 import { dur, easeOut } from '@/lib/motion';
 import { cn } from '@/lib/cn';
 
@@ -180,14 +181,28 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
     {
       text: 'Install the skill once.',
       after: (
-        <pre className="on-bench mt-3 whitespace-pre-wrap break-words border border-bench-rule bg-bench p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
-          <code>{INSTALL}</code>
-        </pre>
+        <div className="on-bench mt-3 border border-bench-rule bg-bench">
+          <div className="flex items-center justify-between border-b border-bench-rule px-4 py-2 font-mono text-mono-xs uppercase text-bench-ink-2">
+            <span>Terminal</span>
+            <CopyButton text={INSTALL} label="Copy" surface="bench" />
+          </div>
+          <pre className="whitespace-pre-wrap break-words p-4 font-mono text-mono-xs leading-[1.7] text-bench-ink">
+            <code>{INSTALL}</code>
+          </pre>
+        </div>
       ),
     },
     {
       text: 'Tell your agent the sentence. It reads llms.txt, shows you the price and asks before paying.',
-      after: <blockquote className="mt-3 border border-ink bg-paper-2 p-4 text-body text-ink">“{sentence}”</blockquote>,
+      after: (
+        <div className="mt-3 border border-ink bg-paper-2">
+          <div className="flex items-center justify-between border-b border-rule px-4 py-2 font-mono text-mono-xs uppercase text-ink-3">
+            <span>Say this</span>
+            <CopyButton text={sentence} label="Copy" />
+          </div>
+          <blockquote className="p-4 text-body text-ink">“{sentence}”</blockquote>
+        </div>
+      ),
     },
     { text: 'It pays with x402, runs your commands and asks you what to do next.' },
   ];
@@ -206,30 +221,30 @@ function Audiences({ shell, origin }: { shell: Shell | undefined; origin: string
     <section id="who-its-for" className="dot-grid border-t border-rule bg-paper-2 py-section">
       <div className="mx-auto w-full max-w-container px-4 md:px-6">
         <SectionIndex title="Two ways to use it" body="By hand, with a wallet. Or through your agent, with one sentence." anim={reveal()} />
-        <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-12 lg:items-start">
-          <motion.div {...reveal()} className="lg:col-span-6">
-            <motion.article {...path(0)} className="group relative flex flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-ink md:p-8">
+        <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-12">
+          <motion.div {...reveal()} className="lg:col-span-6 lg:h-full">
+            <motion.article {...path(0)} className="group relative flex h-full flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-ink md:p-8">
               <motion.span aria-hidden variants={PATH_RULE} className="absolute inset-x-0 top-0 h-0.5 origin-left bg-ink" />
               <p className="flex items-center gap-2 font-mono text-mono-xs uppercase text-ink-3">
                 You <span className="arrow text-ink">→</span>
               </p>
               <h3 className="wide-106 mt-3 text-h2">Rent it from this page and drive it yourself.</h3>
               <Steps items={human} />
-              <div className="mt-8">
+              <div className="mt-8 lg:mt-auto lg:pt-8">
                 <Button as="link" href={shell ? shellHref(shell) : '/shells/el-tucu'} label="Rent five minutes" />
               </div>
             </motion.article>
           </motion.div>
 
-          <motion.div {...reveal(0.08)} className="min-w-0 lg:col-span-6">
-            <motion.article {...path(1)} className="group relative flex min-w-0 flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-signal md:p-8">
+          <motion.div {...reveal(0.08)} className="min-w-0 lg:col-span-6 lg:h-full">
+            <motion.article {...path(1)} className="group relative flex h-full min-w-0 flex-col border border-rule bg-paper p-6 transition-colors duration-base hover:border-signal md:p-8">
               <motion.span aria-hidden variants={PATH_RULE} className="absolute inset-x-0 top-0 h-0.5 origin-left bg-signal" />
               <p className="flex items-center gap-2 font-mono text-mono-xs uppercase text-signal-deep">
                 Your agent <span className="arrow">→</span>
               </p>
               <h3 className="wide-106 mt-3 text-h2">Tell your agent one sentence. It pays and drives it for you.</h3>
               <Steps items={agent} />
-              <div className="mt-8">
+              <div className="mt-8 lg:mt-auto lg:pt-8">
                 <Button as="link" href="/agents" variant="secondary" label="Agent guide" />
               </div>
             </motion.article>
