@@ -251,7 +251,7 @@ ${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}
 - Catalog JSON: ${site}/api/catalog
 - MCP (Streamable HTTP): ${site}/mcp, tools list_shells and get_shell
 - Add your hardware as a Forger: ask for a Forger token, then POST ${site}/api/forgers with Authorization: Bearer <token> and {"gateway":"https://your-gateway"}
-- Agent skill to rent and test code on real hardware:
+- Agent skill to rent a shell and drive it from your agent:
   npx skills add francoperez03/rent-a-shell --skill rent-a-shell (or read ${site}/skills/rent/SKILL.md)
 - Agent skill for Forgers (installs and configures the gateway, camera and tunnel):
   npx skills add francoperez03/rent-a-shell --skill rent-a-shell-forger (or read ${site}/skills/forger/SKILL.md)
