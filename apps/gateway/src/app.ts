@@ -26,11 +26,31 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
   let status: ShellStatus = "online";
   let lastActive: string | null = null;
 
+  // spec 15: the rail with an escrow program keeps a record per shell; register on start (best effort) and read
+  // its counters for the spec sheet, llms.txt, agent card and MCP. Refreshed after every finalize.
+  const registry = rails.find((r) => r.registry)?.registry;
+  let reputation: Shell["reputation"];
+  async function refreshReputation() {
+    if (!registry) return;
+    try {
+      reputation = (await registry.reputation(cfg.shell.id)) ?? undefined;
+    } catch (e) {
+      console.error("[registry] read:", (e as Error).message);
+    }
+  }
+  if (registry) {
+    void registry
+      .register(cfg.shell)
+      .then(() => console.log(`[registry] shell ${cfg.shell.id} registered`), (e) => console.error("[registry] register:", (e as Error).message))
+      .then(refreshReputation);
+  }
+
   const shell = (): Shell => ({
     ...cfg.shell,
     status,
     camera: { hls: cfg.liveUrl, frame: `${cfg.publicUrl}/api/shells/${cfg.shell.id}/frame` },
     gateway: cfg.publicUrl,
+    ...(reputation && { reputation }),
   });
   const price = (blocks: number) => ({ usd: mulUsd(cfg.shell.pricing.usd, blocks) });
   const parseBlocks = (v: unknown) => {
@@ -46,6 +66,22 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     rec.sid = g.sid;
     sessions.save();
     bus.emit({ type: "payment_seen", intentId: id, rail: p.rail, tx: p.tx, explorerUrl: p.explorerUrl });
+    return g;
+  }
+
+  /** Creates a pending intent on a rail (Solana Pay QR, or the escrow an x402 payment will land in). */
+  async function createIntent(railId: string | undefined, blocks: number, asset?: string) {
+    const rail = railId ? byId.get(railId) : undefined;
+    if (!rail?.createIntent) return { error: "unknown_rail", status: 400 as const };
+    if (!rail.manifest().available) return { error: "rail_unavailable", status: 409 as const };
+    try {
+      const intent = await rail.createIntent(price(blocks), { id: crypto.randomUUID(), asset, shell: cfg.shell.id, blocks });
+      const rec = { intent, shell: cfg.shell.id, blocks, status: "pending" as const };
+      sessions.addIntent(rec);
+      return { rec };
+    } catch (e) {
+      return { error: "intent_failed", message: (e as Error).message, status: 409 as const };
+    }
   }
 
   async function checkIntent(id: string, force = false) {
@@ -79,6 +115,7 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
         if (r && r.tx) s.finalize_tx = r.tx;
         sessions.save();
         if (rail?.finalize) console.log(`[finalize] session ${s.sid} ${outcome}${r && r.tx ? ` tx ${r.tx}` : ""}`);
+        if (r && r.tx) await refreshReputation();
       } catch (e) {
         // retried on a later tick; funds stay in escrow and the payer can reclaim them if it never closes
         console.error(`[finalize] session ${s.sid} ${outcome}:`, (e as Error).message);
@@ -199,17 +236,8 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     if (b.shell !== cfg.shell.id) return c.json({ error: "unknown_shell" }, 404);
     const blocks = parseBlocks(b.blocks);
     if (!blocks) return c.json({ error: "invalid_blocks", max: cfg.maxBlocks }, 400);
-    const rail = b.rail ? byId.get(b.rail) : undefined;
-    if (!rail?.createIntent) return c.json({ error: "unknown_rail" }, 400);
-    if (!rail.manifest().available) return c.json({ error: "rail_unavailable" }, 409);
-    try {
-      const intent = await rail.createIntent(price(blocks), { id: crypto.randomUUID(), asset: b.asset });
-      const rec = { intent, shell: cfg.shell.id, blocks, status: "pending" as const };
-      sessions.addIntent(rec);
-      return c.json(sessions.view(rec));
-    } catch (e) {
-      return c.json({ error: "intent_failed", message: (e as Error).message }, 409);
-    }
+    const r = await createIntent(b.rail, blocks, b.asset);
+    return r.rec ? c.json(sessions.view(r.rec)) : c.json({ error: r.error, message: r.message }, r.status);
   });
 
   app.get("/api/sessions/intent/:id", async (c) => {
@@ -220,6 +248,8 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
   });
 
   // x402: validate the request BEFORE the paywall so invalid requests are never charged.
+  // With ?intent=<id> (spec 14) the payment is bound to a pending intent of this gateway: the rail decides whether
+  // it is required (escrow mode) and charges the intent's amount; the gateway then grants that intent's blocks.
   const x402Rails = rails.filter((r) => r.paywall);
   const paywalls = new Map(
     x402Rails.map((r) => [
@@ -231,15 +261,28 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     "/api/sessions/x402",
     async (c, next) => {
       if ((c.req.query("shell") ?? cfg.shell.id) !== cfg.shell.id) return c.json({ error: "unknown_shell" }, 404);
-      if (!parseBlocks(c.req.query("blocks"))) return c.json({ error: "invalid_blocks", max: cfg.maxBlocks }, 400);
+      const blocks = parseBlocks(c.req.query("blocks"));
+      if (!blocks) return c.json({ error: "invalid_blocks", max: cfg.maxBlocks }, 400);
       const id = c.req.query("rail") ?? x402Rails[0]?.id;
       const pw = id && paywalls.get(id);
       if (!pw) return c.json({ error: "no_x402_rail" }, 404);
+      const intentId = c.req.query("intent");
+      if (intentId) {
+        const rec = sessions.intents.get(intentId);
+        if (!rec || rec.intent.rail !== id || rec.shell !== cfg.shell.id) return c.json({ error: "unknown_intent", create: "POST /api/sessions/intent" }, 404);
+        if (rec.status !== "pending") return c.json({ error: "intent_not_pending", status: rec.status }, 409);
+        if (rec.blocks !== blocks) return c.json({ error: "invalid_blocks", hint: `this intent buys ${rec.blocks} blocks` }, 400);
+      }
       return pw(c, next);
     },
     async (c) => {
       const p = c.get("payment" as never) as Payment | undefined;
       if (!p) return c.json({ error: "payment_missing" }, 402);
+      const intentId = c.req.query("intent");
+      if (intentId && sessions.intents.has(intentId)) {
+        const g = await settleIntent(intentId, { ...p, intentId });
+        return g ? c.json(g) : c.json({ error: "intent_not_pending" }, 409);
+      }
       const g = await sessions.grant(cfg.shell.id, parseBlocks(c.req.query("blocks"))!, p);
       bus.emit({ type: "payment_seen", intentId: p.intentId, rail: p.rail, tx: p.tx, explorerUrl: p.explorerUrl });
       return c.json(g);
@@ -292,7 +335,7 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
     }),
   );
 
-  const card = () => agentCard(cfg, rails);
+  const card = () => agentCard(cfg, rails, reputation);
   // MediaMTX HLS proxy: the Forger's camera goes out through the same tunnel as the API.
   // The bearer matches hlsCDNSecret in scripts/forger/mediamtx.yml (local only): MediaMTX then serves HLS as a CDN,
   // without the cookieCheck redirect nor per-client sessions, which a server-side proxy cannot follow.
@@ -307,7 +350,7 @@ export function createApp(cfg: Config, env: Env, opts: { rails?: PaymentRail[] }
 
   app.get("/llms.txt", (c) => c.text(llmsTxt(cfg, shell(), rails)));
   app.get("/.well-known/agent.json", (c) => c.json(card()));
-  app.all("/mcp", (c) => mcpHandler(c.req.raw, { cfg, shell, rails, robot, sessions, frames, price, publicUrl: cfg.publicUrl }));
+  app.all("/mcp", (c) => mcpHandler(c.req.raw, { cfg, shell, rails, robot, sessions, frames, price, createIntent, publicUrl: cfg.publicUrl }));
 
   return { app, tick, robot, sessions, rails };
 }

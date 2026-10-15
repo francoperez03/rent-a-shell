@@ -44,7 +44,7 @@ With the `reference` there's no need for magic decimals or a contract: each inte
 - `pnpm check-solana`: `x402.org/facilitator/supported` answers `exact` on `solana:EtWT…`, and the devnet USDC mint exists.
 - Real 402 from the gateway: `{"scheme":"exact","network":"solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1","amount":"1000000","asset":"4zMMC9…","payTo":"<SOLANA_PAY_TO>","extra":{"feePayer":"CKPKJW…","recentBlockhash":"…"}}`.
 - `pnpm buyer` with an empty wallet: the facilitator simulates the tx and answers `invalid_exact_svm_transaction_simulation_failed` (signature and requirement are valid; balance is missing).
-- `POST /api/sessions/intent` with `solana-pay` returns a valid `solana:` link and the checkout shows the QR (`evidence/f4/checkout-solana-pay.png`).
+- `POST /api/sessions/intent` with `solana-pay` returns a valid `solana:` link and the checkout shows the QR (`evidence/f4/checkout-rails.png`).
 - PayAI answers `/supported` with `exact` on mainnet. `[to verify]` whether settle on mainnet requires `X402_API_KEY` or credits (the rail sends `Authorization: Bearer` only if the variable is set).
 
 ## Price
@@ -52,7 +52,7 @@ With the `reference` there's no need for magic decimals or a contract: each inte
 | Parameter | Value | Status |
 |---|---|---|
 | Block | 5 minutes (`BLOCK_MINUTES`) | `[INPUT]` |
-| Price per block | USD 0.05, one cent per minute (`BLOCK_USD`) | `[INPUT]` |
+| Price per block | USD 0.05 for El Tucu; each Forger sets `BLOCK_USD` | `[INPUT]` |
 | Max per purchase | 6 blocks (30 min) | `[INPUT]` |
 
 The price is charged in USDC, 1:1 with USD.

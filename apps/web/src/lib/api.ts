@@ -2,18 +2,14 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { GatewayEvent, IntentView, RailManifest, SessionGrant, Shell, ShellState } from '@ras/shell-spec';
 
-export const API = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-/** Marketplace hub: when set, the catalog comes from it and each shell is operated on its Forger's gateway. */
-export const HUB = ((import.meta.env.VITE_HUB_URL as string | undefined) ?? '').replace(/\/$/, '');
-
+// The site is the hub: the catalog is same-origin (/api/catalog) and each shell is operated on its Forger's gateway.
 // "Current" gateway (the one of the shell being rented). Persists in the tab for checkout and console.
 const GW_KEY = 'ras:gateway';
 let gateway = (() => {
-  if (!HUB) return API; // without a hub there is a single gateway: never reuse one stored by a previous hub session
   try {
-    return sessionStorage.getItem(GW_KEY) ?? API;
+    return sessionStorage.getItem(GW_KEY) ?? '';
   } catch {
-    return API;
+    return ''; // server render or no storage
   }
 })();
 export const setGateway = (url: string) => {
@@ -25,10 +21,10 @@ export const setGateway = (url: string) => {
   }
 };
 const gwById = new Map<string, string>();
-/** API base for a shell: its gateway when it comes from the hub, otherwise the current gateway. */
-const baseFor = (id?: string) => (HUB && id && gwById.get(id)) || gateway;
-/** Link to the shell page that pins the shell's gateway (needed with a hub, harmless without one). */
-export const shellHref = (s: Pick<Shell, 'id' | 'gateway'>) => (HUB && s.gateway ? `/shells/${s.id}?gw=${encodeURIComponent(s.gateway)}` : `/shells/${s.id}`);
+/** API base for a shell: its gateway from the catalog, otherwise the current gateway. */
+const baseFor = (id?: string) => (id && gwById.get(id)) || gateway;
+/** Link to the shell page that pins the shell's gateway. */
+export const shellHref = (s: Pick<Shell, 'id' | 'gateway'>) => `/shells/${s.id}?gw=${encodeURIComponent(s.gateway)}`;
 
 /** Absolute URL against the gateway (gateway routes may come relative, e.g. camera.frame). */
 export const apiUrl = (path: string, base = gateway) => (path.startsWith('http') ? path : `${base}${path}`);
@@ -76,16 +72,16 @@ export interface SessionInfo {
   ended: 'expired' | 'ended' | 'offline' | null;
 }
 
-export const useShells = () =>
-  useQuery({
+export const useShells = () => {
+  const q = useQuery({
     queryKey: ['shells'],
-    queryFn: async () => {
-      const list = HUB ? await api<Shell[]>('/api/catalog', { base: HUB }) : await api<Shell[]>('/api/shells');
-      for (const s of list) if (s.gateway) gwById.set(s.id, s.gateway.replace(/\/$/, ''));
-      return list;
-    },
+    queryFn: () => api<Shell[]>('/api/catalog', { base: '' }),
     refetchInterval: 10_000,
   });
+  // filled from rendered data (the layout seeds the query, so queryFn may never run)
+  for (const s of q.data ?? []) if (s.gateway) gwById.set(s.id, s.gateway.replace(/\/$/, ''));
+  return q;
+};
 
 export const useShell = (id: string | undefined) => {
   const q = useShells();
@@ -132,14 +128,15 @@ export const clearGrant = () => sessionStorage.removeItem(GRANT_KEY);
  * Subscription to /api/events (SSE). Calls `onEvent` for each GatewayEvent.
  * fetch instead of EventSource so GW_HEADERS can be sent; reconnects after 3 s on any error.
  */
-export function useEvents(onEvent: (e: GatewayEvent) => void) {
+export function useEvents(onEvent: (e: GatewayEvent) => void, base?: string) {
   const [connected, setConnected] = useState(false);
   useEffect(() => {
+    if (base === '') return; // no gateway known yet (e.g. empty catalog): nothing to subscribe to
     const ctrl = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
     const connect = async () => {
       try {
-        const res = await fetch(apiUrl('/api/events'), { headers: GW_HEADERS, signal: ctrl.signal });
+        const res = await fetch(apiUrl('/api/events', base ?? gateway), { headers: GW_HEADERS, signal: ctrl.signal });
         if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
         setConnected(true);
         const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -174,7 +171,7 @@ export function useEvents(onEvent: (e: GatewayEvent) => void) {
     };
     // onEvent is read on each message via the first render's closure: callers use functional setState.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [base]);
   return connected;
 }
 

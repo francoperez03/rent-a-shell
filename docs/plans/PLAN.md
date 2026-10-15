@@ -16,13 +16,32 @@ What runs on the Mac is done by Claude Code. What runs next to the robot, on the
 | F5 | Real El Tucu + camera + tunnel | Mac + ESP32 | to do | `evidence/f5/` |
 | F6 | MCP, `llms.txt`, agent card | Mac | code done; testing with a fresh Claude Code session against devnet is pending | `apps/gateway/src/{mcp,discovery}.ts` |
 | F7 | Demo rehearsal, video and submission | all | to do | `evidence/f7/` |
-| F8 | Marketplace: Forger hub | Mac | done (2026-10-12): registration, catalog, health, `llms.txt`, MCP; tested with two gateways and one down | `apps/hub`, `docs/specs/09-hub.md` |
+| F8 | Marketplace: Forger hub | Mac | done (2026-10-12): registration, catalog, health, `llms.txt`, MCP; tested with two gateways and one down. Merged into the Next.js site on 2026-10-14 (`apps/web/src/server/hub.ts`, registry in Upstash Redis) | `apps/hub`, `docs/specs/09-hub.md` |
 | F9 | 90/10 escrow with refund | Mac + devnet | program and rail done (2026-10-12): `anchor test` 7/7 and e2e on a local validator (90/10, refund, idempotency); devnet deploy and a Phantom payment pending | `programs/`, `packages/rails/solana/src/pay-escrow.ts` |
 | F10 | Current sensor (INA219) | robot-a + Mac | firmware builds (`idf.py build`) and conversion test ok; mock, gateway, buyer and console show `current_ma`; soldering the chip pending | `robot-a/apps/firmware/main/ina219.c` |
 | F11 | Customization requests | Mac | done: endpoint, form on the spec page and reading with `FORGER_TOKEN` | `apps/gateway/src/app.ts` |
 | F12 | Claude Code skills and Forger launcher | Mac | done: rent skill + `rent.mjs` (spending cap, report), Forger skill + `pnpm forger` / `forger:doctor` / `forger:find-esp32` | `skills/`, `scripts/forger/` |
 
 Critical path: F2 (real devnet payment) → F5 → F7.
+
+## After the review (Superteam Argentina, 2026-10-13 · 56/100, target 80)
+
+Submission tagged `colosseum-submission` (`e8a5989`). Only the `/llms.txt` fix went to `main` after it (`2898f7d`, a P0 in the review); everything else lands on `post-submission` and merges after judging. Each phase starts with its spec in `docs/specs/` (same format as the existing ones, with its own verification) and is marked here.
+
+| Phase | Spec | Priority | What | Done when |
+|---|---|---|---|---|
+| F13 | `10-escrow-guard.md` | P1 | `check()` in `packages/rails/solana/src/pay-escrow.ts` requires `operator == gateway operator`, `forger == payTo` and `expires_at` inside the expected window; `init_config` restricted to a fixed admin; `[programs.devnet]` in `Anchor.toml` | done (2026-10-14): `acceptableDeposit` in `pay-escrow.ts` (unit tests in `pay-escrow.test.ts`), `ADMIN` constant and `WrongAdmin` on `init_config`, `[programs.devnet]`; `anchor test` 12/12, e2e ignores a forged deposit |
+| F14 | `11-claims.md` | P1 | README, `docs/colosseum.md` and the application say what exists today: one shell built by us, per 5-minute block held in escrow, INA219 as roadmap, a "What is real today vs roadmap" section; program id with explorer link, a deposit and a settle signature, the agent → gateway → rail → robot → HOME diagram, what the firmware repo holds | done (2026-10-14): README has the real-vs-roadmap table (program id, deposit and settle signatures, `el-tucu` firmware repo) and the two-branch flow diagram; the spec grep only hits the specs themselves and the 0.1 USDC verification line in `04-payments.md` |
+| F15 | `12-terms.md` | P1 | terms for renters and Forgers (who covers what, joint limits and safe cutoff, optional damage deposit per shell); camera rule: fixed framing on the robot, visible notice, no third parties | done (2026-10-14): `docs/terms.md`, `/terms` (`apps/web/src/pages/Terms.tsx`, build green, 200 on the dev server), footer link, sentence on checkout and under the Rent box, `pnpm forger` logs the URL, both skills mention the terms, `llms.txt` carries `Terms:` |
+| F16 | `13-pricing.md` | P2 | price per shell set by the Forger in the spec sheet and published in `llms.txt`, MCP and checkout; 10% take rate; monthly package for courses; worked example in `docs/costs.md` | copy done (2026-10-14): landing reads the catalog price, `docs/costs.md` has the per-shell table, Forger skill asks for `BLOCK_USD`, `forger:doctor` warns on the default price; gateway part done (2026-10-14): tests set `BLOCK_USD`, `llms.txt` (gateway and hub) prints the 10 % fee, `SHELL_SENSORS` defaults to `angles` (`apps/gateway/src/{app.test,discovery,config}.ts`) |
+| F17 | `14-x402-escrow.md` | P2 | agent payments go through the escrow (x402 `payTo` = session vault, or the agent signs `deposit`); `finalize()` settles 90/10 or refunds | done (2026-10-14) on the local validator: `open`/`set_payer` in the program, per-intent paywall (`payTo` = vault, `extra.memo` = intent), shared `EscrowClient.finalize`, clients create the intent first; `anchor test` 12/12, `escrow.e2e.ts` settles 90/10 and refunds the agent; devnet deploy, a real facilitator payment and the Solscan refund pending (Franco) |
+| F18 | `15-shell-registry.md` | P2 | PDA per shell (price, Forger wallet, completed and refunded counters updated by `settle` and `refund`), exposed in `llms.txt` and MCP; mainnet with small amounts and the upgrade authority in a Squads multisig | done (2026-10-14) except mainnet: `ShellRecord` PDA with counters on `settle`/`refund`/`reclaim`, `register-shell` script, gateway registers on start, reputation in `llms.txt`, agent card, MCP, hub and `rent.mjs info`; `anchor test` 12/12, e2e reads 1/0 after the first settle; mainnet runbook not executed |
+
+Follow-ups found while building (2026-10-14): an `Opened` escrow that never gets paid keeps about 0.0035 SOL of operator rent with no close path, so `POST /api/sessions/intent` with `rail: solana-x402` can drain the operator's SOL; needs a `close_opened` instruction plus rail cleanup on intent expiry, or a rate limit on intents. The devnet program is behind the branch (`Escrow` gained `rent_to` and `shell`, state `Opened`, instructions `open`, `set_payer`, `register_shell`): `anchor deploy --provider.cluster devnet` before any live test. Toolchain on this Mac: `cargo-build-sbf` 3.0.13 breaks on its own `rustup toolchain list -v` output, so run `rustup toolchain uninstall 1.89.0-sbpf-solana-v1.52` right before `npm run build`; `anchor test` needs `rm -rf programs/.anchor/test-ledger` and `COPYFILE_DISABLE=1` when macOS leaves `._genesis.bin` behind.
+
+Before re-recording the demo: live HLS through the gateway proxy (`/live/*`, MediaMTX `cookieCheck` redirect), still open from the 2026-10-12 handoff.
+
+Outside the repo (Franco, this week): 2:00 pitch with the review's structure and subtitles; demo that runs the block out to HOME and opens deposit and settle on Solscan labelled devnet; chapter form fields (one-liner, stack, go-to-market, repo, videos, Colosseum link); first external Forger and first renters with numbers; firmware repo pinned on GitHub, LinkedIn and X linked.
 
 ## To verify
 
@@ -51,7 +70,7 @@ Steps (Franco, on the Mac next to the robot; the Forger skill covers it in detai
 2. ESP32 with El Tucu on the own router; `pnpm forger:find-esp32`.
 3. `.env.local` with `ESP32_URL`, `CAMERA` (from `pnpm forger:cameras`), `SOLANA_PAY_TO`, `HUB_URL`.
 4. `pnpm forger` (camera, tunnel, gateway and hub registration) and `pnpm forger:doctor`.
-5. Website on Vercel with `VITE_API_URL` (or `VITE_HUB_URL`).
+5. Website on Vercel (Next.js, root `apps/web`): the Forger registers with `HUB_URL=<site url>`; the registry lives in Upstash Redis (Marketplace).
 
 **Verification:** from a phone on mobile data (off the network), pay 1 block with the QR and move the arm while watching it on camera. Screen video in `evidence/f5/` (outside git).
 
@@ -85,7 +104,7 @@ Steps (Franco, on the Mac next to the robot; the Forger skill covers it in detai
    ```
 2. **Marketplace config**: `ESCROW_ADMIN_KEY=<base58 secret> ESCROW_TREASURY=<treasury address> pnpm --filter @ras/rails-solana init-escrow` (FEE_BPS defaults to 1000).
 3. **Gateway operator**: `pnpm --filter @ras/rails-solana -s operator-key` (writes `SOLANA_OPERATOR_KEY` to `apps/gateway/.env.local` and prints only the address) and fund it with devnet SOL. With it, Solana Pay switches to escrow; the QR needs an HTTPS `PUBLIC_URL` (tunnel).
-4. **Hub**: `cp apps/hub/.env.example apps/hub/.env.local`, `HUB_GATEWAYS=<gateway url>`, `pnpm hub`. On the website, `VITE_HUB_URL=<hub url>`.
+4. **Hub**: it is the site. Locally `cp apps/web/.env.example apps/web/.env.local` with `HUB_GATEWAYS=<gateway url>` and `pnpm web`; the gateway's `HUB_URL` is the site URL.
 5. **INA219**: solder it to the servos' 5 V bus with SDA on GPIO 21 and SCL on GPIO 22 (address 0x40), flash the robot-a firmware and check that `curl http://<ip>/state` shows `current_ma` rising while moving.
 
 Escrow e2e locally (no devnet):

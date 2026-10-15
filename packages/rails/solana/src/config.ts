@@ -10,6 +10,7 @@ export interface SolNet {
   facilitator: string;
   usdc: Address;
   explorerTx: (sig: string) => string;
+  explorerAccount: (address: string) => string;
   explorer: string;
 }
 
@@ -22,6 +23,7 @@ export const NETWORKS: Record<SolNet["key"], SolNet> = {
     facilitator: "https://x402.org/facilitator",
     usdc: address("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"),
     explorerTx: (sig) => `https://solscan.io/tx/${sig}?cluster=devnet`,
+    explorerAccount: (a) => `https://solscan.io/account/${a}?cluster=devnet`,
     explorer: "https://solscan.io/?cluster=devnet",
   },
   mainnet: {
@@ -32,6 +34,7 @@ export const NETWORKS: Record<SolNet["key"], SolNet> = {
     facilitator: "https://facilitator.payai.network",
     usdc: address("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
     explorerTx: (sig) => `https://solscan.io/tx/${sig}`,
+    explorerAccount: (a) => `https://solscan.io/account/${a}`,
     explorer: "https://solscan.io",
   },
 };

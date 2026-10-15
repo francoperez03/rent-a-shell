@@ -165,4 +165,4 @@ if (tunnel === "cloudflared") {
 // macOS: keep the Mac awake while the Forger runs (caffeinate exits on its own when this process ends)
 if (MAC) spawn("caffeinate", ["-i", "-s", "-w", String(process.pid)], { stdio: "ignore" }).on("error", () => {}).unref();
 
-log("forger", `shell ${SHELL_ID} · ${WIN ? "Windows" : MAC ? "macOS" : "Linux"} · Ctrl+C to stop`);
+log("forger", `shell ${SHELL_ID} · ${WIN ? "Windows" : MAC ? "macOS" : "Linux"} · terms: ${env.SITE_URL || "https://rent-a-shell.vercel.app"}/terms · Ctrl+C to stop`);

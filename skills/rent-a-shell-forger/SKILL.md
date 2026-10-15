@@ -9,7 +9,7 @@ A **Forger** builds a robot, publishes it on Rent a Shell and gets paid for ever
 
 ```
 webcam ─ ffmpeg ─> MediaMTX ─┐
-ESP32 (local WiFi) <─────────┼── gateway (node :8787) ── tunnel ──> website, agents, hub
+ESP32 (local WiFi) <─────────┼── gateway (node :8787) ── tunnel ──> website (catalog), agents
                              │    charges in USDC (x402 and Solana Pay with escrow),
                              │    sessions, queue, safe cutoff, MCP, llms.txt
         pnpm forger  ────────┘    (a single process starts and supervises everything)
@@ -71,6 +71,8 @@ Ask the person:
 - **Shell name** (`SHELL_NAME`), **id** with no spaces and unique in the catalog (`SHELL_ID`) and **location** (`SHELL_LOCATION`).
 - **Forger name** (`FORGER_NAME`) and an optional **contact** for requests (`FORGER_CONTACT`).
 - **Network:** `SOLANA_NETWORK=devnet` to test or `mainnet` to charge for real.
+- **Price per block** (`BLOCK_USD`, default `0.05`) and block length (`BLOCK_MINUTES`, default `5`). The platform keeps 10 % of escrow settles; the Forger decides the price of their own shell.
+- **Terms:** the person reads and accepts https://rent-a-shell.vercel.app/terms (safe hardware for remote use, fixed camera framing on the robot with a visible notice at the place, they answer for their equipment and the place). Do not publish the shell until they say yes.
 
 Fill in without asking:
 ```
@@ -79,7 +81,7 @@ FORGER_TOKEN=<openssl rand -hex 24>
 ESP32_URL=<step 3>
 CAMERA=<step 3>
 RAILS=solana-x402,solana-pay
-HUB_URL=<Rent a Shell hub URL>      # public hub URL, TBD
+HUB_URL=https://rent-a-shell.vercel.app   # the site is the catalog: pnpm forger registers your gateway there
 ```
 Don't set `PUBLIC_URL`: the tunnel assigns it on each start.
 

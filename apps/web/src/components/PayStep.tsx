@@ -1,5 +1,6 @@
+'use client';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import type { Instructions, IntentView, RailManifest } from '@ras/shell-spec';
@@ -10,7 +11,7 @@ import { cn } from '@/lib/cn';
 
 /** Intent lifecycle shared by the checkout and the modal: polls until paid or expired, listens to SSE, saves the grant when paid (and opens the console with `autoOpen`). */
 export function usePayment(first: IntentView, { autoOpen = true }: { autoOpen?: boolean } = {}) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const now = useNow();
   const id = first.intent.id;
   const [seen, setSeen] = useState<{ explorerUrl?: string; tx?: string } | null>(null);
@@ -33,9 +34,9 @@ export function usePayment(first: IntentView, { autoOpen = true }: { autoOpen?: 
   useEffect(() => {
     if (status === 'paid' && session) {
       saveGrant(session);
-      if (autoOpen) navigate('/session');
+      if (autoOpen) router.push('/session');
     }
-  }, [status, session, navigate, autoOpen]);
+  }, [status, session, router, autoOpen]);
 
   const left = intent.expiresAt - now;
   const expired = status === 'expired' || (status === 'pending' && left <= 0);
@@ -176,4 +177,13 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
       {done ? 'Copied' : label}
     </button>
   );
+}
+
+/** Browser country (es-AR → AR). Only used to suggest a rail; all of them can be chosen. */
+const browserCountry = () => (typeof navigator === 'undefined' ? undefined : navigator.language.split('-')[1]?.toUpperCase());
+
+export function suggest(rails: RailManifest[]): string | undefined {
+  const c = browserCountry();
+  const usable = rails.filter((r) => r.available);
+  return (usable.find((r) => c && r.countries?.includes(c)) ?? usable.find((r) => !r.countries?.length) ?? usable[0])?.id;
 }

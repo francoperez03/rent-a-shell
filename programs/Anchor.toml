@@ -8,6 +8,9 @@ skip-lint = false
 [programs.localnet]
 shell_escrow = "5459LTpropgaL1a7Ct4nRUN6BULGvJs3STMcreh2gf4X"
 
+[programs.devnet]
+shell_escrow = "5459LTpropgaL1a7Ct4nRUN6BULGvJs3STMcreh2gf4X"
+
 [registry]
 url = "https://api.apr.dev"
 

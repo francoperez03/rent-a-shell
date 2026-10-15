@@ -9,7 +9,8 @@
     "test": "tsx --test src/*.test.ts",
     "e2e": "tsx src/escrow.e2e.ts",
     "operator-key": "tsx src/operator-key.ts",
-    "init-escrow": "tsx --env-file-if-exists=../../../apps/gateway/.env.local src/init-escrow.ts"
+    "init-escrow": "tsx --env-file-if-exists=../../../apps/gateway/.env.local src/init-escrow.ts",
+    "register-shell": "tsx --env-file-if-exists=../../../apps/gateway/.env.local src/register-shell.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",

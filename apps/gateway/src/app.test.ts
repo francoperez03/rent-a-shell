@@ -37,7 +37,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 before(async () => {
   await new Promise<void>((r) => esp.listen(0, r));
   const port = (esp.address() as AddressInfo).port;
-  const env = { RAILS: "fake", ESP32_URL: `http://localhost:${port}`, BLOCK_MINUTES: "0.005", REST_SECONDS: "0", DATA_FILE: "", FORGER_TOKEN: "forger-test" };
+  // spec 13: the price is the Forger's decision, so the tests set it instead of relying on a default
+  const env = { RAILS: "fake", ESP32_URL: `http://localhost:${port}`, BLOCK_MINUTES: "0.005", BLOCK_USD: "1", REST_SECONDS: "0", DATA_FILE: "", FORGER_TOKEN: "forger-test" };
   ctx = createApp(loadConfig(env), env);
 });
 after(() => esp.close());
@@ -63,7 +64,10 @@ test("spec sheet, rails and discovery", async () => {
   assert.deepEqual(shells[0].routines, ["robot", "lento", "saludo", "recta"]);
   const rails = await (await req("/api/rails")).json();
   assert.equal(rails[0].id, "fake");
-  assert.match(await (await req("/llms.txt")).text(), /api\/sessions\/x402/);
+  const llms = await (await req("/llms.txt")).text();
+  assert.match(llms, /api\/sessions\/x402/);
+  assert.match(llms, /Price: USD 1 per/);
+  assert.match(llms, /Platform fee: 10 %/);
   const card = await (await req("/.well-known/agent.json")).json();
   assert.equal(card.name, "Rent a Shell");
 });
@@ -136,6 +140,67 @@ test("x402: validates before charging, 402 without payment, session with payment
   assert.equal(r.status, 200);
   const g = await r.json();
   assert.ok(g.token && g.expires_at > g.starts_at);
+});
+
+test("x402 bound to an intent (spec 14): the paywall charges the intent, the gateway grants its blocks once", async () => {
+  const { fakeRail } = await import("@ras/rails-core");
+  // an x402 rail that works like the escrow one: intents carry the pay URL and the paywall requires ?intent=
+  const base = fakeRail();
+  const rail = {
+    ...base,
+    id: "fake",
+    async createIntent(price: { usd: string }, o: { id: string; shell?: string; blocks?: number }) {
+      return { ...(await base.createIntent!(price, o)), instructions: { kind: "x402" as const, url: `http://gw/api/sessions/x402?shell=${o.shell}&blocks=${o.blocks}&intent=${o.id}` } };
+    },
+    paywall: (_p: string, priceFor: (q: Record<string, string>) => { usd: string }) => async (c: import("hono").Context, next: () => Promise<void>) => {
+      if (!c.req.query("intent")) return c.json({ error: "intent_required", create: "POST /api/sessions/intent" }, 402);
+      if (c.req.header("x-fake-pay") !== "1") return c.json({ error: "payment_required", price: priceFor(c.req.query()) }, 402);
+      c.set("payment" as never, { intentId: "rail-made-this-up", rail: "fake", payer: "agent", paidAt: Date.now() } as never);
+      await next();
+    },
+  };
+  const env = { RAILS: "fake", ESP32_URL: `http://localhost:${(esp.address() as AddressInfo).port}`, BLOCK_MINUTES: "1", BLOCK_USD: "1", REST_SECONDS: "0", DATA_FILE: "" };
+  const a = createApp(loadConfig(env), env, { rails: [rail] });
+  const r0 = await a.app.request("/api/sessions/x402?shell=el-tucu&blocks=2", { method: "POST", headers: { "x-fake-pay": "1" } });
+  assert.equal(r0.status, 402, "no intent, no session");
+  assert.equal((await r0.json()).error, "intent_required");
+  const v = await (await a.app.request("/api/sessions/intent", json({ shell: "el-tucu", blocks: 2, rail: "fake" }))).json();
+  const url = v.intent.instructions.url.replace("http://gw", "");
+  assert.match(url, /&intent=/);
+  assert.equal((await a.app.request(url.replace(v.intent.id, "nope"), { method: "POST", headers: { "x-fake-pay": "1" } })).status, 404, "unknown intent");
+  assert.equal((await a.app.request(url.replace("blocks=2", "blocks=1"), { method: "POST", headers: { "x-fake-pay": "1" } })).status, 400, "blocks must match the intent");
+  const g = await (await a.app.request(url, { method: "POST", headers: { "x-fake-pay": "1" } })).json();
+  assert.ok(g.token);
+  assert.equal(g.expires_at - g.starts_at, 2 * 60_000, "grants the intent's blocks");
+  assert.equal(g.payment.intentId, v.intent.id, "Payment.intentId is the intent, whatever the rail said");
+  const view = await (await a.app.request(`/api/sessions/intent/${v.intent.id}`)).json();
+  assert.equal(view.status, "paid");
+  assert.equal((await a.app.request(url, { method: "POST", headers: { "x-fake-pay": "1" } })).status, 409, "an intent pays once");
+});
+
+test("shell registry (spec 15): registers on start and shows the counters in the spec sheet, llms.txt and agent card", async () => {
+  const { fakeRail } = await import("@ras/rails-core");
+  const registered: string[] = [];
+  const rail = {
+    ...fakeRail(),
+    registry: {
+      async register(s: { id: string; pricing: { usd: string } }) {
+        registered.push(`${s.id}@${s.pricing.usd}`);
+      },
+      async reputation(id: string) {
+        return { completed: 7, refunded: 1, address: "PDA111", explorer: `https://solscan.io/account/PDA111?shell=${id}` };
+      },
+    },
+  };
+  const env = { RAILS: "fake", ESP32_URL: `http://localhost:${(esp.address() as AddressInfo).port}`, BLOCK_USD: "2", DATA_FILE: "" };
+  const a = createApp(loadConfig(env), env, { rails: [rail] });
+  await sleep(10); // registration is best effort in the background
+  assert.deepEqual(registered, ["el-tucu@2"]);
+  const sh = (await (await a.app.request("/api/shells")).json())[0];
+  assert.deepEqual(sh.reputation, { completed: 7, refunded: 1, address: "PDA111", explorer: "https://solscan.io/account/PDA111?shell=el-tucu" });
+  assert.match(await (await a.app.request("/llms.txt")).text(), /Reputation \(on-chain\): 7 completed, 1 refunded \(https:\/\/solscan/);
+  assert.equal((await (await a.app.request("/.well-known/agent.json")).json()).reputation.completed, 7);
+  assert.match(await (await req("/llms.txt")).text(), /Reputation \(on-chain\): not registered yet/, "without a registry rail");
 });
 
 test("MCP: lists tools and rent_shell returns how to pay", async () => {

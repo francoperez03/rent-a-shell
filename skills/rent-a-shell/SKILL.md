@@ -11,7 +11,7 @@ What each shell measures today: the real angle of each joint (and whether the re
 
 ## Rules
 
-- **Real money.** Before paying, show the person the shell, how many blocks and the total price, and wait for an explicit yes. That amount is `--max-usd`; never raise it without asking.
+- **Real money.** Before paying, show the person the shell, how many blocks and the total price, and wait for an explicit yes. That amount is `--max-usd`; never raise it without asking. Paying accepts the terms at https://rent-a-shell.vercel.app/terms (use within the spec's limits, no filming or identifying people, refunds only when the shell goes offline with escrow, devnet has no monetary value).
 - The agent's wallet lives in `~/.rent-a-shell/wallet.json`. **Never show or copy the secret**: only the address.
 - Plan within the spec's safe range. The gateway clamps whatever goes past it, but planning inside the range is better.
 - If a step fails or the shell goes offline, don't retry by paying again without asking. When the shell goes down, a Solana Pay payment with escrow is refunded automatically; with x402 the Forger has to be told.
@@ -46,7 +46,7 @@ Creates the wallet the first time and prints the address. To pay it only needs *
 ```bash
 node rent.mjs info --gateway https://rent-a-shell.vercel.app
 ```
-`--gateway` takes the website URL or a gateway URL (the site's `/llms.txt` names the live gateway). `info` returns the spec (joints and safe range, HOME, routines, sensors, price, Forger), the queue and the current state. If it's `busy`, the rental is queued and starts when the shell frees up (the client waits on its own). With a hub: `node rent.mjs catalog --hub <HUB_URL>` lists every shell and its gateway.
+`--gateway` takes the website URL or a gateway URL (the site's `/llms.txt` names the live gateway). `info` returns the spec (joints and safe range, HOME, routines, sensors, price, Forger), the queue and the current state. If it's `busy`, the rental is queued and starts when the shell frees up (the client waits on its own). `node rent.mjs catalog --hub https://rent-a-shell.vercel.app` lists every shell and its gateway (the site is the catalog).
 
 Without the client: the site and each gateway expose `llms.txt` and MCP (`claude mcp add --transport http rent-a-shell <gateway>/mcp`) to explore the catalog. Payment still goes through this client.
 

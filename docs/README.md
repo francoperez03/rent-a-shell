@@ -17,6 +17,13 @@ A real robot (El Tucu) is rented in time blocks. A person from any country or an
 | 7 | [`specs/07-project-a.md`](specs/07-project-a.md) | The "people practicing Physical AI" front on the same core |
 | 8 | [`specs/08-rail-adapter.md`](specs/08-rail-adapter.md) | `PaymentRail` interface and isolation rule |
 | 9 | [`specs/09-hub.md`](specs/09-hub.md) | Marketplace hub: Forger registration, catalog, `llms.txt` and MCP |
+| 10 | [`specs/10-escrow-guard.md`](specs/10-escrow-guard.md) | The gateway validates operator, forger and expiry of every deposit; fixed admin for `init_config` |
+| 11 | [`specs/11-claims.md`](specs/11-claims.md) | What the material says versus what exists; README for the reviewer |
+| 12 | [`specs/12-terms.md`](specs/12-terms.md) | Terms for renters and Forgers, camera rule |
+| 13 | [`specs/13-pricing.md`](specs/13-pricing.md) | Price per shell set by the Forger, 10 % take rate, worked example |
+| 14 | [`specs/14-x402-escrow.md`](specs/14-x402-escrow.md) | Agent payments through the escrow: `open`, `set_payer`, per-intent paywall |
+| 15 | [`specs/15-shell-registry.md`](specs/15-shell-registry.md) | On-chain shell record with completed/refunded counters; mainnet runbook |
+| · | [`terms.md`](terms.md) | Terms of use |
 | · | [`forgers.md`](forgers.md) | How a Forger publishes their hardware and gets paid |
 | · | [`costs.md`](costs.md) | Owning versus renting |
 | · | [`plans/PLAN.md`](plans/PLAN.md) | Phases with verification, who runs each one |

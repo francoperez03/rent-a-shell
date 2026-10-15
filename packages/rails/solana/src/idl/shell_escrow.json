@@ -167,6 +167,10 @@
         {
           "name": "expires_at",
           "type": "i64"
+        },
+        {
+          "name": "shell",
+          "type": "pubkey"
         }
       ]
     },
@@ -223,6 +227,169 @@
         },
         {
           "name": "usdc_mint",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "open",
+      "docs": [
+        "Agent path (spec 14): the operator opens the escrow and its vault before the x402 402, so the facilitator's",
+        "plain TransferChecked lands in the vault. The payer is unknown until the payment settles."
+      ],
+      "discriminator": [
+        228,
+        220,
+        155,
+        71,
+        199,
+        189,
+        60,
+        45
+      ],
+      "accounts": [
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "session_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "escrow"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "session_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "forger",
+          "type": "pubkey"
+        },
+        {
+          "name": "expires_at",
+          "type": "i64"
+        },
+        {
+          "name": "shell",
           "type": "pubkey"
         }
       ]
@@ -337,6 +504,12 @@
         },
         {
           "name": "payer",
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "rent_to",
           "writable": true,
           "relations": [
             "escrow"
@@ -398,6 +571,14 @@
               ]
             }
           }
+        },
+        {
+          "name": "shell",
+          "docs": [
+            "Required when escrow.shell is set; its counter moves."
+          ],
+          "writable": true,
+          "optional": true
         },
         {
           "name": "token_program"
@@ -523,6 +704,12 @@
         },
         {
           "name": "payer",
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "rent_to",
           "writable": true,
           "relations": [
             "escrow"
@@ -586,6 +773,14 @@
           }
         },
         {
+          "name": "shell",
+          "docs": [
+            "Required when escrow.shell is set; its counter moves."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
           "name": "token_program"
         },
         {
@@ -598,6 +793,200 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "register_shell",
+      "docs": [
+        "Spec 15: one record per shell, created or updated by its operator. settle/refund/reclaim move its counters,",
+        "so completed and refunded come from the chain and no operator can inflate them."
+      ],
+      "discriminator": [
+        164,
+        156,
+        168,
+        86,
+        192,
+        58,
+        157,
+        217
+      ],
+      "accounts": [
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "shell",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  104,
+                  101,
+                  108,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "shell_id_hash"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "shell_id_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "forger",
+          "type": "pubkey"
+        },
+        {
+          "name": "price_usd_cents",
+          "type": "u64"
+        },
+        {
+          "name": "block_minutes",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "set_payer",
+      "docs": [
+        "Once, after the facilitator paid: records who paid (for refunds) and moves the escrow to Funded.",
+        "ponytail: requires the vault to hold the amount, so Funded always means funded; the gateway retries otherwise."
+      ],
+      "discriminator": [
+        70,
+        36,
+        166,
+        117,
+        101,
+        77,
+        14,
+        25
+      ],
+      "accounts": [
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "escrow.session_id",
+                "account": "Escrow"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "vault",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "escrow"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "payer",
+          "type": "pubkey"
+        }
+      ]
     },
     {
       "name": "settle",
@@ -738,7 +1127,7 @@
           ]
         },
         {
-          "name": "payer",
+          "name": "rent_to",
           "writable": true,
           "relations": [
             "escrow"
@@ -859,6 +1248,14 @@
           }
         },
         {
+          "name": "shell",
+          "docs": [
+            "Required when escrow.shell is set; its counter moves."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
           "name": "token_program"
         },
         {
@@ -954,6 +1351,19 @@
         218,
         155
       ]
+    },
+    {
+      "name": "ShellRecord",
+      "discriminator": [
+        40,
+        65,
+        150,
+        28,
+        228,
+        142,
+        90,
+        114
+      ]
     }
   ],
   "errors": [
@@ -996,6 +1406,31 @@
       "code": 6007,
       "name": "WrongAdmin",
       "msg": "Only the admin can change the config"
+    },
+    {
+      "code": 6008,
+      "name": "PayerAlreadySet",
+      "msg": "Payer already set"
+    },
+    {
+      "code": 6009,
+      "name": "NoPayer",
+      "msg": "Escrow has no payer yet"
+    },
+    {
+      "code": 6010,
+      "name": "NotFunded",
+      "msg": "Vault does not hold the escrow amount"
+    },
+    {
+      "code": 6011,
+      "name": "ShellMissing",
+      "msg": "Escrow is bound to a shell: pass its record"
+    },
+    {
+      "code": 6012,
+      "name": "WrongShell",
+      "msg": "Shell record does not match the escrow"
     }
   ],
   "types": [
@@ -1042,6 +1477,13 @@
             }
           },
           {
+            "name": "shell",
+            "docs": [
+              "ShellRecord this session counts for; default when the shell was not registered at deposit/open time."
+            ],
+            "type": "pubkey"
+          },
+          {
             "name": "payer",
             "type": "pubkey"
           },
@@ -1074,6 +1516,13 @@
             }
           },
           {
+            "name": "rent_to",
+            "docs": [
+              "Receives the vault rent on close: the payer (deposit) or the operator (open)."
+            ],
+            "type": "pubkey"
+          },
+          {
             "name": "bump",
             "type": "u8"
           }
@@ -1093,6 +1542,57 @@
           },
           {
             "name": "Refunded"
+          },
+          {
+            "name": "Opened"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShellRecord",
+      "docs": [
+        "Per-shell record, PDA [\"shell\", sha256(shell_id)] (spec 15)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "shell_id_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "forger",
+            "type": "pubkey"
+          },
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "price_usd_cents",
+            "type": "u64"
+          },
+          {
+            "name": "block_minutes",
+            "type": "u16"
+          },
+          {
+            "name": "completed",
+            "type": "u64"
+          },
+          {
+            "name": "refunded",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }

@@ -14,8 +14,13 @@ export function CountUp({ value, prefix = '' }: { value: string | number; prefix
   const decimals = (text.split('.')[1] ?? '').length;
   const [n, setN] = useState(0);
 
+  // Always paint n first (same HTML on server and client); with reduced motion the effect jumps to the target.
   useEffect(() => {
-    if (!inView || reduced) return;
+    if (!inView) return;
+    if (reduced) {
+      setN(target);
+      return;
+    }
     const t0 = performance.now();
     let raf = 0;
     const tick = (now: number) => {
@@ -31,7 +36,7 @@ export function CountUp({ value, prefix = '' }: { value: string | number; prefix
   return (
     <span ref={ref}>
       {prefix}
-      {reduced ? text : n.toFixed(decimals)}
+      {n.toFixed(decimals)}
     </span>
   );
 }

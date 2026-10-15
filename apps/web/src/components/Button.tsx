@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from 'react';
-import { Link, type LinkProps } from 'react-router-dom';
+import Link, { type LinkProps } from 'next/link';
 import { cn } from '@/lib/cn';
 import { Roll } from '@/motion-kit/split';
 
@@ -40,11 +40,11 @@ function classesFor(variant: Variant, surface: Surface): string {
 const SIZES: Record<Size, string> = { sm: 'h-10 px-4 text-mono-xs', md: 'h-11 px-5 text-mono', lg: 'h-14 px-6 text-mono' };
 
 const base =
-  'roll-parent inline-flex items-center justify-center gap-2 rounded-sm font-mono font-medium uppercase select-none whitespace-nowrap transition-[color,background-color,border-color] duration-base ease-out active:translate-y-px disabled:opacity-40 disabled:pointer-events-none';
+  'roll-parent inline-flex items-center justify-center gap-2 rounded-sm font-mono font-medium uppercase select-none whitespace-nowrap transition-[color,background-color,border-color] duration-base ease-out active:translate-y-px disabled:pointer-events-none disabled:border disabled:border-rule-2 disabled:bg-paper-2 disabled:text-ink-3';
 
 type ButtonProps = CommonProps & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { as?: 'button' };
 type AnchorProps = CommonProps & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'children'> & { as: 'a'; href: string };
-type RouterProps = CommonProps & Omit<LinkProps, 'children'> & { as: 'link' };
+type RouterProps = CommonProps & Omit<LinkProps, 'children'> & { as: 'link'; href: string };
 
 export const Button = forwardRef<HTMLElement, ButtonProps | AnchorProps | RouterProps>(
   ({ variant = 'primary', surface = 'paper', size = 'md', label, roll = true, loading = false, className, ...rest }, ref) => {

@@ -25,6 +25,8 @@ export function llmsTxt(cfg: Config, shell: Shell, rails: PaymentRail[]): string
 - Routines: ${shell.routines.join(", ")}
 - Sensors in /state: ${shell.sensors.join(", ")}${shell.sensors.includes("current_ma") ? " (current_ma = total mA on the servo bus; use it to measure how much your motion draws)" : ""}
 - Price: USD ${shell.pricing.usd} per ${shell.pricing.block_minutes}-minute block, up to ${cfg.maxBlocks} blocks
+- Reputation (on-chain): ${shell.reputation ? `${shell.reputation.completed} completed, ${shell.reputation.refunded} refunded (${shell.reputation.explorer})` : "not registered yet"}
+- Platform fee: 10 % of each session, taken when the escrow settles (fee_bps in the shell_escrow config)${cfg.escrow ? "; the rest goes to the Forger" : ". This gateway runs without escrow: x402 pays the Forger directly and no fee applies"}
 - Camera: HLS ${shell.camera.hls ?? "(not published)"} · latest JPEG frame ${shell.camera.frame}
 - Forger (who builds and maintains it): ${shell.forger.name}${shell.forger.contact ? `, contact ${shell.forger.contact}` : ""}${shell.forger.customizations ? ". Takes customization requests." : ""}
 - Owning one: about USD ${shell.build.parts_usd} in parts, ${shell.build.lead_days} days of waiting and ${shell.build.build_hours} h of assembly. Here: USD ${shell.pricing.usd} per ${shell.pricing.block_minutes} min, starting now.
@@ -35,12 +37,18 @@ ${agentRails.length ? agentRails.map((r) => `- ${r.id}: ${r.label}. ${r.descript
 
 ## How to rent (x402)
 
-1. POST ${u}/api/sessions/x402?shell=${shell.id}&blocks=1 answers 402 with the payment requirement (PAYMENT-REQUIRED header).
-2. Sign the payment with an x402 client and retry with the PAYMENT-SIGNATURE header.
+${
+  cfg.escrow
+    ? `1. POST ${u}/api/sessions/intent with JSON {"shell":"${shell.id}","blocks":1,"rail":"solana-x402"}. The answer has intent.id and intent.instructions.url: the x402 endpoint bound to an escrow opened for your session (valid 15 min). GET ${u}/api/sessions/intent/<id> shows its status.
+2. POST intent.instructions.url (${payUrl}&intent=<id>) answers 402 with the payment requirement (PAYMENT-REQUIRED header): payTo is the escrow and extra.memo is the intent id.
+3. Sign the payment with an x402 client and retry with the PAYMENT-SIGNATURE header. The USDC stays in escrow until the session ends: then 90 % goes to the Forger and 10 % to the platform, or everything comes back to you if the robot dropped.`
+    : `1. POST ${payUrl} answers 402 with the payment requirement (PAYMENT-REQUIRED header).
+2. Sign the payment with an x402 client and retry with the PAYMENT-SIGNATURE header.`
+}
 
 ${examples}
 
-3. The response is { token, sid, starts_at, expires_at, payment }. If the robot is busy, starts_at is in the future: wait until then.
+${cfg.escrow ? 4 : 3}. The response is { token, sid, starts_at, expires_at, payment }. If the robot is busy, starts_at is in the future: wait until then.
 
 ## Control
 
@@ -61,7 +69,7 @@ ${examples}
 `;
 }
 
-export function agentCard(cfg: Config, rails: PaymentRail[]) {
+export function agentCard(cfg: Config, rails: PaymentRail[], reputation?: Shell["reputation"]) {
   const u = cfg.publicUrl;
   return {
     name: "Rent a Shell",
@@ -75,6 +83,7 @@ export function agentCard(cfg: Config, rails: PaymentRail[]) {
     ],
     x402Support: rails.some((r) => r.paywall && r.manifest().available),
     active: true,
+    ...(reputation && { reputation }),
     payments: rails.map((r) => r.manifest()).filter((m) => m.available).map((m) => ({ id: m.id, network: m.wallet?.chains[0]?.id, assets: m.assets.map((a) => a.symbol) })),
   };
 }

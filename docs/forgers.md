@@ -16,7 +16,7 @@ The Forger's computer will most likely be a **Mac**: the skill is written for ma
 
 Support tools: `pnpm forger:find-esp32` (finds the ESP32 on the local network), `pnpm forger:doctor` (end-to-end check), `pnpm --filter @ras/rails-solana operator-key` (operator wallet without showing the key) and `scripts/forger/mediamtx.yml` (camera config).
 
-A Forger builds a shell, keeps it online and gets paid per minute of use. They run their own gateway next to their robot and register it in the hub.
+A Forger builds a shell, keeps it online, sets its price per 5-minute block (`BLOCK_USD`) and gets paid per block: with x402, upfront; with Solana Pay, from the escrow when the session ends (90 %). They run their own gateway next to their robot and register it in the hub.
 
 ## 1. Gateway
 
@@ -47,15 +47,15 @@ pnpm gateway
 curl $PUBLIC_URL/api/shells     # your spec sheet
 ```
 
-## 2. Register in the hub
+## 2. Register in the catalog
 
 ```bash
-curl -X POST https://<hub>/api/forgers \
+curl -X POST https://rent-a-shell.vercel.app/api/forgers \
   -H 'content-type: application/json' \
   -d '{"gateway":"https://<your-gateway>"}'
 ```
 
-The hub fetches your `/api/shells`. If it responds, you're in the catalog (201); if not, 422. Every 30 s it checks that you're still online.
+The site fetches your `/api/shells`. If it responds, you're in the catalog (201); if not, 422. It re-checks every gateway whenever the catalog is requested (30 s cache); an unreachable gateway shows its shells as offline. `pnpm forger` does this registration for you with `HUB_URL`.
 
 ## 3. Getting paid
 
