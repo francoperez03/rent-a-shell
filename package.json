@@ -13,6 +13,7 @@
     "forger:cameras": "node scripts/forger/run.mjs --list-cameras",
     "forger:find-esp32": "node scripts/forger/find-esp32.mjs",
     "forger:doctor": "node scripts/forger/doctor.mjs",
+    "forger:spec": "node scripts/forger/spec.mjs",
     "mock": "cd \"${ROBOT_A_DIR:-$HOME/repos/job/eventos/bnb-builder-session/agentes/robot-a}\" && pnpm --filter mock start"
   },
   "devDependencies": {

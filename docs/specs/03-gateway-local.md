@@ -92,3 +92,7 @@ Same scheme as El Tucu (`robot-a/SPEC.md` §4.3):
 - Proxy and 409 handling: `robot-a/apps/agent/app/agent/src/tucu.ts` (`dance`, `/state` query).
 - x402 and Solana Pay payments: `packages/rails/solana` (`x402.ts`, `pay.ts`, `pay-escrow.ts`).
 - Reference 402 middleware: `paybot/packages/x402/src/middleware.ts`. The 402 is built from the `requirement` the rail returns.
+
+## Spec sheet (2026-10-14)
+
+The shell's spec sheet comes from `apps/gateway/shell.json` (`SHELL_FILE` to point elsewhere; `shell.example.json` is El Tucu's), validated with zod in `config.ts` (`loadSheet`): slug id, min below max per joint, HOME inside the ranges, price as a two-decimal string, non-empty routines and sensors, optional `image` file next to the json. The gateway refuses to start on an invalid sheet. `SHELL_*`, `BLOCK_*` and `FORGER_*` env vars override single fields. The photo is served at `GET /api/shells/:id/image` (one hour cache) and published as `image` in `/api/shells`, `llms.txt` and the site. `pnpm forger:spec` validates and prints the sheet; `forger:doctor` checks it too.

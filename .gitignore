@@ -16,3 +16,7 @@ videos/
 .playwright-mcp/
 .next/
 next-env.d.ts
+# the Forger's own spec sheet and photo
+apps/gateway/shell.json
+apps/gateway/shell.jpg
+apps/gateway/shell.png

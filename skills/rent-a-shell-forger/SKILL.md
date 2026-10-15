@@ -64,14 +64,35 @@ It prints the cameras with their index. Use the index as `CAMERA` (the built-in 
 - The first time ffmpeg opens the camera, macOS asks for permission for the **Terminal** (or whichever terminal app is used) and the person has to accept it. If it was denied: System Settings → Privacy & Security → Camera → enable the terminal.
 - With no webcam at hand everything can be tested with `CAMERA=test` (test signal).
 
-## 4. Configuration (`apps/gateway/.env.local`)
+## 4. Spec sheet (`apps/gateway/shell.json`)
+
+The spec sheet is what the site shows on the shell's page, what agents read in `llms.txt` and what the gateway enforces (safe ranges). One file, `apps/gateway/shell.json`, plus a photo next to it. Start from the example and fill it in with the person, one group at a time; show each answer back before moving on.
+
+```bash
+cp apps/gateway/shell.example.json apps/gateway/shell.json
+```
+
+Ask, in this order (the `_help` block in the file explains every field; delete it or leave it, the gateway ignores it):
+1. **Identity**: `name` (what customers see), `id` (lowercase slug, unique in the catalog, e.g. `el-tucu`), `kind` (`arm-4dof` for a four-joint arm: base, shoulder, elbow, grip), `location` as "City, CC".
+2. **Safe ranges**: for each joint, the `[min, max]` in degrees the servo can reach without hitting anything, and the `home` pose inside those ranges. If the person does not know them, measure: with the robot on, move each joint by hand to its ends and read `curl $ESP32_URL/state`. Commands outside the range are clamped, so a narrow range is safe and a wide one is risky.
+3. **Routines**: the names the firmware accepts for the dance command (El Tucu: `robot`, `lento`, `saludo`, `recta`). Only list what the firmware really has.
+4. **Sensors**: `angles` always; add `current_ma` only with an INA219 on the servo bus.
+5. **Price**: `pricing.usd` per block as a string with two decimals (default `"0.05"`) and `block_minutes` (default 5). The platform keeps 10 % of escrow settles; the Forger sets the price.
+6. **Owning one**: `build.parts_usd` (what the parts cost), `lead_days` (days to get them) and `build_hours` (assembly). The site shows "the parts alone buy N hours here" from these.
+7. **Forger**: `forger.name`, optional `contact` (a link customers can open) and `customizations` (true if they take requests for extra sensors, effectors or mounts).
+8. **Photo**: ask for a picture of the robot. Square, 1200 px, the robot filling the frame, no people. Save it as `apps/gateway/shell.jpg` (`image: "shell.jpg"`). On macOS crop and resize with `sips`: `sips -c <h> <w> --resampleWidth 1200 in.jpg --out apps/gateway/shell.jpg`. Keep it under 2 MB. Without a photo the site shows a dark placeholder.
+
+Then validate and show the result to the person until they say it is right:
+```bash
+pnpm forger:spec
+```
+It prints the sheet the way the site shows it and exits 1 with the field to fix when something is wrong (HOME outside a range, a price with three decimals, a missing photo). The gateway refuses to start with an invalid `shell.json`, so this has to pass before step 6.
+
+## 5. Configuration (`apps/gateway/.env.local`)
 
 Ask the person:
 - **Solana address** to get paid: `SOLANA_PAY_TO`, the public one (Phantom → copy address).
-- **Shell name** (`SHELL_NAME`), **id** with no spaces and unique in the catalog (`SHELL_ID`) and **location** (`SHELL_LOCATION`).
-- **Forger name** (`FORGER_NAME`) and an optional **contact** for requests (`FORGER_CONTACT`).
 - **Network:** `SOLANA_NETWORK=devnet` to test or `mainnet` to charge for real.
-- **Price per block** (`BLOCK_USD`, default `0.05`) and block length (`BLOCK_MINUTES`, default `5`). The platform keeps 10 % of escrow settles; the Forger decides the price of their own shell.
 - **Terms:** the person reads and accepts https://rent-a-shell.vercel.app/terms (safe hardware for remote use, fixed camera framing on the robot with a visible notice at the place, they answer for their equipment and the place). Do not publish the shell until they say yes.
 
 Fill in without asking:
@@ -92,7 +113,7 @@ pnpm --filter @ras/rails-solana -s operator-key
 ```
 It's written into `.env.local` and the command prints only the address. Ask the person to send it ~0.05 SOL for fees (on devnet, from faucet.solana.com).
 
-## 5. Start (confirm the tunnel first)
+## 6. Start (confirm the tunnel first)
 
 ```bash
 pnpm forger
@@ -105,7 +126,7 @@ A single process starts MediaMTX, the camera, the Cloudflare tunnel, the gateway
 
 Without a tunnel (to test on the local network): `TUNNEL=none`. With a fixed URL (named tunnel or Tailscale Funnel): set `PUBLIC_URL=https://...` and `TUNNEL=none`.
 
-## 6. Verify everything
+## 7. Verify everything
 
 In another terminal tab:
 ```bash
@@ -113,7 +134,7 @@ pnpm forger:doctor
 ```
 It should end with everything green and no ✗ lines. Each ✗ (critical) or ! (warning) line says what to fix. For a real payment test, follow `docs/plans/PLAN.md` (buyer with devnet USDC).
 
-## 7. Start automatically (macOS)
+## 8. Start automatically (macOS)
 
 macOS camera permission belongs to the **Terminal**. That's why the most reliable autostart opens the Terminal:
 1. Create `~/RentAShellForger.command`:

@@ -147,6 +147,9 @@ export default function ShellPage({ id, gw }: { id: string; gw?: string }) {
               )}
             </p>
             {shell.forger.customizations && <CustomRequest shellId={shell.id} forger={shell.forger.name} />}
+            {shell.image && (
+              <img src={shell.image} alt={`${shell.name}, built by ${shell.forger.name}`} loading="lazy" className="mt-6 aspect-square w-full max-w-sm border border-rule object-cover" />
+            )}
           </section>
         </div>
 

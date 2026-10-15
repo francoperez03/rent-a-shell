@@ -1,0 +1,67 @@
+{
+  "_help": {
+    "id": "lowercase slug, unique in the catalog",
+    "kind": "arm-4dof (four joints: base, shoulder, elbow, grip)",
+    "location": "City, CC",
+    "joints": "safe range per joint in degrees [min, max]; commands outside are clamped",
+    "home": "resting pose, inside each range",
+    "routines": "names the firmware accepts for the dance command",
+    "sensors": "angles always; current_ma with an INA219",
+    "pricing": "usd per block (string, two decimals) and block length in minutes",
+    "forger": "how customers see you; customizations = you take requests",
+    "build": "what it costs to own one: parts in USD, days to get them, hours of assembly",
+    "image": "square photo file next to this json (jpg or png, 1200 px)"
+  },
+  "id": "el-tucu",
+  "name": "El Tucu",
+  "kind": "arm-4dof",
+  "location": "Tucumán, AR",
+  "joints": {
+    "base": [
+      20,
+      160
+    ],
+    "shoulder": [
+      80,
+      170
+    ],
+    "elbow": [
+      80,
+      130
+    ],
+    "grip": [
+      130,
+      175
+    ]
+  },
+  "home": {
+    "base": 105,
+    "shoulder": 115,
+    "elbow": 90,
+    "grip": 150
+  },
+  "routines": [
+    "robot",
+    "lento",
+    "saludo",
+    "recta"
+  ],
+  "sensors": [
+    "angles"
+  ],
+  "pricing": {
+    "block_minutes": 5,
+    "usd": "0.05"
+  },
+  "forger": {
+    "name": "Franco Pérez",
+    "contact": "",
+    "customizations": true
+  },
+  "build": {
+    "parts_usd": 45,
+    "lead_days": 14,
+    "build_hours": 10
+  },
+  "image": "shell.jpg"
+}

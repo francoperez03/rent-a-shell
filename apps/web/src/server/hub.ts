@@ -244,7 +244,7 @@ ${QUICK_START(site)}
 
 Each shell has its own price, set by its Forger. Platform fee: 10 % of each session, taken when the escrow settles; the rest goes to the Forger. Gateways with escrow bind each x402 payment to an intent (POST <gateway>/api/sessions/intent first): their llms.txt has the steps.
 
-${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}, ${s.status}. USD ${s.pricing.usd} per ${s.pricing.block_minutes} min. Sensors: ${(s.sensors ?? []).join(', ') || 'angles'}. Forger: ${s.forger?.name ?? '?'}.${s.reputation ? ` Reputation (on-chain): ${s.reputation.completed} completed, ${s.reputation.refunded} refunded (${s.reputation.explorer}).` : ''} Gateway: ${s.gateway} · instructions ${s.gateway}/llms.txt · payment POST ${s.gateway}/api/sessions/x402?shell=${s.id}&blocks=1`).join('\n') : '- No shells registered yet.'}
+${live.length ? live.map((s) => `- ${s.name} (${s.id}), ${s.kind}, ${s.location}, ${s.status}. USD ${s.pricing.usd} per ${s.pricing.block_minutes} min. Sensors: ${(s.sensors ?? []).join(', ') || 'angles'}. Forger: ${s.forger?.name ?? '?'}.${s.reputation ? ` Reputation (on-chain): ${s.reputation.completed} completed, ${s.reputation.refunded} refunded (${s.reputation.explorer}).` : ''} Gateway: ${s.gateway} · instructions ${s.gateway}/llms.txt · payment POST ${s.gateway}/api/sessions/x402?shell=${s.id}&blocks=1${s.image ? ` · photo ${s.image}` : ''}`).join('\n') : '- No shells registered yet.'}
 
 ## Other entry points
 

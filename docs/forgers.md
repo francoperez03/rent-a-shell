@@ -25,6 +25,8 @@ git clone https://github.com/francoperez03/rent-a-shell.git && cd rent-a-shell &
 cp apps/gateway/.env.example apps/gateway/.env.local
 ```
 
+**Spec sheet.** Everything customers and agents see about the shell lives in one file, `apps/gateway/shell.json`, plus its photo: id, name, kind, location, safe range and HOME per joint, routines, sensors, price per block, what owning one costs, your name and contact, and `image` (a square 1200 px jpg next to the json, e.g. `shell.jpg`). Copy `apps/gateway/shell.example.json`, fill it in and run `pnpm forger:spec`: it validates the file (HOME inside the ranges, price format, photo under 2 MB) and prints the sheet the way the site shows it. The gateway serves the photo at `/api/shells/<id>/image`. Env vars `SHELL_ID`, `SHELL_NAME`, `SHELL_LOCATION`, `SHELL_SENSORS`, `BLOCK_*` and `FORGER_*` still override single fields if you need that.
+
 In `apps/gateway/.env.local`:
 
 | Variable | What to set |
@@ -32,10 +34,6 @@ In `apps/gateway/.env.local`:
 | `ESP32_URL` | robot IP on your local network |
 | `PUBLIC_URL` | public HTTPS URL of the gateway (tunnel). Used by the hub, the website and wallets (transaction request) |
 | `SESSION_SECRET` | `openssl rand -hex 32` |
-| `SHELL_ID`, `SHELL_NAME` | unique id in the catalog and display name |
-| `SHELL_SENSORS` | `angles,current_ma` if you have an INA219; otherwise `angles` |
-| `BLOCK_MINUTES`, `BLOCK_USD` | block length and price |
-| `FORGER_NAME`, `FORGER_CONTACT` | how customers see you |
 | `FORGER_TOKEN` | `openssl rand -hex 24`, to read requests |
 | `RAILS` | `solana-x402,solana-pay` |
 | `SOLANA_NETWORK` | `devnet` or `mainnet` |

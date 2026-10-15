@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Shell } from '@ras/shell-spec';
 import Link from 'next/link';
@@ -72,7 +71,7 @@ export default function ShellsView({ shells }: { shells: Shell[] }) {
 
 /** The centre card: photo, nameplate, price and the way in. */
 function ShellCard({ shell }: { shell: Shell }) {
-  const photo = SHELL_IMAGES[shell.id];
+  const photo = shell.image ?? SHELL_IMAGES[shell.id];
   return (
     <Link href={shellHref(shell)} className="group block border border-rule bg-paper shadow-[0_24px_60px_-30px_rgba(21,17,13,.45)] transition-[transform,border-color] duration-medium ease-out hover:scale-[1.03] hover:border-ink">
       <div className="flex items-center justify-between border-b border-rule px-5 py-3">
@@ -81,7 +80,7 @@ function ShellCard({ shell }: { shell: Shell }) {
       </div>
       <div className="relative aspect-square w-full overflow-hidden bg-bench">
         {photo ? (
-          <Image src={photo} alt={`${shell.name}, ${shell.kind} built by ${shell.forger.name}`} fill priority sizes="(min-width: 1024px) 560px, 100vw" className="object-cover transition-transform duration-medium ease-out group-hover:scale-105" />
+          <img src={photo} alt={`${shell.name}, ${shell.kind} built by ${shell.forger.name}`} className="absolute inset-0 h-full w-full object-cover transition-transform duration-medium ease-out group-hover:scale-105" />
         ) : (
           <div className="dot-grid-bench grid h-full place-items-center font-mono text-mono uppercase text-bench-ink-2">{shell.name}</div>
         )}
@@ -109,8 +108,8 @@ function Side({ shell, className }: { shell?: Shell; className?: string }) {
       {shell ? (
         <Link href={shellHref(shell)} className="group block border border-rule bg-paper transition-[transform,border-color] duration-medium ease-out hover:scale-[1.03] hover:border-ink">
           <div className="relative aspect-square w-full overflow-hidden bg-bench">
-            {SHELL_IMAGES[shell.id] ? (
-              <Image src={SHELL_IMAGES[shell.id]} alt="" fill sizes="(min-width: 1024px) 320px, 50vw" className="object-cover" />
+            {shell.image ?? SHELL_IMAGES[shell.id] ? (
+              <img src={shell.image ?? SHELL_IMAGES[shell.id]} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
             ) : (
               <div className="dot-grid-bench grid h-full place-items-center font-mono text-mono uppercase text-bench-ink-2">{shell.name}</div>
             )}

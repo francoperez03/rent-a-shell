@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { cameraArgs, readEnvFile } from "./lib.mjs";
+import { cameraArgs, readEnvFile, validateSheet } from "./lib.mjs";
 
 test(".env.local with CRLF and comments (Windows)", () => {
   const f = path.join(mkdtempSync(path.join(tmpdir(), "forger-")), ".env.local");
@@ -28,4 +28,14 @@ test("camera per OS: dshow by name, avfoundation by index, v4l2 by /dev", () => 
   assert.equal(lin[lin.indexOf("-i") + 1], "/dev/video0");
   assert.ok(lin.join(" ").includes("-video_size 640x480"));
   assert.ok(cameraArgs("win32", { CAMERA: "test" }).join(" ").includes("lavfi"));
+});
+
+test("shell.json validation: a good sheet passes, HOME outside a range and a bad price fail", () => {
+  const good = JSON.parse(readFileSync(new URL("../../apps/gateway/shell.example.json", import.meta.url), "utf8"));
+  assert.deepEqual(validateSheet(good), []);
+  const bad = { ...good, home: { ...good.home, base: 10 }, pricing: { block_minutes: 5, usd: "0.055" } };
+  const problems = validateSheet(bad);
+  assert.ok(problems.some((p) => p.startsWith("home.base")));
+  assert.ok(problems.some((p) => p.startsWith("pricing.usd")));
+  assert.ok(validateSheet({}).length > 10);
 });
