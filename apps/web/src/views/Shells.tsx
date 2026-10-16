@@ -7,7 +7,7 @@ import { Footer } from '@/components/Footer';
 import { Readout } from '@/components/Readout';
 import { SectionIndex } from '@/components/SectionIndex';
 import { StatusDot } from '@/components/StatusDot';
-import { SHELL_IMAGES } from '@/content/shell-images';
+import { shellPhoto } from '@/content/shell-images';
 import { shellHref } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { dur, easeOut } from '@/lib/motion';
@@ -71,7 +71,7 @@ export default function ShellsView({ shells }: { shells: Shell[] }) {
 
 /** The centre card: photo, nameplate, price and the way in. */
 function ShellCard({ shell }: { shell: Shell }) {
-  const photo = shell.image ?? SHELL_IMAGES[shell.id];
+  const photo = shellPhoto(shell);
   return (
     <Link href={shellHref(shell)} className="group block border border-rule bg-paper shadow-[0_24px_60px_-30px_rgba(21,17,13,.45)] transition-[transform,border-color] duration-medium ease-out hover:scale-[1.03] hover:border-ink">
       <div className="flex items-center justify-between border-b border-rule px-5 py-3">
@@ -108,8 +108,8 @@ function Side({ shell, className }: { shell?: Shell; className?: string }) {
       {shell ? (
         <Link href={shellHref(shell)} className="group block border border-rule bg-paper transition-[transform,border-color] duration-medium ease-out hover:scale-[1.03] hover:border-ink">
           <div className="relative aspect-square w-full overflow-hidden bg-bench">
-            {shell.image ?? SHELL_IMAGES[shell.id] ? (
-              <img src={shell.image ?? SHELL_IMAGES[shell.id]} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+            {shellPhoto(shell) ? (
+              <img src={shellPhoto(shell)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
             ) : (
               <div className="dot-grid-bench grid h-full place-items-center font-mono text-mono uppercase text-bench-ink-2">{shell.name}</div>
             )}
