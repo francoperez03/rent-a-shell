@@ -11,6 +11,7 @@ import { Footer } from '@/components/Footer';
 import { api, fmtClock, setGateway, toMs, useNow, useQueue, useShell, useShellState } from '@/lib/api';
 import { JOINTS, JOINT_LABEL, routineLabel } from '@/lib/joints';
 import { cn } from '@/lib/cn';
+import { shellPhoto } from '@/content/shell-images';
 
 const BLOCKS = [1, 2, 3, 4, 5, 6];
 
@@ -147,8 +148,8 @@ export default function ShellPage({ id, gw }: { id: string; gw?: string }) {
               )}
             </p>
             {shell.forger.customizations && <CustomRequest shellId={shell.id} forger={shell.forger.name} />}
-            {shell.image && (
-              <img src={shell.image} alt={`${shell.name}, built by ${shell.forger.name}`} loading="lazy" className="mt-6 aspect-square w-full max-w-sm border border-rule object-cover" />
+            {shellPhoto(shell) && (
+              <img src={shellPhoto(shell)} alt={`${shell.name}, built by ${shell.forger.name}`} loading="lazy" className="mt-6 aspect-square w-full max-w-sm border border-rule object-cover" />
             )}
           </section>
         </div>
