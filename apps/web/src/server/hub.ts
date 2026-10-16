@@ -101,6 +101,9 @@ let inflight: Promise<GatewayEntry[]> | null = null;
 export const invalidate = () => { cache = null; };
 
 /** Re-fetches every gateway; an unreachable one keeps its last known spec sheet and shows as offline. */
+/** Last refresh attempts on this instance, for /api/probe. */
+export const attempts: { at: number; url: string; ms: number; error?: string }[] = [];
+
 export async function refresh(): Promise<GatewayEntry[]> {
   if (inflight) return inflight;
   inflight = (async () => {
@@ -108,14 +111,18 @@ export async function refresh(): Promise<GatewayEntry[]> {
     const entries = await Promise.all(
       (await gateways()).map(async (g) => {
         const next = { ...g };
+        const t0 = Date.now();
         try {
           next.shells = await fetchShells(g.url, timeoutMs);
           next.online = true;
           next.lastSeen = Date.now();
+          attempts.push({ at: t0, url: g.url, ms: Date.now() - t0 });
         } catch (e) {
           console.warn(`[hub] ${g.url} unreachable: ${(e as Error).message}${(e as Error).cause ? ` (${String((e as Error).cause)})` : ''}`);
+          attempts.push({ at: t0, url: g.url, ms: Date.now() - t0, error: (e as Error).message });
           next.online = false;
         }
+        if (attempts.length > 20) attempts.shift();
         // lastSeen alone is not worth a write: persist only when the status or the spec sheet changed
         if (next.online !== g.online || JSON.stringify(next.shells) !== JSON.stringify(g.shells)) await store.set(next);
         return next;
