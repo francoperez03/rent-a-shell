@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
+import { after } from 'next/server';
 import { z } from 'zod';
 import type { Shell } from '@ras/shell-spec';
 import { store } from './store';
@@ -137,7 +138,16 @@ export async function refresh(): Promise<GatewayEntry[]> {
 /** Fresh cache: return it. Stale: return it and refresh in the background. Empty: wait for a refresh. */
 async function entries(): Promise<GatewayEntry[]> {
   if (!cache) return refresh();
-  if (Date.now() - cache.at > TTL_MS) void refresh().catch(() => {});
+  if (Date.now() - cache.at > TTL_MS) {
+    // Vercel freezes the instance once the response is sent: a plain background refresh stalls until the next request
+    // and hits its timeout, marking every gateway offline. after() keeps the function alive until the refresh is done.
+    const run = () => refresh().catch(() => {});
+    try {
+      after(run);
+    } catch {
+      void run(); // outside a request (tests)
+    }
+  }
   return cache.entries;
 }
 
