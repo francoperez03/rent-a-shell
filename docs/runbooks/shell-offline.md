@@ -66,7 +66,35 @@ The launcher only restarts ffmpeg when it exits. On 2026-10-16 it kept running w
 was gone. Fix: `kill <pid of ffmpeg -f avfoundation>`; the launcher respawns it in 3 s. A watchdog on that error is the
 next improvement.
 
-## Known gaps
+## 6. Payments fail with `InstructionFallbackNotFound` (escrow program)
 
-- `[registry] register: AnchorError ... InstructionFallbackNotFound` on gateway start: the `shell_escrow` program on devnet
-  predates `register_shell`. Harmless for renting; on-chain reputation stays empty until the program is redeployed.
+The `shell_escrow` program on devnet is older than `programs/programs/shell-escrow/src/lib.rs` (an instruction the
+rail calls does not exist on-chain). Rebuild and upgrade with the upgrade authority (`~/.config/solana/id.json`, `ADMIN`):
+
+```bash
+cd programs && npm run build                      # cargo-build-sbf with platform-tools v1.52 (anchor build alone fails: edition2024)
+A=~/.local/share/solana/install/active_release/bin # Agave 3.x; the Homebrew solana 1.18 is too old
+$A/solana program show 5459LTpropgaL1a7Ct4nRUN6BULGvJs3STMcreh2gf4X --url devnet   # Data Length vs ls -l target/deploy/shell_escrow.so
+$A/solana program extend 5459LTpropgaL1a7Ct4nRUN6BULGvJs3STMcreh2gf4X <extra bytes> --url devnet   # only if the new .so is bigger
+$A/solana program deploy target/deploy/shell_escrow.so --program-id target/deploy/shell_escrow-keypair.json --url devnet
+```
+
+Needs ~2.1 SOL free for the deploy buffer (returned afterwards) plus rent for the extension. Then restart the gateway
+(`pkill -f src/index.ts`; the launcher respawns it) and look for `[registry] shell el-tucu registered` in its log.
+Done on 2026-10-16 (slot 511787810).
+
+## 7. The arm is limp although `/state` answers
+
+The firmware does not report whether the servos got power. Capture the UART (the board is on `/dev/cu.usbserial-0001`;
+opening the port resets it) while sending a command:
+
+```bash
+PY=~/.espressif/python_env/idf5.3_py3.13_env/bin/python
+$PY ~/repos/job/eventos/bnb-builder-session/agentes/robot-a/apps/firmware/scripts/uart-log.py /dev/cu.usbserial-0001 /tmp/uart.txt &
+curl -X POST -H 'content-type: application/json' -d '{"joint":"base","angle":60}' http://192.168.1.15/joint
+```
+
+`obj base=60 gpio32` and `mov ... (1133us g32)` lines mean the firmware is pulsing the GPIOs. If the arm still does not
+move and the bench meter reads 0.000 A, the servos are not getting the 5 V rail or share no ground with the ESP32: check
+the supply leads to the servo rail and the common GND. Flashing does not fix that. The flashed build is from 2026-09-19
+(`e04742c-dirty`) and predates the INA219 current reading; flash with `pnpm flash` in `apps/firmware` when the sensor is wired.
