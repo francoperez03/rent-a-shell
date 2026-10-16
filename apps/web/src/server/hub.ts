@@ -110,7 +110,8 @@ export async function refresh(): Promise<GatewayEntry[]> {
           next.shells = await fetchShells(g.url, timeoutMs);
           next.online = true;
           next.lastSeen = Date.now();
-        } catch {
+        } catch (e) {
+          console.warn(`[hub] ${g.url} unreachable: ${(e as Error).message}${(e as Error).cause ? ` (${String((e as Error).cause)})` : ''}`);
           next.online = false;
         }
         // lastSeen alone is not worth a write: persist only when the status or the spec sheet changed
