@@ -117,8 +117,9 @@ async function register() {
   writeFileSync(URL_FILE, publicUrl);
   if (!env.HUB_URL || publicUrl.includes("localhost")) return;
   if (!env.HUB_TOKEN) return log("hub", "HUB_TOKEN is missing: ask for a Forger token and put it in .env.local to be listed");
-  for (let i = 0; i < 10; i++) {
-    await new Promise((r) => setTimeout(r, 3000));
+  // ponytail: never give up; a quick tunnel can take minutes to be reachable from the hub's region
+  for (let i = 0; ; i++) {
+    await new Promise((r) => setTimeout(r, Math.min(3000 * (i + 1), 30_000)));
     try {
       const r = await fetch(`${env.HUB_URL.replace(/\/$/, "")}/api/forgers`, {
         method: "POST",
@@ -129,12 +130,11 @@ async function register() {
       const j = await r.json().catch(() => ({}));
       if (r.ok) return log("hub", `registered ${publicUrl} · shells ${(j.shells ?? []).join(", ")}`);
       if (r.status === 401 || r.status === 409 || r.status === 429) return log("hub", `rejected (${r.status} ${j.error ?? ""}): ${j.message ?? "check HUB_TOKEN"}`);
-      log("hub", `not yet (${r.status} ${j.error ?? ""}); retrying`);
+      log("hub", `not yet (${r.status} ${j.error ?? ""}: ${j.message ?? ""}); retrying`);
     } catch (e) {
       log("hub", `no answer (${e.message}); retrying`);
     }
   }
-  log("hub", "could not register: check HUB_URL and the tunnel");
 }
 
 if (tunnel === "cloudflared") {

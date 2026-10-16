@@ -74,7 +74,9 @@ function isShell(s: unknown): s is Shell {
 }
 
 async function fetchShells(url: string, timeoutMs: number): Promise<Shell[]> {
-  const r = await fetch(`${url}/api/shells`, { signal: AbortSignal.timeout(timeoutMs), cache: 'no-store' });
+  // ponytail: connection: close — a kept-alive socket to a Cloudflare quick tunnel goes stale between refreshes on a warm
+  // Vercel instance and every later fetch hangs until the timeout; a fresh connection per refresh is cheap (one every 30 s)
+  const r = await fetch(`${url}/api/shells`, { signal: AbortSignal.timeout(timeoutMs), cache: 'no-store', headers: { connection: 'close' } });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const list = (await r.json()) as unknown[];
   if (!Array.isArray(list) || !list.every(isShell)) throw new Error('response is not a list of shells');
