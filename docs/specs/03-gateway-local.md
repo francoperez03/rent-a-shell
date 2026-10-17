@@ -1,6 +1,6 @@
 # 03 · Local gateway
 
-A single Node 22 process with Hono on `localhost:8787`, plus MediaMTX and ffmpeg for the camera. It runs on the computer next to the robot; `pnpm forger` (`scripts/forger/run.mjs`) starts and supervises everything on macOS, Windows or Linux.
+A single Node 22 process with Hono on `localhost:8787`, plus MediaMTX and ffmpeg for the camera. It runs on the computer next to the robot; `pnpm forger` (`scripts/forger/forger.mjs`) starts and supervises everything; on a Raspberry Pi it runs as the systemd service `rent-a-shell-forger` (`pnpm forger:deploy`).
 
 ## Responsibilities
 
@@ -69,14 +69,14 @@ Same scheme as El Tucu (`robot-a/SPEC.md` §4.3):
 | Piece | Value |
 |---|---|
 | Server | MediaMTX with `scripts/forger/mediamtx.yml`, the only process that opens the webcam |
-| Capture | ffmpeg (`avfoundation` on macOS, `dshow` on Windows, `v4l2` on Linux) publishing to MediaMTX at the `SHELL_ID` path |
+| Capture | ffmpeg (`v4l2` with MJPG input on Linux, `avfoundation` on macOS) publishing to MediaMTX at the `SHELL_ID` path |
 | Output | HLS on `localhost:8888`, exposed by the gateway at `/live` |
 | Latency | a few seconds with HLS. WebRTC is out: it uses UDP and doesn't go through the tunnel |
 | Frame for agents | the gateway reads a JPEG via ffmpeg from MediaMTX's RTSP and caches it for 1 s |
 
 ## Processes
 
-`pnpm forger` starts MediaMTX, the ffmpeg capture, the tunnel (`cloudflared`) and the gateway as children, restarts whatever crashes and re-registers in the site's catalog (`HUB_URL`) when the tunnel URL changes. Autostart: Login Items on macOS, a scheduled task on Windows, pm2 or systemd on Linux (see the Forger skill).
+`pnpm forger` starts MediaMTX, the ffmpeg capture, the tunnel (`cloudflared`) and the gateway as children, restarts whatever crashes and re-registers in the site's catalog (`HUB_URL`) when the tunnel URL changes. It also serves a status page on the LAN (`:8790`, JSON at `/health`). Autostart: the systemd service `rent-a-shell-forger` that `pnpm forger:deploy` installs on a Raspberry Pi.
 
 ## Failures
 
