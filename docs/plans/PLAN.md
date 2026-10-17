@@ -20,7 +20,7 @@ Each phase says where it runs. What runs next to the robot, on the ESP32 or requ
 | F9 | 90/10 escrow with refund | Mac + devnet | program and rail done (2026-10-12): `anchor test` 7/7 and e2e on a local validator (90/10, refund, idempotency); devnet deploy and a Phantom payment pending | `programs/`, `packages/rails/solana/src/pay-escrow.ts` |
 | F10 | Current sensor (INA219) | robot-a + Mac | firmware builds (`idf.py build`) and conversion test ok; mock, gateway, buyer and console show `current_ma`; soldering the chip pending | `robot-a/apps/firmware/main/ina219.c` |
 | F11 | Customization requests | Mac | done: endpoint, form on the spec page and reading with `FORGER_TOKEN` | `apps/gateway/src/app.ts` |
-| F12 | Agent skills and Forger launcher | Mac | done: rent skill + `rent.mjs` (spending cap, report), Forger skill + `pnpm forger` / `forger:doctor` / `forger:find-esp32` | `skills/`, `scripts/forger/` |
+| F12 | Agent skills and Forger launcher | Mac | done: rent skill + `rent.mjs` (spending cap, report), Forger skill + `pnpm forger` / `forger:doctor` / `forger:esp32` | `skills/`, `scripts/forger/` |
 
 Critical path: F2 (real devnet payment) → F5 → F7.
 
@@ -67,7 +67,7 @@ Outside the repo (Franco, this week): 2:00 pitch with the review's structure and
 
 Steps (Franco, on the Mac next to the robot; the Forger skill covers it in detail):
 1. Clone `rent-a-shell`, `pnpm install`, `brew install node pnpm ffmpeg mediamtx cloudflared`.
-2. ESP32 with El Tucu on the own router; `pnpm forger:find-esp32`.
+2. ESP32 with El Tucu on the own router; `pnpm forger:esp32`.
 3. `.env.local` with `ESP32_URL`, `CAMERA` (from `pnpm forger:cameras`), `SOLANA_PAY_TO`, `HUB_URL`.
 4. `pnpm forger` (camera, tunnel, gateway and hub registration) and `pnpm forger:doctor`.
 5. Website on Vercel (Next.js, root `apps/web`): the Forger registers with `HUB_URL=<site url>`; the registry lives in Upstash Redis (Marketplace).

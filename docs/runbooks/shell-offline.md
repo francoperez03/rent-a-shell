@@ -5,15 +5,19 @@ The site marks a shell offline when the hub (the Next.js app on Vercel) cannot f
 
 ## 1. Robot and gateway (on the Forger machine)
 
+First open the status page, `http://<forger>:8790` (El Tucu's Pi: `http://192.168.1.17:8790`). It shows each process
+(mediamtx, camera, tunnel, gateway: up, restarts, last log line), the public URL, the hub registration and every check with
+what to fix. The rows below are the same checks by hand. On the Pi the commands run over `ssh crisol-pi`.
+
 ```bash
 curl http://192.168.1.15/state                      # ESP32: must be 200 with angles
 curl http://localhost:8787/api/health               # gateway: {"ok":true,...,"robot":true}
 curl http://localhost:8787/api/shells/el-tucu/state # angles, moving, uptime
 curl -o /dev/null -w '%{http_code}\n' http://localhost:8787/live/el-tucu/index.m3u8   # HLS: 200 (404 = camera down, see 5)
-tail -50 <forger log>                               # pnpm forger output: [tunnel] URL, [hub] registered, [camera] errors
+journalctl -u rent-a-shell-forger -n 50            # Pi service log (on a Mac: the pnpm forger output): [tunnel] URL, [hub] registered, [camera] errors
 ```
 
-`robot:false` means the ESP32 is not answering on the LAN: power, Wi-Fi, IP changed (`pnpm forger:find-esp32`).
+`robot:false` means the ESP32 is not answering on the LAN: power, Wi-Fi, IP changed (`pnpm forger:esp32`).
 
 ## 2. Tunnel
 
@@ -23,8 +27,8 @@ curl -o /dev/null -w '%{http_code} %{time_total}s\n' "$(cat apps/gateway/data/pu
 curl -s http://127.0.0.1:20242/metrics | grep -E '^cloudflared_tunnel_(ha_connections|total_requests|request_errors)'
 ```
 
-The metrics port is 20241..20245 (first free one; 20241 is often the named `cloudflared` service of this Mac, not ours).
-If the URL does not answer: kill the `cloudflared tunnel --url` process, the launcher restarts it with a new URL and
+The metrics port is 20241..20245 (first free one; on a Mac 20241 is often a named `cloudflared` service, not ours).
+If the URL does not answer: kill the `cloudflared tunnel --url` process (or `sudo systemctl restart rent-a-shell-forger` on the Pi), the launcher restarts it with a new URL and
 registers it again on the hub (it retries forever since 2026-10-16).
 
 ## 3. Hub registration
@@ -85,7 +89,7 @@ Done on 2026-10-16 (slot 511787810).
 
 ## 7. The arm is limp although `/state` answers
 
-The firmware does not report whether the servos got power. Capture the UART (the board is on `/dev/cu.usbserial-0001`;
+The firmware does not report whether the servos got power. Capture the UART (the board is on `/dev/cu.usbserial-0001` on a Mac, `/dev/ttyUSB0` on Linux;
 opening the port resets it) while sending a command:
 
 ```bash

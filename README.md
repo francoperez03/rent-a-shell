@@ -82,6 +82,6 @@ Prior reference: `paybot` (`github.com/superposition/paybot`), x402 payment to c
 ## Agent skills
 
 - **`skills/rent-a-shell`** (rent): an agent rents a shell, runs a motion plan, measures angles, current and photos, and returns a report. It pays with x402 under a spending cap approved by the person. The client is `skills/rent-a-shell/rent.mjs`.
-- **`skills/rent-a-shell-forger`** (publish): turns a computer (macOS first, also Windows and Linux) into a Forger with `pnpm forger`, which starts the camera, tunnel, gateway and hub registration, and finishes with `pnpm forger:doctor`.
+- **`skills/rent-a-shell-forger`** (publish): turns a Raspberry Pi into a Forger over SSH with `pnpm forger:deploy user@pi` (systemd service, status page on `:8790`), or runs `pnpm forger` on a Mac. Either way one process starts the camera, tunnel, gateway and hub registration.
 
 The site serves both at `/skills/rent/SKILL.md` and `/skills/forger/SKILL.md`.
