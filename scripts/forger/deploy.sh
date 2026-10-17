@@ -49,7 +49,7 @@ cd ~/rent-a-shell
 COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm install --filter "gateway..." --frozen-lockfile --reporter=silent
 # config copied from the deploying machine; the Pi's camera is v4l2
 if [ -d /tmp/forger-config ]; then
-  cp /tmp/forger-config/* apps/gateway/ && rm -rf /tmp/forger-config
+  cp -a /tmp/forger-config/. apps/gateway/ && rm -rf /tmp/forger-config # ".": the glob would skip .env.local
   ENV=apps/gateway/.env.local
   if [ -f $ENV ]; then grep -q '^CAMERA=' $ENV && sed -i 's|^CAMERA=.*|CAMERA=/dev/video0|' $ENV || echo CAMERA=/dev/video0 >> $ENV; fi
 fi
@@ -71,6 +71,7 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 UNIT
+sync # a Pi that loses power right after this keeps its config (an unsynced unit file comes back empty, i.e. masked)
 sudo systemctl daemon-reload
 sudo systemctl enable -q rent-a-shell-forger
 sudo systemctl restart rent-a-shell-forger
