@@ -20,7 +20,7 @@ if [ -n "${SUDO_PASS:-}" ]; then echo "$SUDO_PASS" | sudo -S -v 2>/dev/null; els
 ARCH="$(dpkg --print-architecture)" # arm64 on a Pi 5 / Pi 4 with 64-bit OS
 
 echo "== packages"
-sudo apt-get update -qq
+sudo apt-get update -qq 2>/dev/null
 sudo apt-get install -y -qq ffmpeg git curl v4l-utils ca-certificates >/dev/null
 if ! node -v 2>/dev/null | grep -qE '^v(2[2-9]|[3-9][0-9])'; then
   curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - >/dev/null
@@ -28,7 +28,7 @@ if ! node -v 2>/dev/null | grep -qE '^v(2[2-9]|[3-9][0-9])'; then
 fi
 sudo corepack enable
 if ! command -v mediamtx >/dev/null; then
-  TAG="$(curl -fsSL https://api.github.com/repos/bluenviron/mediamtx/releases/latest | grep -m1 '"tag_name"' | cut -d'"' -f4)"
+  TAG="$(basename "$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/bluenviron/mediamtx/releases/latest)")"
   curl -fsSL "https://github.com/bluenviron/mediamtx/releases/download/$TAG/mediamtx_${TAG}_linux_${ARCH}.tar.gz" | sudo tar -xz -C /usr/local/bin mediamtx
 fi
 if ! command -v cloudflared >/dev/null; then
@@ -82,7 +82,7 @@ for f in .env.local shell.json shell.jpg; do
   [ -f "$GW/$f" ] && scp -q "$GW/$f" "$HOST:/tmp/forger-config/$f" && echo "copying $f"
 done
 scp -q "${TMPDIR:-/tmp}/forger-setup.sh" "$HOST:$REMOTE"
-ssh -tt "$HOST" "SUDO_PASS='${SUDO_PASS:-}' bash $REMOTE $BRANCH; rm -f $REMOTE"
+ssh -tt "$HOST" "SUDO_PASS='${SUDO_PASS:-}' bash $REMOTE $BRANCH; s=\$?; rm -f $REMOTE; exit \$s"
 
 IP="$(ssh -G "$HOST" | awk '/^hostname /{print $2}')" # resolves ~/.ssh/config aliases
 echo "== waiting for http://$IP:8790"
